@@ -6,6 +6,7 @@ export interface Product {
   description: string
   whatsapp?: string
   gradient: string
+  image?: string
 }
 
 export interface CartItem extends Product {

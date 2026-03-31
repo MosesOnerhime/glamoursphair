@@ -13,6 +13,7 @@ const products: Product[] = [
     tag: 'Best Seller',
     description: 'Silky smooth, jet black bone straight wig. 26" length, 180% density.',
     gradient: 'from-neutral-900 to-neutral-800',
+    image: '/images/bone-straight.jpeg',
   },
   {
     id: 2,
@@ -21,6 +22,7 @@ const products: Product[] = [
     tag: 'New',
     description: 'Voluminous bouncy curls with natural-looking body. 22" length.',
     gradient: 'from-stone-900 to-neutral-800',
+    image: '/images/bone-straight.jpeg',
   },
   {
     id: 3,
@@ -29,6 +31,7 @@ const products: Product[] = [
     tag: 'Premium',
     description: 'Deep ocean wave pattern. HD lace frontal. 24" length, 200% density.',
     gradient: 'from-zinc-900 to-stone-900',
+    image: '/images/bone-straight.jpeg',
   },
   {
     id: 4,
@@ -36,6 +39,7 @@ const products: Product[] = [
     price: 68000,
     description: 'Classic body wave texture. Lightweight and breathable cap. 20" length.',
     gradient: 'from-neutral-800 to-zinc-900',
+    image: '/images/bone-straight.jpeg',
   },
   {
     id: 5,
@@ -44,6 +48,7 @@ const products: Product[] = [
     tag: 'Trending',
     description: 'Embrace your natural roots. Full kinky coily texture. 18" length.',
     gradient: 'from-stone-800 to-neutral-900',
+    image: '/images/bone-straight.jpeg',
   },
   {
     id: 6,
@@ -52,6 +57,7 @@ const products: Product[] = [
     tag: 'Exclusive',
     description: 'Our most luxurious piece. Virgin Remy hair, 28" length. 220% density.',
     gradient: 'from-zinc-800 to-neutral-900',
+    image: '/images/bone-straight.jpeg',
   },
   {
     id: 7,
@@ -59,6 +65,7 @@ const products: Product[] = [
     price: 62000,
     description: 'Effortless beach waves. Beginner-friendly. 20" length, 150% density.',
     gradient: 'from-neutral-900 to-stone-800',
+    image: '/images/bone-straight.jpeg',
   },
   {
     id: 8,
@@ -67,6 +74,7 @@ const products: Product[] = [
     tag: 'Limited',
     description: 'Stunning water wave texture with HD transparent lace. 24" length.',
     gradient: 'from-stone-900 to-zinc-800',
+    image: '/images/bone-straight.jpeg',
   },
 ]
 
@@ -125,13 +133,21 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
               {/* Image placeholder */}
               <div className={`relative h-64 bg-gradient-to-br ${product.gradient} overflow-hidden`}>
                 {/* Decorative hair silhouette */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-20">
-                  <svg viewBox="0 0 200 300" className="w-32 h-48 fill-[#c9a84c]">
-                    <ellipse cx="100" cy="80" rx="60" ry="70" />
-                    <path d="M40 80 Q20 180 30 280 Q100 260 170 280 Q180 180 160 80" />
-                    <ellipse cx="100" cy="75" rx="50" ry="55" fill="#0a0a0a" opacity="0.5"/>
-                  </svg>
-                </div>
+                {product.image ? (
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center opacity-20">
+                    <svg viewBox="0 0 200 300" className="w-32 h-48 fill-[#c9a84c]">
+                      <ellipse cx="100" cy="80" rx="60" ry="70" />
+                      <path d="M40 80 Q20 180 30 280 Q100 260 170 280 Q180 180 160 80" />
+                      <ellipse cx="100" cy="75" rx="50" ry="55" fill="#0a0a0a" opacity="0.5"/>
+                    </svg>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#111]/80 to-transparent" />
 
                 {/* Gold shimmer effect on hover */}
