@@ -32,8 +32,10 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
           {/* Logo */}
           <div className="flex flex-col leading-none cursor-pointer" onClick={() => scrollTo('home')}>
-            <span className="font-display text-2xl md:text-3xl tracking-[0.15em] text-[#c9a84c]">GLAMOURS</span>
-            <span className="font-display text-2xl md:text-3xl tracking-[0.15em] text-white -mt-1">PHAIR</span>
+            <span className="font-display text-2xl md:text-3xl tracking-[0.15em]">
+              <span className="text-[#c9a84c]">GLAMOURS</span>
+              <span className="text-white">PHAIR</span>
+            </span>
             <div className="h-px bg-gradient-to-r from-[#c9a84c] to-transparent mt-1" />
           </div>
 
