@@ -77,9 +77,9 @@ export default function Hero() {
       </div>
 
       {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 hidden md:flex">
         <span className="text-neutral-600 text-xs tracking-widest uppercase">Scroll</span>
-        <div className="w-px h-8 bg-gradient-to-b from-[#c9a84c]/50 to-transparent" />
+        <div className="w-px h-8 bg-gradient-to-b from-[#c9a84c]/50 to-transparent animate-bounce" />
       </div>
     </section>
   )
