@@ -55,7 +55,7 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
           </ul>
 
           {/* Cart + Hamburger + search icon */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' })}
               className="p-2 text-neutral-400 hover:text-[#c9a84c] transition-colors"

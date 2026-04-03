@@ -20,7 +20,8 @@ export default function Hero() {
         muted
         loop
         playsInline
-        className="absolute inset-0 w-full h-full object-cover opacity-40"
+        className="absolute inset-0 w-full h-full object-cover opacity-60"
+        style={{ objectPosition: '50% 20%' }}
       >
         <source src="/videos/hero.mp4" type="video/mp4" />
       </video>
@@ -95,6 +96,9 @@ export default function Hero() {
         <span className="text-neutral-600 text-xs tracking-widest uppercase">Scroll</span>
         <div className="w-px h-8 bg-gradient-to-b from-[#c9a84c]/50 to-transparent animate-bounce" />
       </div>
+      
+      {/* Bottom fade into next section */}
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-b from-transparent to-[#0d0d0d] pointer-events-none" />
     </section>
   )
 }
