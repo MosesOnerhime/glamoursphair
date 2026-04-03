@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { HiShoppingBag, HiMenu, HiX } from 'react-icons/hi'
+import { HiShoppingBag, HiMenu, HiX, HiSearch } from 'react-icons/hi'
 
 interface NavbarProps {
   cartCount: number
@@ -54,8 +54,14 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
             ))}
           </ul>
 
-          {/* Cart + Hamburger */}
+          {/* Cart + Hamburger + search icon */}
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' })}
+              className="p-2 text-neutral-400 hover:text-[#c9a84c] transition-colors"
+            >
+              <HiSearch size={20} />
+            </button>
             <button onClick={onCartClick} className="relative p-2 hover:text-[#c9a84c] transition-colors">
               <HiShoppingBag size={22} />
               {cartCount > 0 && (

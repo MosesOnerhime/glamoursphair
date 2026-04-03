@@ -5,6 +5,7 @@ import type { Product } from '../types'
 
 const WHATSAPP = '2348128288948'
 
+
 const products: Product[] = [
   {
     id: 1,
@@ -93,6 +94,13 @@ interface ProductGridProps {
 
 export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   const [added, setAdded] = useState<number | null>(null)
+  const [search, setSearch] = useState('')
+
+  const filtered = products.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    p.description.toLowerCase().includes(search.toLowerCase()) ||
+    (p.tag ?? '').toLowerCase().includes(search.toLowerCase())
+  )
 
   const handleAdd = (product: Product) => {
     onAddToCart(product)
@@ -123,9 +131,28 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
           </p>
         </div>
 
+        {/* Search bar */}
+        <div className="relative max-w-md mx-auto mb-12">
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search wigs e.g. 'bone straight', 'curls'..."
+            className="w-full bg-[#111] border border-white/10 focus:border-[#c9a84c]/50 outline-none px-5 py-4 text-sm text-white placeholder-neutral-600 tracking-wide transition-colors duration-300 search-pulse"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors text-lg"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
         {/* Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {products.map((product) => (
+          {filtered.map((product) => (
             <div
               key={product.id}
               className="group relative bg-[#111] border border-white/5 hover:border-[#c9a84c]/40 transition-all duration-500 flex flex-col overflow-hidden"
@@ -203,6 +230,20 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
             </div>
           ))}
         </div>
+
+        {/* No-Result Message */}
+        {filtered.length === 0 && (
+          <div className="text-center py-20">
+            <p className="text-neutral-500 text-lg mb-2">No results for "<span className="text-[#c9a84c]">{search}</span>"</p>
+            <p className="text-neutral-600 text-sm">Try searching for a different style or texture</p>
+            <button
+              onClick={() => setSearch('')}
+              className="mt-6 px-6 py-2.5 border border-[#c9a84c]/30 text-[#c9a84c] text-sm tracking-widest uppercase hover:bg-[#c9a84c]/10 transition-colors"
+            >
+              Clear Search
+            </button>
+          </div>
+        )}
 
         {/* Bottom CTA */}
         <div className="mt-16 text-center">

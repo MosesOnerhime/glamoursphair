@@ -5,14 +5,28 @@ export default function Hero() {
 
   return (
     <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#0a0a0a]">
-      {/* Background mesh/grain effect */}
+      {/* Background mesh/grain effect
       <div className="absolute inset-0 opacity-30"
         style={{
           backgroundImage: `radial-gradient(ellipse at 20% 50%, #c9a84c22 0%, transparent 60%),
                             radial-gradient(ellipse at 80% 20%, #8b6914 0%, transparent 50%),
                             radial-gradient(ellipse at 60% 80%, #c9a84c11 0%, transparent 50%)`
         }}
-      />
+      /> */}
+
+      {/* Video background */}
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover opacity-40"
+      >
+        <source src="/videos/hero.mp4" type="video/mp4" />
+      </video>
+
+      {/* Dark overlay so text stays readable */}
+      <div className="absolute inset-0 bg-[#0a0a0a]/60" />
 
       {/* Decorative vertical lines */}
       <div className="absolute left-8 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#c9a84c]/30 to-transparent hidden md:block" />
