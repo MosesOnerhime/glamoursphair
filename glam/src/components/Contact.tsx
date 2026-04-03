@@ -39,10 +39,15 @@ export default function Contact() {
               </div>
               <div>
                 <h3 className="text-white font-semibold tracking-wide mb-1">Our Showroom</h3>
-                <p className="text-neutral-400 text-sm leading-relaxed">
+                <a
+                  href="https://maps.app.goo.gl/wxwPUFEoeazuTs3r5"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-neutral-400 text-sm leading-relaxed hover:text-[#c9a84c] transition-colors"
+                >
                   Suite FB-53, New Banex Plaza<br />
                   Wuse 2, Abuja, FCT
-                </p>
+                </a>
               </div>
             </div>
 
@@ -114,13 +119,13 @@ export default function Contact() {
             {/* Social links */}
             <div className="border border-white/5 p-6 flex items-center justify-center gap-6">
               <span className="text-neutral-500 text-sm tracking-widest uppercase">Follow Us</span>
-              <a href="#" className="w-10 h-10 border border-white/10 flex items-center justify-center text-neutral-400 hover:text-[#c9a84c] hover:border-[#c9a84c]/50 transition-all duration-300">
+              <a href="https://www.instagram.com/glamoursphair" target="_blank" rel="noopener noreferrer" className="w-10 h-10 border border-white/10 flex items-center justify-center text-neutral-400 hover:text-[#c9a84c] hover:border-[#c9a84c]/50 transition-all duration-300">
                 <FaInstagram size={18} />
               </a>
-              <a href="#" className="w-10 h-10 border border-white/10 flex items-center justify-center text-neutral-400 hover:text-[#c9a84c] hover:border-[#c9a84c]/50 transition-all duration-300">
+              <a href="https://www.tiktok.com/@abujahairboss" target="_blank" rel="noopener noreferrer" className="w-10 h-10 border border-white/10 flex items-center justify-center text-neutral-400 hover:text-[#c9a84c] hover:border-[#c9a84c]/50 transition-all duration-300">
                 <FaTiktok size={18} />
               </a>
-              <a href="#" className="w-10 h-10 border border-white/10 flex items-center justify-center text-neutral-400 hover:text-[#c9a84c] hover:border-[#c9a84c]/50 transition-all duration-300">
+              <a href="https://wa.me/2348128288948" target="_blank" rel="noopener noreferrer" className="w-10 h-10 border border-white/10 flex items-center justify-center text-neutral-400 hover:text-[#c9a84c] hover:border-[#c9a84c]/50 transition-all duration-300">
                 <FaWhatsapp size={18} />
               </a>
             </div>
