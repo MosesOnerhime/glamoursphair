@@ -1,2 +1,2 @@
 # glamoursphair
-Website for my mom's hair business, Glamoursphair.
+Website for Dee Glamoursphair Luxury.
