@@ -6,13 +6,13 @@ A premium React + Vite + TypeScript + Tailwind CSS website for GLAMOURSPHAIR, a 
 
 ## 🚀 Quick Setup
 
-### 1. Create the Vite project (already done if you ran `npm create vite@latest glam`)
+### 1. Create the Vite project (already done if you ran `npm create vite@latest frontend`)
 
 ```bash
-cd glam
+cd frontend
 ```
 
-### 2. Copy all project files into your `glam/` folder
+### 2. Copy all project files into your `frontend/` folder
 
 Replace or merge the following:
 - `src/` folder (all components)
@@ -51,7 +51,7 @@ npm run preview
 ## 📁 Project Structure
 
 ```
-glam/
+frontend/
 ├── index.html
 ├── package.json
 ├── tailwind.config.js

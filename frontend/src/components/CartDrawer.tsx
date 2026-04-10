@@ -7,11 +7,12 @@ interface CartDrawerProps {
   onClose: () => void
   items: CartItem[]
   onRemove: (id: number) => void
+  onCheckout: () => void
 }
 
 const WHATSAPP = '2348128288948'
 
-export default function CartDrawer({ open, onClose, items, onRemove }: CartDrawerProps) {
+export default function CartDrawer({ open, onClose, items, onRemove, onCheckout }: CartDrawerProps) {
   const total = items.reduce((sum, i) => sum + i.price * i.qty, 0)
 
   const orderViaWhatsApp = () => {
@@ -31,6 +32,7 @@ export default function CartDrawer({ open, onClose, items, onRemove }: CartDrawe
 
       {/* Drawer */}
       <div className={`fixed top-0 right-0 bottom-0 w-full max-w-sm bg-[#0d0d0d] border-l border-white/5 z-50 flex flex-col transition-transform duration-500 ${open ? 'translate-x-0' : 'translate-x-full'}`}>
+
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-white/5">
           <h2 className="font-display text-xl text-white tracking-wide">Your Cart</h2>
@@ -51,8 +53,11 @@ export default function CartDrawer({ open, onClose, items, onRemove }: CartDrawe
           ) : (
             items.map(item => (
               <div key={item.id} className="flex gap-4 border border-white/5 p-4">
-                <div className={`w-16 h-16 bg-gradient-to-br ${item.gradient} flex-shrink-0 flex items-center justify-center`}>
-                  <span className="text-[#c9a84c]/40 text-2xl">👸</span>
+                <div className={`w-16 h-16 bg-gradient-to-br ${item.gradient} flex-shrink-0 flex items-center justify-center overflow-hidden`}>
+                  {item.image
+                    ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                    : <span className="text-[#c9a84c]/40 text-2xl">👸</span>
+                  }
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-white text-sm font-medium truncate">{item.name}</h4>
@@ -72,20 +77,31 @@ export default function CartDrawer({ open, onClose, items, onRemove }: CartDrawe
 
         {/* Footer */}
         {items.length > 0 && (
-          <div className="px-6 py-6 border-t border-white/5 space-y-4">
-            <div className="flex items-center justify-between">
+          <div className="px-6 py-6 border-t border-white/5 space-y-3">
+            <div className="flex items-center justify-between mb-1">
               <span className="text-neutral-400 text-sm uppercase tracking-widest">Total</span>
               <span className="text-[#c9a84c] font-display text-2xl">₦{total.toLocaleString()}</span>
             </div>
+
+            {/* Primary: Pay with card */}
+            <button
+              onClick={onCheckout}
+              className="w-full py-4 bg-[#c9a84c] text-black font-bold tracking-[0.2em] text-sm uppercase hover:bg-white transition-colors duration-300"
+            >
+              Proceed to Checkout
+            </button>
+
+            {/* Secondary: WhatsApp */}
             <button
               onClick={orderViaWhatsApp}
-              className="w-full flex items-center justify-center gap-2 py-4 bg-[#25D366] text-white font-bold tracking-[0.15em] uppercase text-sm hover:bg-[#20b85a] transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-3 border border-[#25D366]/30 text-[#25D366] font-semibold text-sm hover:bg-[#25D366]/10 transition-all duration-300"
             >
-              <FaWhatsapp size={18} />
-              Order via WhatsApp
+              <FaWhatsapp size={16} />
+              Order via WhatsApp Instead
             </button>
+
             <p className="text-center text-neutral-600 text-xs">
-              Pay in installments available • 20% down
+              Pay in installments available · 20% down
             </p>
           </div>
         )}
