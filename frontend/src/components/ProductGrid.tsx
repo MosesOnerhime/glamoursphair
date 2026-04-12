@@ -167,14 +167,14 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
           {filtered.map((product) => (
             <div
               key={product.id}
               className="group relative bg-[#111] border border-white/5 hover:border-[#c9a84c]/40 transition-all duration-500 flex flex-col overflow-hidden"
             >
               {/* Image placeholder */}
-              <div className={`relative h-64 bg-gradient-to-br ${product.gradient} overflow-hidden`}>
+              <div className={`relative h-48 sm:h-64 bg-gradient-to-br ${product.gradient} overflow-hidden`}>
                 {/* Decorative hair silhouette */}
                 {product.image ? (
                   <img
@@ -210,8 +210,8 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
               </div>
 
               {/* Card body */}
-              <div className="flex flex-col flex-1 p-5 gap-3">
-                <h3 className="font-display text-xl text-white tracking-wide group-hover:text-[#c9a84c] transition-colors duration-300">
+              <div className="flex flex-col flex-1 p-3 sm:p-5 gap-2 sm:gap-3">
+                <h3 className="font-display text-base sm:text-xl text-white tracking-wide group-hover:text-[#c9a84c] transition-colors duration-300">
                   {product.name}
                 </h3>
                 <p className="text-neutral-500 text-sm leading-relaxed flex-1">{product.description}</p>

@@ -13,6 +13,7 @@ interface CheckoutModalProps {
 
 const EMAILJS_SERVICE = 'service_n33g579'
 const EMAILJS_TEMPLATE = 'template_qlo9mrg'
+const EMAILJS_TEMPLATE2 = 'template_4l65g4a'
 const EMAILJS_PUBLIC_KEY = 'picn4x_CNW2nK6hjX'
 const PAYSTACK_PUBLIC_KEY = 'pk_test_84bb1a37982e3713da5bdb24bafdcaa5737b834c'
 const WHATSAPP = '2348128288948'
@@ -113,6 +114,21 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
         {
           customer_name: name,
           customer_email: email,
+          order_summary: orderSummary,
+          total: displayTotal,
+          reference,
+          date,
+        },
+        EMAILJS_PUBLIC_KEY
+      )
+
+      await emailjs.send(
+        EMAILJS_SERVICE,
+        EMAILJS_TEMPLATE2,
+        {
+          customer_name: name,
+          customer_email: email,
+          customer_phone: phone,
           order_summary: orderSummary,
           total: displayTotal,
           reference,
