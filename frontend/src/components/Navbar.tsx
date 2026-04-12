@@ -77,22 +77,28 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
         </div>
       </nav>
 
-      {/* Mobile menu */}
-      <div className={`fixed inset-0 z-40 bg-[#0a0a0a] flex flex-col items-center justify-center gap-8 transition-all duration-500 ${
-        menuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-      }`}>
-        {links.map((link, i) => (
-          <button
-            key={link}
-            onClick={() => scrollTo(link)}
-            className="font-display text-4xl tracking-widest text-white hover:text-[#c9a84c] transition-colors"
-            style={{ animationDelay: `${i * 0.1}s` }}
-          >
-            {link}
-          </button>
-        ))}
-        <div className="mt-8 text-[#c9a84c] tracking-[0.3em] text-xs uppercase">Luxury Hair & Wigs</div>
-      </div>
+      {/* Mobile dropdown menu */}
+      {menuOpen && (
+        <div className="fixed top-[60px] left-0 right-0 z-40 bg-[#0a0a0a]/98 backdrop-blur-md border-b border-[#c9a84c]/20 md:hidden">
+          <ul className="flex flex-col py-2">
+            {links.map((link, i) => (
+              <li key={link} style={{ animationDelay: `${i * 0.05}s` }}>
+                <button
+                  onClick={() => scrollTo(link)}
+                  className="w-full text-left px-6 py-4 text-sm tracking-[0.2em] uppercase text-neutral-300 hover:text-[#c9a84c] hover:bg-[#c9a84c]/5 transition-all duration-200 border-b border-white/5 last:border-0"
+                >
+                  {link}
+                </button>
+              </li>
+            ))}
+            <li className="px-6 py-4">
+              <span className="text-[#c9a84c]/50 tracking-[0.3em] text-xs uppercase">
+                Luxury Hair & Wigs
+              </span>
+            </li>
+          </ul>
+        </div>
+      )}
     </>
   )
 }

@@ -1,5 +1,5 @@
 const promos = [
-  '✨ Pay in Installments: 20% down, 60 days to pay!',
+  // '✨ Pay in Installments: 20% down, 60 days to pay!',
   '🔥 Mega Sales: Buy 2 hairs, get FREE installation!',
   '💎 New Collection: Luxury Bone Straight now available',
   '🚚 Free delivery on orders above ₦150,000',

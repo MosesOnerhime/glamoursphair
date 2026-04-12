@@ -211,7 +211,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
               {/* Card body */}
               <div className="flex flex-col flex-1 p-3 sm:p-5 gap-2 sm:gap-3">
-                <h3 className="font-display text-base sm:text-xl text-white tracking-wide group-hover:text-[#c9a84c] transition-colors duration-300">
+                <h3 className="font-display text-base sm:text-xl text-white tracking-wide group-hover:text-[#c9a84c] transition-colors duration-300">                                             
                   {product.name}
                 </h3>
                 <p className="text-neutral-500 text-sm leading-relaxed flex-1">{product.description}</p>
@@ -236,10 +236,10 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                     href={whatsappLink(product)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold tracking-wide border border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/10 transition-all duration-300"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 text-xs sm:text-sm font-semibold tracking-wide border border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/10 transition-all duration-300 text-center"
                   >
                     <FaWhatsapp size={16} />
-                    Order via WhatsApp
+                    <span className="hidden xs:inline">Order via</span> WhatsApp
                   </a>
                 </div>
               </div>
