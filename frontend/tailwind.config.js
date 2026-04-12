@@ -11,7 +11,7 @@ export default {
         body: ['"DM Sans"', 'system-ui', 'sans-serif'],
       },
       animation: {
-        marquee: 'marquee 30s linear infinite',
+        marquee: 'marquee 6s linear infinite',
         'spin-slow': 'spin 20s linear infinite',
       },
       keyframes: {

@@ -79,7 +79,7 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
 
       {/* Mobile dropdown menu */}
       {menuOpen && (
-        <div className="fixed top-[60px] left-0 right-0 z-40 bg-[#0a0a0a]/98 backdrop-blur-md border-b border-[#c9a84c]/20 md:hidden">
+        <div className="fixed top-[60px] left-0 right-0 z-40 bg-[#0a0a0a]/98 backdrop-blur-md border-b border-[#c9a84c]/20 md:hidden animate-dropdown">
           <ul className="flex flex-col py-2">
             {links.map((link, i) => (
               <li key={link} style={{ animationDelay: `${i * 0.05}s` }}>

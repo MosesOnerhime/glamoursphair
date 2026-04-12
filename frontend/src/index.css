@@ -58,3 +58,18 @@ body {
 .search-pulse {
   animation: pulse-gold 2.5s ease-in-out infinite;
 }
+
+@keyframes dropdown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-dropdown {
+  animation: dropdown 0.25s ease-out forwards;
+}

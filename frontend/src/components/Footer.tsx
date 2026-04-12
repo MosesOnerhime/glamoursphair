@@ -22,8 +22,8 @@ export default function Footer() {
               Premium luxury hair and wig brand based in Abuja. We believe every woman deserves to feel like royalty, every single day.
             </p>
             <div className="flex items-center gap-4 mt-6">
-              <a href="#" className="text-neutral-500 hover:text-[#c9a84c] transition-colors"><FaInstagram size={20} /></a>
-              <a href="#" className="text-neutral-500 hover:text-[#c9a84c] transition-colors"><FaTiktok size={20} /></a>
+              <a href="https://www.instagram.com/glamoursphair" target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-[#c9a84c] transition-colors"><FaInstagram size={20} /></a>
+              <a href="https://www.tiktok.com/@abujahairboss" target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-[#c9a84c] transition-colors"><FaTiktok size={20} /></a>
               <a
                 href="https://wa.me/2348128288948"
                 target="_blank"
