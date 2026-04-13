@@ -40,7 +40,7 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
   return (
     <>
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled ? 'bg-[#0a0a0a]/95 backdrop-blur-md border-b border-[#c9a84c]/20 py-3' : 'bg-transparent py-5'
+        scrolled ? 'bg-[#0a0a0a]/95 backdrop-blur-md border-b border-[#c9a84c]/20 py-3' : 'bg-transparent py-4'
       }`}>
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
           {/* Logo */}
@@ -51,6 +51,13 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
             </span>
             <div className="h-px bg-gradient-to-r from-[#c9a84c] to-transparent mt-1" />
           </div>
+          {/* <div className="cursor-pointer flex items-center" onClick={() => scrollTo('home')}>
+            <img
+              src="/images/logo.png"
+              alt="GLAMOURSPHAIR"
+              className="w-40 md:w-40 h-24 md:h-20 object-contain"
+            />
+          </div> */}
 
           {/* Desktop links */}
           <ul className="hidden md:flex items-center gap-8">

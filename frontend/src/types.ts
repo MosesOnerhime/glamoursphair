@@ -7,6 +7,7 @@ export interface Product {
   whatsapp?: string
   gradient: string
   image?: string
+  instagramLink?: string
 }
 
 export interface CartItem extends Product {

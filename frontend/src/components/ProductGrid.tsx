@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { HiShoppingCart, HiCheck } from 'react-icons/hi'
-import { FaWhatsapp } from 'react-icons/fa'
+import { HiShoppingCart, HiCheck, HiX } from 'react-icons/hi'
+import { FaWhatsapp, FaInstagram } from 'react-icons/fa'
 import type { Product } from '../types'
 
 const WHATSAPP = '2348128288948'
@@ -11,6 +11,7 @@ const products: Product[] = [
     id: 1,
     name: '1',
     price: 135000,
+    instagramLink: 'https://instagram.com/glamoursphair',
     tag: 'Best Seller',
     description: 'Silky smooth, jet black bone straight wig. 26" length, 180% density.',
     gradient: 'from-neutral-900 to-neutral-800',
@@ -20,6 +21,7 @@ const products: Product[] = [
     id: 2,
     name: '2',
     price: 298000,
+    instagramLink: 'https://instagram.com/glamoursphair',
     tag: 'New',
     description: 'Voluminous bouncy curls with natural-looking body. 22" length.',
     gradient: 'from-stone-900 to-neutral-800',
@@ -29,6 +31,7 @@ const products: Product[] = [
     id: 3,
     name: '3',
     price: 265000,
+    instagramLink: 'https://instagram.com/glamoursphair',
     tag: 'Premium',
     description: 'Deep ocean wave pattern. HD lace frontal. 24" length, 200% density.',
     gradient: 'from-zinc-900 to-stone-900',
@@ -38,6 +41,7 @@ const products: Product[] = [
     id: 4,
     name: '4',
     price: 185000,
+    instagramLink: 'https://instagram.com/glamoursphair',
     description: 'Classic body wave texture. Lightweight and breathable cap. 20" length.',
     gradient: 'from-neutral-800 to-zinc-900',
     image: '/images/4.png',
@@ -46,6 +50,7 @@ const products: Product[] = [
     id: 5,
     name: '5',
     price: 235000,
+    instagramLink: 'https://instagram.com/glamoursphair',
     tag: 'Trending',
     description: 'Embrace your natural roots. Full kinky coily texture. 18" length.',
     gradient: 'from-stone-800 to-neutral-900',
@@ -55,6 +60,7 @@ const products: Product[] = [
     id: 6,
     name: '6',
     price: 235000,
+    instagramLink: 'https://instagram.com/glamoursphair',
     description: 'Our most luxurious piece. Virgin Remy hair, 28" length. 220% density.',
     gradient: 'from-zinc-800 to-neutral-900',
     image: '/images/6.png',
@@ -63,6 +69,7 @@ const products: Product[] = [
     id: 7,
     name: '7',
     price: 235000,
+    instagramLink: 'https://instagram.com/glamoursphair',
     description: 'Effortless beach waves. Beginner-friendly. 20" length, 150% density.',
     gradient: 'from-neutral-900 to-stone-800',
     image: '/images/7.png',
@@ -71,6 +78,7 @@ const products: Product[] = [
     id: 8,
     name: '8',
     price: 110000,
+    instagramLink: 'https://instagram.com/glamoursphair',
     tag: 'Limited',
     description: 'Stunning water wave texture with HD transparent lace. 24" length.',
     gradient: 'from-stone-900 to-zinc-800',
@@ -80,6 +88,7 @@ const products: Product[] = [
     id: 9,
     name: '9',
     price: 850000,
+    instagramLink: 'https://instagram.com/glamoursphair',
     tag: 'Exclusive',
     description: 'Stunning water wave texture with HD transparent lace. 24" length.',
     gradient: 'from-stone-900 to-zinc-800',
@@ -89,6 +98,7 @@ const products: Product[] = [
     id: 10,
     name: '10',
     price: 345000,
+    instagramLink: 'https://instagram.com/glamoursphair',
     description: 'Stunning water wave texture with HD transparent lace. 24" length.',
     gradient: 'from-stone-900 to-zinc-800',
     image: '/images/10.png',
@@ -111,6 +121,8 @@ interface ProductGridProps {
 export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   const [added, setAdded] = useState<number | null>(null)
   const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<Product | null>(null)
+
 
   const filtered = products.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -171,7 +183,8 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
           {filtered.map((product) => (
             <div
               key={product.id}
-              className="group relative bg-[#111] border border-white/5 hover:border-[#c9a84c]/40 transition-all duration-500 flex flex-col overflow-hidden"
+              onClick={() => setSelected(product)}
+              className="group relative bg-[#111] border border-white/5 hover:border-[#c9a84c]/40 transition-all duration-500 flex flex-col overflow-hidden cursor-pointer"
             >
               {/* Image placeholder */}
               <div className={`relative h-48 sm:h-64 bg-gradient-to-br ${product.gradient} overflow-hidden`}>
@@ -275,6 +288,102 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
           </a>
         </div>
       </div>
+      {/* Product Preview Modal */}
+      {selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setSelected(null)}
+          />
+          <div className="relative w-full max-w-lg bg-[#0d0d0d] border border-white/10 z-10 animate-dropdown overflow-hidden">
+            {/* Close button */}
+            <button
+              onClick={() => setSelected(null)}
+              className="absolute top-4 right-4 z-20 text-neutral-400 hover:text-white transition-colors bg-[#0d0d0d]/80 rounded-full p-1"
+            >
+              <HiX size={20} />
+            </button>
+
+            {/* Product image */}
+            <div className={`relative h-72 bg-gradient-to-br ${selected.gradient} overflow-hidden`}>
+              {selected.image ? (
+                <img
+                  src={selected.image}
+                  alt={selected.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center opacity-20">
+                  <svg viewBox="0 0 200 300" className="w-32 h-48 fill-[#c9a84c]">
+                    <ellipse cx="100" cy="80" rx="60" ry="70" />
+                    <path d="M40 80 Q20 180 30 280 Q100 260 170 280 Q180 180 160 80" />
+                    <ellipse cx="100" cy="75" rx="50" ry="55" fill="#0a0a0a" opacity="0.5"/>
+                  </svg>
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d0d] to-transparent" />
+              {selected.tag && (
+                <span className={`absolute top-3 left-3 text-xs font-bold tracking-widest uppercase px-2.5 py-1 ${tagColors[selected.tag]}`}>
+                  {selected.tag}
+                </span>
+              )}
+            </div>
+
+            {/* Product details */}
+            <div className="p-6 space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <h3 className="font-display text-2xl text-white tracking-wide">{selected.name}</h3>
+                <span className="text-[#c9a84c] font-bold text-xl whitespace-nowrap">
+                  ₦{selected.price.toLocaleString()}
+                </span>
+              </div>
+
+              <p className="text-neutral-400 text-sm leading-relaxed">{selected.description}</p>
+
+              <div className="h-px bg-white/5" />
+
+              {/* Action buttons */}
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleAdd(selected)
+                    setSelected(null)
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#c9a84c] text-black font-bold tracking-[0.15em] uppercase text-sm hover:bg-white transition-colors"
+                >
+                  <HiShoppingCart size={16} />
+                  Add to Cart
+                </button>
+
+                <a
+                  href={whatsappLink(selected)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="w-full flex items-center justify-center gap-2 py-3 border border-[#25D366]/30 text-[#25D366] text-sm font-semibold hover:bg-[#25D366]/10 transition-colors"
+                >
+                  <FaWhatsapp size={16} />
+                  Order via WhatsApp
+                </a>
+
+                {selected.instagramLink && (
+                  <a
+                    href={selected.instagramLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    className="w-full flex items-center justify-center gap-2 py-3 border border-[#E1306C]/30 text-[#E1306C] text-sm font-semibold hover:bg-[#E1306C]/10 transition-colors"
+                  >
+                    <FaInstagram size={16} />
+                    View on Instagram
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
