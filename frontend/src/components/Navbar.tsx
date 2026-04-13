@@ -11,7 +11,7 @@ const links = ['Home', 'Shop', 'Promotions', 'Contact']
 export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [menuVisible, setMenuVisible] = useState(false)
+  const [setMenuVisible] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30)
