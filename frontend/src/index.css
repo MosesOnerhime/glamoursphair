@@ -86,5 +86,5 @@ body {
 }
 
 .animate-dropdown-exit {
-  animation: dropdown-exit 1.2s cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: dropdown-exit 10.2s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
