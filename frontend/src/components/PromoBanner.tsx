@@ -11,7 +11,7 @@ export default function PromoBanner() {
 
   return (
     <div id="promotions" className="bg-[#c9a84c] overflow-hidden py-2.5 relative z-30 mt-[72px]">
-      <div className="flex gap-12 whitespace-nowrap" style={{ animation: 'marquee 10s linear infinite' }}>
+      <div className="flex gap-12 whitespace-nowrap animate-marquee" style={{ animationDuration: '15s' }}>
         {doubled.map((promo, i) => (
           <span key={i} className="text-black font-semibold tracking-wide text-sm flex-shrink-0 px-4">
             {promo}

@@ -122,20 +122,20 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
         EMAILJS_PUBLIC_KEY
       )
 
-      await emailjs.send(
-        EMAILJS_SERVICE,
-        EMAILJS_TEMPLATE2,
-        {
-          customer_name: name,
-          customer_email: email,
-          customer_phone: phone,
-          order_summary: orderSummary,
-          total: displayTotal,
-          reference,
-          date,
-        },
-        EMAILJS_PUBLIC_KEY
-      )
+      // await emailjs.send(
+      //   EMAILJS_SERVICE,
+      //   EMAILJS_TEMPLATE2,
+      //   {
+      //     customer_name: name,
+      //     customer_email: email,
+      //     customer_phone: phone,
+      //     order_summary: orderSummary,
+      //     total: displayTotal,
+      //     reference,
+      //     date,
+      //   },
+      //   EMAILJS_PUBLIC_KEY
+      // )
     } catch (err) {
       console.error('Email receipt failed:', err)
     }
