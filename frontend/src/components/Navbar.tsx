@@ -11,6 +11,7 @@ const links = ['Home', 'Shop', 'Promotions', 'Contact']
 export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [menuVisible, setMenuVisible] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30)
@@ -18,10 +19,22 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  const openMenu = () => {
+    setMenuVisible(true)
+    setMenuOpen(true)
+  }
+
+  const closeMenu = () => {
+    setMenuOpen(false)
+    setTimeout(() => setMenuVisible(false), 200)
+  }
+
+  const toggleMenu = () => menuOpen ? closeMenu() : openMenu()
+
   const scrollTo = (id: string) => {
     const el = document.getElementById(id.toLowerCase())
     if (el) el.scrollIntoView({ behavior: 'smooth' })
-    setMenuOpen(false)
+    closeMenu()
   }
 
   return (
@@ -70,7 +83,7 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
                 </span>
               )}
             </button>
-            <button className="md:hidden p-2 text-white" onClick={() => setMenuOpen(!menuOpen)}>
+            <button className="md:hidden p-2 text-white" onClick={toggleMenu}>
               {menuOpen ? <HiX size={24} /> : <HiMenu size={24} />}
             </button>
           </div>
@@ -79,20 +92,21 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
 
       {/* Mobile dropdown menu */}
       {menuOpen && (
-        <div className="fixed top-[60px] left-0 right-0 z-40 bg-[#0a0a0a]/98 backdrop-blur-md border-b border-[#c9a84c]/20 md:hidden animate-dropdown">
+        <div className="fixed top-[60px] right-4 z-40 bg-[#0a0a0a]/98 backdrop-blur-md border border-[#c9a84c]/20 md:hidden animate-dropdown w-48 shadow-xl shadow-black/50">
           <ul className="flex flex-col py-2">
             {links.map((link, i) => (
-              <li key={link} style={{ animationDelay: `${i * 0.05}s` }}>
+              <li key={link}>
                 <button
                   onClick={() => scrollTo(link)}
-                  className="w-full text-left px-6 py-4 text-sm tracking-[0.2em] uppercase text-neutral-300 hover:text-[#c9a84c] hover:bg-[#c9a84c]/5 transition-all duration-200 border-b border-white/5 last:border-0"
+                  style={{ animationDelay: `${i * 0.05}s` }}
+                  className="w-full text-left px-5 py-3.5 text-xs tracking-[0.2em] uppercase text-neutral-300 hover:text-[#c9a84c] hover:bg-[#c9a84c]/5 transition-all duration-200 border-b border-white/5 last:border-0"
                 >
                   {link}
                 </button>
               </li>
             ))}
-            <li className="px-6 py-4">
-              <span className="text-[#c9a84c]/50 tracking-[0.3em] text-xs uppercase">
+            <li className="px-5 py-3">
+              <span className="text-[#c9a84c]/40 tracking-[0.25em] text-[10px] uppercase">
                 Luxury Hair & Wigs
               </span>
             </li>

@@ -73,3 +73,18 @@ body {
 .animate-dropdown {
   animation: dropdown 0.25s ease-out forwards;
 }
+
+@keyframes dropdown-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.animate-dropdown-exit {
+  animation: dropdown-exit 0.2s ease-in forwards;
+}
