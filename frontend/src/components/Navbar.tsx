@@ -11,7 +11,7 @@ const links = ['Home', 'Shop', 'Promotions', 'Contact']
 export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [setMenuVisible] = useState(false)
+  const [menuVisible, setMenuVisible] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30)
@@ -91,7 +91,7 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
       </nav>
 
       {/* Mobile dropdown menu */}
-      {menuOpen && (
+      {menuVisible && (
         <div className="fixed top-[60px] right-4 z-40 bg-[#0a0a0a]/98 backdrop-blur-md border border-[#c9a84c]/20 md:hidden animate-dropdown w-48 shadow-xl shadow-black/50">
           <ul className="flex flex-col py-2">
             {links.map((link, i) => (
