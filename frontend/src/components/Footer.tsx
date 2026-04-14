@@ -13,9 +13,16 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           {/* Brand */}
           <div className="md:col-span-2">
-            <div className="mb-4">
-              <span className="font-display text-3xl tracking-[0.15em] text-[#c9a84c]">GLAMOURS</span>
-              <span className="font-display text-3xl tracking-[0.15em] text-white">PHAIR</span>
+            <div className="mb-4 flex items-center gap-4">
+              <img
+                src="/images/logo.png"
+                alt="GLAMOURSPHAIR"
+                className="w-28 md:w-32 h-28 md:h-32 object-contain opacity-80"
+              />
+              {/* <div>
+                <span className="font-display text-3xl tracking-[0.15em] text-[#c9a84c]">GLAMOURS</span>
+                <span className="font-display text-3xl tracking-[0.15em] text-white">PHAIR</span>
+              </div> */}
             </div>
             <div className="h-px w-24 bg-gradient-to-r from-[#c9a84c] to-transparent mb-5" />
             <p className="text-neutral-500 text-sm leading-relaxed max-w-xs">

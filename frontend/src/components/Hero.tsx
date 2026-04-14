@@ -38,6 +38,15 @@ export default function Hero() {
       <div className="absolute bottom-1/4 right-1/4 w-40 h-40 rounded-full border border-[#c9a84c]/15" />
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 text-center">
+        {/* Logo */}
+        <div className="flex justify-center mb-1">
+          <img
+            src="/images/logo.png"
+            alt="GLAMOURSPHAIR LOGO"
+            className="w-32 md:w-36 h-36 md:h-40 object-contain opacity-90"
+          />
+        </div>
+
         {/* Eyebrow text */}
         <div className="flex items-center justify-center gap-3 mb-8">
           <div className="h-px w-16 bg-[#c9a84c]" />
