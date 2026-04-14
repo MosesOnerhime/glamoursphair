@@ -231,7 +231,10 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
                 <div className="flex flex-col gap-2 mt-2">
                   <button
-                    onClick={() => handleAdd(product)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleAdd(product)
+                    }}
                     className={`w-full flex items-center justify-center gap-2 py-3 text-sm font-bold tracking-[0.15em] uppercase transition-all duration-300 ${
                       added === product.id
                         ? 'bg-emerald-500 text-white'
@@ -249,6 +252,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                     href={whatsappLink(product)}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
                     className="w-full flex items-center justify-center gap-2 py-2.5 text-xs sm:text-sm font-semibold tracking-wide border border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/10 transition-all duration-300 text-center"
                   >
                     <FaWhatsapp size={16} />

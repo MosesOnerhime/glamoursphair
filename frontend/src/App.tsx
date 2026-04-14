@@ -23,7 +23,13 @@ export default function App() {
     setCartOpen(true)
   }
 
+  
+
   const removeFromCart = (id: number) => setCartItems(prev => prev.filter(i => i.id !== id))
+  const updateQty = (id: number, qty: number) => {
+    setCartItems(prev => prev.map(i => i.id === id ? { ...i, qty } : i))
+  }
+  const clearCart = () => setCartItems([])
   const cartCount = cartItems.reduce((sum, i) => sum + i.qty, 0)
 
   const handleCheckoutSuccess = () => {
@@ -45,6 +51,8 @@ export default function App() {
         items={cartItems}
         onRemove={removeFromCart}
         onCheckout={() => { setCartOpen(false); setCheckoutOpen(true) }}
+        onUpdateQty={updateQty}
+        onClear={clearCart}
       />
       <CheckoutModal
         open={checkoutOpen}

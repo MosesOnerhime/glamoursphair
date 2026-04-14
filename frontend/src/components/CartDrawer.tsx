@@ -8,11 +8,13 @@ interface CartDrawerProps {
   items: CartItem[]
   onRemove: (id: number) => void
   onCheckout: () => void
+  onUpdateQty: (id: number, qty: number) => void
+  onClear: () => void
 }
 
 const WHATSAPP = '2348128288948'
 
-export default function CartDrawer({ open, onClose, items, onRemove, onCheckout }: CartDrawerProps) {
+export default function CartDrawer({ open, onClose, items, onRemove, onCheckout, onUpdateQty, onClear }: CartDrawerProps) {
   const total = items.reduce((sum, i) => sum + i.price * i.qty, 0)
 
   const orderViaWhatsApp = () => {
@@ -35,12 +37,21 @@ export default function CartDrawer({ open, onClose, items, onRemove, onCheckout 
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-white/5">
-          <h2 className="font-display text-xl text-white tracking-wide">Your Cart</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="font-display text-xl text-white tracking-wide">Your Cart</h2>
+            {items.length > 0 && (
+              <button
+                onClick={onClear}
+                className="text-xs text-neutral-500 hover:text-red-400 transition-colors tracking-wide uppercase border border-white/10 hover:border-red-400/30 px-2 py-1"
+              >
+                Clear All
+              </button>
+            )}
+          </div>
           <button onClick={onClose} className="text-neutral-400 hover:text-white transition-colors">
             <HiX size={22} />
           </button>
         </div>
-
         {/* Items */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
           {items.length === 0 ? (
@@ -52,8 +63,8 @@ export default function CartDrawer({ open, onClose, items, onRemove, onCheckout 
             </div>
           ) : (
             items.map(item => (
-              <div key={item.id} className="flex gap-4 border border-white/5 p-4">
-                <div className={`w-16 h-16 bg-gradient-to-br ${item.gradient} flex-shrink-0 flex items-center justify-center overflow-hidden`}>
+              <div key={item.id} className="flex gap-3 border border-white/5 p-3">
+                <div className={`w-14 h-14 bg-gradient-to-br ${item.gradient} flex-shrink-0 flex items-center justify-center overflow-hidden`}>
                   {item.image
                     ? <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                     : <span className="text-[#c9a84c]/40 text-2xl">👸</span>
@@ -61,12 +72,29 @@ export default function CartDrawer({ open, onClose, items, onRemove, onCheckout 
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-white text-sm font-medium truncate">{item.name}</h4>
-                  <p className="text-[#c9a84c] text-sm mt-0.5">₦{item.price.toLocaleString()} × {item.qty}</p>
+                  <p className="text-[#c9a84c] text-sm mt-0.5">₦{item.price.toLocaleString()}</p>
                   <p className="text-neutral-500 text-xs mt-0.5">= ₦{(item.price * item.qty).toLocaleString()}</p>
+
+                  {/* Quantity controls */}
+                  <div className="flex items-center gap-2 mt-2">
+                    <button
+                      onClick={() => item.qty === 1 ? onRemove(item.id) : onUpdateQty(item.id, item.qty - 1)}
+                      className="w-6 h-6 border border-white/10 text-white hover:border-[#c9a84c]/50 hover:text-[#c9a84c] transition-colors flex items-center justify-center text-sm"
+                    >
+                      −
+                    </button>
+                    <span className="text-white text-sm w-4 text-center">{item.qty}</span>
+                    <button
+                      onClick={() => onUpdateQty(item.id, item.qty + 1)}
+                      className="w-6 h-6 border border-white/10 text-white hover:border-[#c9a84c]/50 hover:text-[#c9a84c] transition-colors flex items-center justify-center text-sm"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
                 <button
                   onClick={() => onRemove(item.id)}
-                  className="text-neutral-600 hover:text-red-400 transition-colors flex-shrink-0"
+                  className="text-neutral-600 hover:text-red-400 transition-colors flex-shrink-0 self-start"
                 >
                   <HiTrash size={16} />
                 </button>
