@@ -15,7 +15,7 @@ const EMAILJS_SERVICE = 'service_n33g579'
 const EMAILJS_TEMPLATE = 'template_qlo9mrg'
 // const EMAILJS_TEMPLATE2 = 'template_4l65g4a'
 const EMAILJS_PUBLIC_KEY = 'picn4x_CNW2nK6hjX'
-const PAYSTACK_PUBLIC_KEY = 'pk_test_84bb1a37982e3713da5bdb24bafdcaa5737b834c'
+const PAYSTACK_PUBLIC_KEY = 'pk_test_8b72fd9d7c36595505db724fb93639f6e06fc052'
 const WHATSAPP = '2348128288948'
 
 const currencies = [

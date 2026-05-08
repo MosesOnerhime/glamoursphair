@@ -68,7 +68,7 @@ export default function Footer() {
                 Wuse 2, Abuja, FCT
               </p>
               <div className="space-y-1.5 pt-1">
-                <a href="tel:08188030965" className="block hover:text-[#c9a84c] transition-colors">0818 803 0965</a>
+                {/* <a href="tel:08188030965" className="block hover:text-[#c9a84c] transition-colors">0818 803 0965</a> */}
                 <a href="tel:08128288948" className="block hover:text-[#c9a84c] transition-colors">0812 828 8948</a>
                 <a href="tel:+2347072066544" className="block hover:text-[#c9a84c] transition-colors">+234 707 206 6544</a>
               </div>

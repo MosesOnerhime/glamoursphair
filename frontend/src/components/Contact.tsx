@@ -2,7 +2,7 @@ import { HiLocationMarker, HiPhone, HiMail, HiClock } from 'react-icons/hi'
 import { FaWhatsapp, FaInstagram, FaTiktok } from 'react-icons/fa'
 
 const phones = [
-  { number: '08188030965', display: '0818 803 0965' },
+  // { number: '08188030965', display: '0818 803 0965' },
   { number: '08128288948', display: '0812 828 8948' },
   { number: '+2347072066544', display: '+234 707 206 6544' },
 ]
@@ -92,7 +92,7 @@ export default function Contact() {
               <div>
                 <h3 className="text-white font-semibold tracking-wide mb-1">Email</h3>
                 <a href="mailto:info@glamoursphair.com" className="text-neutral-400 text-sm hover:text-[#c9a84c] transition-colors">
-                  info@glamoursphair.com
+                  glamoursphair@gmail.com
                 </a>
               </div>
             </div>

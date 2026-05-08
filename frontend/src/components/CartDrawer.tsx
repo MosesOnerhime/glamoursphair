@@ -7,14 +7,16 @@ interface CartDrawerProps {
   onClose: () => void
   items: CartItem[]
   onRemove: (id: number) => void
-  onCheckout: () => void
+  // onCheckout: () => void
   onUpdateQty: (id: number, qty: number) => void
   onClear: () => void
 }
 
 const WHATSAPP = '2348128288948'
 
-export default function CartDrawer({ open, onClose, items, onRemove, onCheckout, onUpdateQty, onClear }: CartDrawerProps) {
+// export default function CartDrawer({ open, onClose, items, onRemove, onCheckout, onUpdateQty, onClear }: CartDrawerProps) {
+
+export default function CartDrawer({ open, onClose, items, onRemove, onUpdateQty, onClear }: CartDrawerProps) {
   const total = items.reduce((sum, i) => sum + i.price * i.qty, 0)
 
   const orderViaWhatsApp = () => {
@@ -112,12 +114,12 @@ export default function CartDrawer({ open, onClose, items, onRemove, onCheckout,
             </div>
 
             {/* Primary: Pay with card */}
-            <button
+            {/* <button
               onClick={onCheckout}
               className="w-full py-4 bg-[#c9a84c] text-black font-bold tracking-[0.2em] text-sm uppercase hover:bg-white transition-colors duration-300"
             >
               Proceed to Checkout
-            </button>
+            </button> */}
 
             {/* Secondary: WhatsApp */}
             <button
