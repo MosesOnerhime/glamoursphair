@@ -40,13 +40,17 @@ export default function Contact() {
               <div>
                 <h3 className="text-white font-semibold tracking-wide mb-1">Our Showroom</h3>
                 <a
-                  href="https://maps.app.goo.gl/wxwPUFEoeazuTs3r5"
+                  href="https://maps.app.goo.gl/p8znThFBibsLGWa39"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-neutral-400 text-sm leading-relaxed hover:text-[#c9a84c] transition-colors"
                 >
-                  Suite FB-53, New Banex Plaza<br />
-                  Wuse 2, Abuja, FCT
+                  Glamoursphair  Studio <br/>
+                  SHOP NO. 28, 
+                  CAPPADOR GALAXY MALL <br/>
+                  AMINU KANO CRESCENT, 
+                  WUSE II, 
+                  Abuja.
                 </a>
               </div>
             </div>
