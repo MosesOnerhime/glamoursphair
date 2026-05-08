@@ -91,7 +91,7 @@ export default function Contact() {
               </div>
               <div>
                 <h3 className="text-white font-semibold tracking-wide mb-1">Email</h3>
-                <a href="mailto:info@glamoursphair.com" className="text-neutral-400 text-sm hover:text-[#c9a84c] transition-colors">
+                <a href="mailto:info@glamoursphair.com" target="_blank" rel="noopener noreferrer" className="text-neutral-400 text-sm hover:text-[#c9a84c] transition-colors">
                   glamoursphair@gmail.com
                 </a>
               </div>
