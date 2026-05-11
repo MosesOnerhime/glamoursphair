@@ -50,7 +50,7 @@ export default function App() {
         onClose={() => setCartOpen(false)}
         items={cartItems}
         onRemove={removeFromCart}
-        // onCheckout={() => { setCartOpen(false); setCheckoutOpen(true) }}
+        onCheckout={() => { setCartOpen(false); setCheckoutOpen(true) }}
         onUpdateQty={updateQty}
         onClear={clearCart}
       />
