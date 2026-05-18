@@ -46,7 +46,7 @@ export default function Contact() {
                   className="text-neutral-400 text-sm leading-relaxed hover:text-[#c9a84c] transition-colors"
                 >
                   Glamoursphair  Studio <br/>
-                  SHOP NO. 28, 
+                  SHOP 28, 
                   CAPPADOR GALAXY MALL <br/>
                   AMINU KANO CRESCENT, 
                   WUSE II, 
@@ -84,7 +84,7 @@ export default function Contact() {
               <div>
                 <h3 className="text-white font-semibold tracking-wide mb-1">Business Hours</h3>
                 <p className="text-neutral-400 text-sm">Mon – Sat: 9:00 AM – 7:00 PM</p>
-                <p className="text-neutral-400 text-sm">Sunday: 12:00 PM – 5:00 PM</p>
+                <p className="text-neutral-400 text-sm">Sunday – Closed</p>
               </div>
             </div>
 
