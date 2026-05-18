@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { HiX } from 'react-icons/hi'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import PromoBanner from './components/PromoBanner'
@@ -13,6 +14,9 @@ export default function App() {
   const [cartOpen, setCartOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [cartItems, setCartItems] = useState<CartItem[]>([])
+  const [showPaystackPopup, setShowPaystackPopup] = useState(() => {
+  return !localStorage.getItem('paystackPopupSeen')
+  })
 
   const addToCart = (product: Product) => {
     setCartItems(prev => {
@@ -35,6 +39,11 @@ export default function App() {
   const handleCheckoutSuccess = () => {
     setCartItems([])
     setCartOpen(false)
+  }
+
+  const dismissPaystackPopup = () => {
+  localStorage.setItem('paystackPopupSeen', 'true')
+  setShowPaystackPopup(false)
   }
 
   return (
@@ -60,6 +69,51 @@ export default function App() {
         items={cartItems}
         onSuccess={handleCheckoutSuccess}
       />
+
+      {/* Paystack One-Time Popup */}
+      {showPaystackPopup && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={dismissPaystackPopup}
+          />
+          <div className="relative w-full max-w-sm bg-[#0a1628] border border-white/10 z-10 animate-dropdown overflow-hidden">
+            {/* Close button */}
+            <button
+              onClick={dismissPaystackPopup}
+              className="absolute top-3 right-3 z-20 text-neutral-400 hover:text-white transition-colors"
+            >
+              <HiX size={20} />
+            </button>
+
+            {/* Banner image */}
+            <img
+              src="/images/paystack-banner.png"
+              alt="Pay with Paystack"
+              className="w-full object-contain"
+            />
+
+            {/* Bottom actions */}
+            <div className="p-5 space-y-3">
+              <button
+                onClick={() => {
+                  dismissPaystackPopup()
+                  document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                className="w-full flex items-center justify-center py-3.5 bg-[#0ba4db] text-white font-bold tracking-[0.15em] uppercase text-sm hover:bg-[#0993c5] transition-colors"
+              >
+                Shop Now
+              </button>
+              <button
+                onClick={dismissPaystackPopup}
+                className="w-full py-2.5 border border-white/10 text-neutral-400 text-sm hover:text-white transition-colors"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
