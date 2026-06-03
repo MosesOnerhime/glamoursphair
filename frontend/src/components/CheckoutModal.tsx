@@ -74,10 +74,14 @@ const currencies: Currency[] = [
 ]
 
 const deliveryLocations: DeliveryLocation[] = [
-  { id: 'abuja-central', label: 'Abuja central', fee: 3000, note: 'Wuse, Maitama, Garki, Asokoro and nearby areas' },
-  { id: 'abuja-outskirts', label: 'Abuja outskirts', fee: 5000, note: 'Lugbe, Kubwa, Gwarinpa, Lokogoma and similar areas' },
-  { id: 'other-nigeria', label: 'Other Nigerian states', fee: 10000, note: 'Nationwide dispatch within Nigeria' },
-  { id: 'outside-nigeria', label: 'Outside Nigeria', fee: 50000, note: 'International dispatch' },
+  { id: 'uk', label: 'UK', fee: 80000, note: 'Within the United Kingdom' },
+  { id: 'usa', label: 'USA', fee: 98000, note: 'Within the United States of America' },
+  { id: 'uae', label: 'UAE', fee: 125000, note: 'Anywhere in the UUnited Arab Emirates' },
+  { id: 'african-countries', label: 'Other African Countries', fee: 90000, note: 'Any country within Africa asides Nigeria' },
+  { id: 'within-nigeria', label: 'Within Nigeria', fee: 10000, note: 'Any state within Nigeria' },
+  { id: 'abuja', label: 'Abuja', fee: 4000, note: 'Within Abuja' },
+  { id: 'canada', label: 'Canada', fee: 88000, note: 'Within Canada' },
+  { id: 'italy', label: 'Italy', fee: 115000, note: 'Within Italy' },
 ]
 
 interface Receipt {
