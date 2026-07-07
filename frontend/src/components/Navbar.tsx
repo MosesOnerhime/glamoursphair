@@ -6,7 +6,7 @@ interface NavbarProps {
   onCartClick: () => void
 }
 
-const links = ['Home', 'Shop', 'Promotions', 'Contact']
+const links = ['Home', 'Shop', 'Promotions', 'Channel', 'Contact']
 
 export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false)

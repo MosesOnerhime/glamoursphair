@@ -3,6 +3,7 @@ import { HiX } from 'react-icons/hi'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import PromoBanner from './components/PromoBanner'
+import ChannelHub from './components/ChannelHub'
 import ProductGrid from './components/ProductGrid'
 import Contact from './components/Contact'
 import Footer from './components/Footer'
@@ -52,6 +53,7 @@ export default function App() {
       <PromoBanner />
       <Hero />
       <ProductGrid onAddToCart={addToCart} />
+      <ChannelHub />
       <Contact />
       <Footer />
       <CartDrawer
