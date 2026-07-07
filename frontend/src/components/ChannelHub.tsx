@@ -1,5 +1,5 @@
 import { FaInstagram, FaTiktok, FaWhatsapp } from 'react-icons/fa'
-import { HiChevronRight, HiChatAlt2, HiShoppingBag, HiSparkles, HiTruck } from 'react-icons/hi'
+import { HiChevronRight } from 'react-icons/hi'
 import type { IconType } from 'react-icons'
 
 const WHATSAPP_CHANNEL = 'https://whatsapp.com/channel/0029Vb8gQMqK5cDJFIwnVk2y'
