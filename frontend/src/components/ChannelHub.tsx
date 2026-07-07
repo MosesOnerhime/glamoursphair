@@ -48,7 +48,7 @@ const hubLinks: HubLink[] = [
 
 export default function ChannelHub() {
   return (
-    <section id="channel" className="bg-[#080808] px-4 py-20 border-y border-white/5">
+    <section id="channel" className="bg-[#0d0d0d] px-4 py-20">
       <div className="max-w-md mx-auto text-center">
         <div className="relative mx-auto mb-6 flex h-28 w-28 items-center justify-center rounded-full border border-[#c9a84c]/60 bg-black shadow-[0_0_45px_rgba(201,168,76,0.16)]">
           <div className="absolute inset-1 rounded-full border border-white/15" />
