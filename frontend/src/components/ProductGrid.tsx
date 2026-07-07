@@ -8,6 +8,35 @@ const WHATSAPP = '2348128288948'
 
 const products: Product[] = [
   {
+    id: 11,
+    name: 'Signature straight 22”',
+    price: 650000,
+    originalPrice: 850000, 
+    tag: 'New',
+    description: 'Your product description here.',
+    gradient: 'from-neutral-900 to-stone-800',
+    images: [
+      '/images/11a.jpeg',
+      '/images/11b.jpeg',
+      '/images/11c.jpeg',
+    ],
+    instagramLink: 'https://instagram.com/glamoursphair',
+  },
+  {
+    id: 12,
+    name: '400g Donor bouncy 28”',
+    price: 850000,
+    originalPrice: 1200000, 
+    tag: 'New',
+    description: 'Your product description here.',
+    gradient: 'from-neutral-900 to-stone-800',
+    images: [
+      '/images/12a.jpeg',
+      '/images/12b.jpeg',
+    ],
+    instagramLink: 'https://instagram.com/glamoursphair',
+  },
+  {
     id: 1,
     name: 'Wig Kelly Regular',
     price: 135000,
@@ -122,6 +151,19 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   const [added, setAdded] = useState<number | null>(null)
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Product | null>(null)
+  const [slideIndexes, setSlideIndexes] = useState<Record<number, number>>({})
+
+  const getSlideIndex = (id: number) => slideIndexes[id] ?? 0
+
+  const nextSlide = (e: React.MouseEvent, id: number, total: number) => {
+    e.stopPropagation()
+    setSlideIndexes(prev => ({ ...prev, [id]: ((prev[id] ?? 0) + 1) % total }))
+  }
+
+  const prevSlide = (e: React.MouseEvent, id: number, total: number) => {
+    e.stopPropagation()
+    setSlideIndexes(prev => ({ ...prev, [id]: ((prev[id] ?? 0) - 1 + total) % total }))
+  }
 
 
   const filtered = products.filter(p =>
@@ -189,7 +231,41 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
               {/* Image placeholder */}
               <div className={`relative h-48 sm:h-64 bg-gradient-to-br ${product.gradient} overflow-hidden`}>
                 {/* Decorative hair silhouette */}
-                {product.image ? (
+                {product.images && product.images.length > 1 ? (
+                  <>
+                    <img
+                      src={product.images[getSlideIndex(product.id)]}
+                      alt={product.name}
+                      className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+                    />
+                    {/* Prev button */}
+                    <button
+                      onClick={(e) => prevSlide(e, product.id, product.images!.length)}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-6 h-6 bg-black/50 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                    >
+                      ‹
+                    </button>
+                    {/* Next button */}
+                    <button
+                      onClick={(e) => nextSlide(e, product.id, product.images!.length)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-6 h-6 bg-black/50 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                    >
+                      ›
+                    </button>
+                    {/* Dots */}
+                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+                      {product.images.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={(e) => { e.stopPropagation(); setSlideIndexes(prev => ({ ...prev, [product.id]: i })) }}
+                          className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
+                            i === getSlideIndex(product.id) ? 'bg-[#c9a84c] w-3' : 'bg-white/40'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                ) : product.image ? (
                   <img
                     src={product.image}
                     alt={product.name}
@@ -218,7 +294,15 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
                 {/* Price floating */}
                 <div className="absolute bottom-3 right-3 bg-[#0a0a0a]/80 backdrop-blur-sm px-3 py-1.5">
-                  <span className="text-[#c9a84c] font-bold text-lg">₦{product.price.toLocaleString()}</span>
+                  {product.originalPrice && (
+                    <p className="text-neutral-400 text-xs line-through">
+                      Was ₦{product.originalPrice.toLocaleString()}
+                    </p>
+                  )}
+                  <p className="text-[#c9a84c] font-bold text-lg leading-tight">
+                    {product.originalPrice && <span className="text-xs text-emerald-400 mr-1">Now  </span>}
+                    ₦{product.price.toLocaleString()}
+                  </p>
                 </div>
               </div>
 
@@ -258,6 +342,22 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                     <FaWhatsapp size={16} />
                     <span className="hidden xs:inline">Order via</span> WhatsApp
                   </a>
+
+                  
+                  {product.instagramLink && (
+                    <a
+                      href={product.instagramLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={e => e.stopPropagation()}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 text-xs sm:text-sm font-semibold tracking-wide border border-[#E1306C]/30 text-[#E1306C] hover:bg-[#E1306C]/10 transition-all duration-300 text-center"
+                    >
+                      <FaInstagram size={16} />
+                      View on Instagram
+                    </a>
+                  )}
+
+                  
                 </div>
               </div>
             </div>
@@ -310,7 +410,41 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
             {/* Product image */}
             <div className={`relative h-72 bg-gradient-to-br ${selected.gradient} overflow-hidden`}>
-              {selected.image ? (
+              {selected.images && selected.images.length > 1 ? (
+                <>
+                  <img
+                    src={selected.images[slideIndexes[selected.id] ?? 0]}
+                    alt={selected.name}
+                    className="w-full h-full object-cover transition-opacity duration-300"
+                  />
+                  {/* Prev */}
+                  <button
+                    onClick={(e) => prevSlide(e, selected.id, selected.images!.length)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-black/60 text-white flex items-center justify-center hover:bg-black/90 transition-colors text-xl"
+                  >
+                    ‹
+                  </button>
+                  {/* Next */}
+                  <button
+                    onClick={(e) => nextSlide(e, selected.id, selected.images!.length)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-black/60 text-white flex items-center justify-center hover:bg-black/90 transition-colors text-xl"
+                  >
+                    ›
+                  </button>
+                  {/* Dots */}
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                    {selected.images.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={(e) => { e.stopPropagation(); setSlideIndexes(prev => ({ ...prev, [selected.id]: i })) }}
+                        className={`h-1.5 rounded-full transition-all duration-200 ${
+                          i === (slideIndexes[selected.id] ?? 0) ? 'bg-[#c9a84c] w-4' : 'bg-white/40 w-1.5'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              ) : selected.image ? (
                 <img
                   src={selected.image}
                   alt={selected.name}
@@ -337,9 +471,17 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
             <div className="p-6 space-y-4">
               <div className="flex items-start justify-between gap-4">
                 <h3 className="font-display text-2xl text-white tracking-wide">{selected.name}</h3>
-                <span className="text-[#c9a84c] font-bold text-xl whitespace-nowrap">
-                  ₦{selected.price.toLocaleString()}
-                </span>
+                <div className="text-right">
+                  {selected.originalPrice && (
+                    <p className="text-neutral-400 text-xs line-through">
+                      Was ₦{selected.originalPrice.toLocaleString()}
+                    </p>
+                  )}
+                  <p className="text-[#c9a84c] font-bold text-xl whitespace-nowrap">
+                    {selected.originalPrice && <span className="text-xs text-emerald-400 mr-1">Now  </span>}
+                    ₦{selected.price.toLocaleString()}
+                  </p>
+                </div>
               </div>
 
               <p className="text-neutral-400 text-sm leading-relaxed">{selected.description}</p>

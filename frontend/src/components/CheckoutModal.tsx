@@ -11,17 +11,77 @@ interface CheckoutModalProps {
   onSuccess: () => void
 }
 
+type CurrencyCode = 'NGN' | 'USD' | 'GBP'
+
+interface Currency {
+  code: CurrencyCode
+  symbol: string
+  label: string
+  rate: number
+}
+
+interface DeliveryLocation {
+  id: string
+  label: string
+  fee: number
+  note: string
+}
+
+interface PaystackResponse {
+  reference: string
+}
+
+interface PaystackOptions {
+  key: string
+  email: string
+  amount: number
+  currency: CurrencyCode
+  ref: string
+  metadata: {
+    custom_fields: Array<{
+      display_name: string
+      variable_name: string
+      value: string
+    }>
+  }
+  callback: (response: PaystackResponse) => void
+  onClose: () => void
+}
+
+interface PaystackHandler {
+  openIframe: () => void
+}
+
+declare global {
+  interface Window {
+    PaystackPop?: {
+      setup: (options: PaystackOptions) => PaystackHandler
+    }
+  }
+}
+
 const EMAILJS_SERVICE = 'service_n33g579'
 const EMAILJS_TEMPLATE = 'template_qlo9mrg'
-// const EMAILJS_TEMPLATE2 = 'template_4l65g4a'
+const EMAILJS_TEMPLATE2 = 'template_4l65g4a'
 const EMAILJS_PUBLIC_KEY = 'picn4x_CNW2nK6hjX'
-const PAYSTACK_PUBLIC_KEY = 'pk_test_84bb1a37982e3713da5bdb24bafdcaa5737b834c'
+const PAYSTACK_PUBLIC_KEY = 'pk_live_5c7866617f9d4c8ce13dfbf6f6592ee4b3705b15'
 const WHATSAPP = '2348128288948'
 
-const currencies = [
-  { code: 'NGN', symbol: '₦', label: 'Nigeria (NGN)', rate: 1 },
+const currencies: Currency[] = [
+  { code: 'NGN', symbol: '\u20a6', label: 'Nigeria (NGN)', rate: 1 },
   { code: 'USD', symbol: '$', label: 'United States (USD)', rate: 0.00063 },
-  { code: 'GBP', symbol: '£', label: 'United Kingdom (GBP)', rate: 0.00050 },
+  { code: 'GBP', symbol: '\u00a3', label: 'United Kingdom (GBP)', rate: 0.00050 },
+]
+
+const deliveryLocations: DeliveryLocation[] = [
+  { id: 'uk', label: 'UK', fee: 80000, note: 'Within the United Kingdom' },
+  { id: 'usa', label: 'USA', fee: 98000, note: 'Within the United States of America' },
+  { id: 'uae', label: 'UAE', fee: 125000, note: 'Anywhere in the UUnited Arab Emirates' },
+  { id: 'african-countries', label: 'Other African Countries', fee: 90000, note: 'Any country within Africa asides Nigeria' },
+  { id: 'within-nigeria', label: 'Within Nigeria', fee: 10000, note: 'Any state within Nigeria' },
+  { id: 'abuja', label: 'Abuja', fee: 4000, note: 'Within Abuja' },
+  { id: 'canada', label: 'Canada', fee: 88000, note: 'Within Canada' },
+  { id: 'italy', label: 'Italy', fee: 115000, note: 'Within Italy' },
 ]
 
 interface Receipt {
@@ -29,9 +89,14 @@ interface Receipt {
   name: string
   email: string
   items: CartItem[]
+  subtotal: string
+  deliveryFee: string
+  deliveryLocation: string
+  deliveryAddress: string
   total: string
-  currency: string
+  currency: CurrencyCode
   symbol: string
+  currencyRate: number
   date: string
 }
 
@@ -39,46 +104,87 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
-  const [currency, setCurrency] = useState(currencies[0])
+  const [deliveryLocationId, setDeliveryLocationId] = useState('')
+  const [deliveryAddress, setDeliveryAddress] = useState('')
+  const [currency, setCurrency] = useState<Currency>(currencies[0])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [receipt, setReceipt] = useState<Receipt | null>(null)
 
-  const ngnTotal = items.reduce((sum, i) => sum + i.price * i.qty, 0)
-  const convertedTotal = (ngnTotal * currency.rate).toFixed(2)
-  const displayTotal = `${currency.symbol}${Number(convertedTotal).toLocaleString()}`
+  const selectedDelivery = deliveryLocations.find(location => location.id === deliveryLocationId)
+  const subtotalNgn = items.reduce((sum, i) => sum + i.price * i.qty, 0)
+  const deliveryFeeNgn = selectedDelivery?.fee ?? 0
+  const orderTotalNgn = subtotalNgn + deliveryFeeNgn
 
-  const orderSummary = items
-    .map(i => `${i.name} x${i.qty} — ${currency.symbol}${(i.price * i.qty * currency.rate).toFixed(2)}`)
-    .join('\n')
+  const formatMoney = (amountNgn: number, targetCurrency = currency) => {
+    const converted = amountNgn * targetCurrency.rate
+    const fractionDigits = targetCurrency.code === 'NGN' ? 0 : 2
+
+    return `${targetCurrency.symbol}${converted.toLocaleString(undefined, {
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    })}`
+  }
+
+  const subtotalDisplay = formatMoney(subtotalNgn)
+  const deliveryFeeDisplay = selectedDelivery ? formatMoney(deliveryFeeNgn) : 'Select location'
+  const displayTotal = formatMoney(orderTotalNgn)
+  const paystackTotal = formatMoney(orderTotalNgn, currencies[0])
+
+  const orderSummary = [
+    ...items.map(i => `${i.name} x${i.qty} - ${formatMoney(i.price * i.qty)}`),
+    `Subtotal: ${subtotalDisplay}`,
+    selectedDelivery ? `Delivery (${selectedDelivery.label}): ${deliveryFeeDisplay}` : 'Delivery: Not selected',
+    `Total: ${displayTotal}`,
+  ].join('\n')
 
   const handlePayment = () => {
-    if (!name || !email || !phone) {
-      setError('Please fill in all fields.')
+    const trimmedName = name.trim()
+    const trimmedEmail = email.trim()
+    const trimmedPhone = phone.trim()
+    const trimmedAddress = deliveryAddress.trim()
+
+    if (items.length === 0) {
+      setError('Your cart is empty.')
       return
     }
-    if (!/\S+@\S+\.\S+/.test(email)) {
+
+    if (!trimmedName || !trimmedEmail || !trimmedPhone || !selectedDelivery || !trimmedAddress) {
+      setError('Please fill in your contact and delivery details.')
+      return
+    }
+
+    if (!/\S+@\S+\.\S+/.test(trimmedEmail)) {
       setError('Please enter a valid email address.')
       return
     }
+
+    if (!window.PaystackPop) {
+      setError('Payment service is still loading. Please try again in a moment.')
+      return
+    }
+
     setError('')
     setLoading(true)
 
-    const amount = Math.round(ngnTotal * 100)
+    const amount = Math.round(orderTotalNgn * 100)
 
-    const handler = (window as any).PaystackPop.setup({
+    const handler = window.PaystackPop.setup({
       key: PAYSTACK_PUBLIC_KEY,
-      email,
+      email: trimmedEmail,
       amount,
       currency: 'NGN',
       ref: `GLAM-${Date.now()}`,
       metadata: {
         custom_fields: [
-          { display_name: 'Customer Name', variable_name: 'customer_name', value: name },
-          { display_name: 'Phone', variable_name: 'phone', value: phone },
+          { display_name: 'Customer Name', variable_name: 'customer_name', value: trimmedName },
+          { display_name: 'Phone', variable_name: 'phone', value: trimmedPhone },
+          { display_name: 'Delivery Location', variable_name: 'delivery_location', value: selectedDelivery.label },
+          { display_name: 'Delivery Address', variable_name: 'delivery_address', value: trimmedAddress },
+          { display_name: 'Delivery Fee', variable_name: 'delivery_fee', value: formatMoney(deliveryFeeNgn, currencies[0]) },
         ],
       },
-      callback: (response: any) => {
+      callback: (response) => {
         setLoading(false)
         handleSuccess(response.reference)
       },
@@ -98,12 +204,17 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
 
     const receiptData: Receipt = {
       reference,
-      name,
-      email,
+      name: name.trim(),
+      email: email.trim(),
       items,
+      subtotal: subtotalDisplay,
+      deliveryFee: selectedDelivery ? deliveryFeeDisplay : formatMoney(0),
+      deliveryLocation: selectedDelivery?.label ?? 'Not selected',
+      deliveryAddress: deliveryAddress.trim(),
       total: displayTotal,
       currency: currency.code,
       symbol: currency.symbol,
+      currencyRate: currency.rate,
       date,
     }
 
@@ -112,30 +223,38 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
         EMAILJS_SERVICE,
         EMAILJS_TEMPLATE,
         {
-          customer_name: name,
-          customer_email: email,
+          customer_name: receiptData.name,
+          customer_email: receiptData.email,
           order_summary: orderSummary,
-          total: displayTotal,
+          delivery_location: receiptData.deliveryLocation,
+          delivery_address: receiptData.deliveryAddress,
+          delivery_fee: receiptData.deliveryFee,
+          subtotal: receiptData.subtotal,
+          total: receiptData.total,
           reference,
           date,
         },
         EMAILJS_PUBLIC_KEY
       )
 
-      // await emailjs.send(
-      //   EMAILJS_SERVICE,
-      //   EMAILJS_TEMPLATE2,
-      //   {
-      //     customer_name: name,
-      //     customer_email: email,
-      //     customer_phone: phone,
-      //     order_summary: orderSummary,
-      //     total: displayTotal,
-      //     reference,
-      //     date,
-      //   },
-      //   EMAILJS_PUBLIC_KEY
-      // )
+      await emailjs.send(
+        EMAILJS_SERVICE,
+        EMAILJS_TEMPLATE2,
+        {
+          customer_name: receiptData.name,
+          customer_email: receiptData.email,
+          customer_phone: phone.trim(),
+          order_summary: orderSummary,
+          delivery_location: receiptData.deliveryLocation,
+          delivery_address: receiptData.deliveryAddress,
+          delivery_fee: receiptData.deliveryFee,
+          subtotal: receiptData.subtotal,
+          total: receiptData.total,
+          reference,
+          date,
+        },
+        EMAILJS_PUBLIC_KEY
+      )
     } catch (err) {
       console.error('Email receipt failed:', err)
     }
@@ -149,7 +268,7 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
   const whatsappConfirm = () => {
     if (!receipt) return
     const msg = encodeURIComponent(
-      `Hello GLAMOURSPHAIR! I just completed payment.\n\n*Name:* ${receipt.name}\n*Reference:* ${receipt.reference}\n*Total:* ${receipt.total}\n\nPlease confirm my order. Thank you!`
+      `Hello GLAMOURSPHAIR! I just completed payment.\n\n*Name:* ${receipt.name}\n*Reference:* ${receipt.reference}\n*Delivery:* ${receipt.deliveryLocation}\n*Address:* ${receipt.deliveryAddress}\n*Total:* ${receipt.total}\n\nPlease confirm my order. Thank you!`
     )
     window.open(`https://wa.me/${WHATSAPP}?text=${msg}`, '_blank')
   }
@@ -160,6 +279,8 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
       setName('')
       setEmail('')
       setPhone('')
+      setDeliveryLocationId('')
+      setDeliveryAddress('')
       setCurrency(currencies[0])
     }
     onClose()
@@ -178,17 +299,17 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-white/5 sticky top-0 bg-[#0d0d0d] z-10">
           <h2 className="font-display text-2xl text-white tracking-wide">
-            {receipt ? 'Payment Successful ✨' : 'Checkout'}
+            {receipt ? 'Payment Successful' : 'Checkout'}
           </h2>
           {!receipt && (
-            <button onClick={handleClose} className="text-neutral-500 hover:text-white transition-colors">
+            <button onClick={handleClose} className="text-neutral-500 hover:text-white transition-colors" aria-label="Close checkout">
               <HiX size={22} />
             </button>
           )}
         </div>
 
         {receipt ? (
-          /* ── RECEIPT VIEW ── */
+          /* Receipt view */
           <div className="p-6 space-y-6">
             <div className="flex flex-col items-center text-center gap-3">
               <HiCheckCircle className="text-emerald-400" size={52} />
@@ -201,31 +322,50 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
 
             {/* Receipt box */}
             <div className="border border-[#c9a84c]/20 p-5 space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <span className="font-display text-xl text-[#c9a84c] tracking-wide">GLAMOURSPHAIR</span>
-                <span className="text-neutral-500 text-xs">{receipt.date}</span>
+                <span className="text-neutral-500 text-xs text-right">{receipt.date}</span>
               </div>
               <div className="h-px bg-[#c9a84c]/20" />
 
               <div className="space-y-2">
                 {receipt.items.map(item => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span className="text-neutral-300">{item.name} × {item.qty}</span>
-                    <span className="text-white">
-                      {receipt.symbol}{(item.price * item.qty * currency.rate).toFixed(2)}
+                  <div key={item.id} className="flex justify-between gap-3 text-sm">
+                    <span className="text-neutral-300">{item.name} x {item.qty}</span>
+                    <span className="text-white whitespace-nowrap">
+                      {formatMoney(item.price * item.qty, {
+                        code: receipt.currency,
+                        symbol: receipt.symbol,
+                        label: receipt.currency,
+                        rate: receipt.currencyRate,
+                      })}
                     </span>
                   </div>
                 ))}
               </div>
 
               <div className="h-px bg-white/5" />
-              <div className="flex justify-between">
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between gap-3">
+                  <span className="text-neutral-400">Subtotal</span>
+                  <span className="text-white">{receipt.subtotal}</span>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <span className="text-neutral-400">Delivery</span>
+                  <span className="text-white">{receipt.deliveryFee}</span>
+                </div>
+              </div>
+
+              <div className="h-px bg-white/5" />
+              <div className="flex justify-between gap-3">
                 <span className="text-neutral-400 uppercase tracking-widest text-xs">Total Paid</span>
                 <span className="text-[#c9a84c] font-bold text-lg">{receipt.total}</span>
               </div>
 
               <div className="h-px bg-white/5" />
               <div className="space-y-1 text-xs text-neutral-500">
+                <p>Delivery: <span className="text-neutral-300">{receipt.deliveryLocation}</span></p>
+                <p>Address: <span className="text-neutral-300">{receipt.deliveryAddress}</span></p>
                 <p>Ref: <span className="text-neutral-300">{receipt.reference}</span></p>
                 <p>Suite FB-53, New Banex Plaza, Wuse 2, Abuja</p>
               </div>
@@ -256,7 +396,7 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
             </div>
           </div>
         ) : (
-          /* ── CHECKOUT FORM ── */
+          /* Checkout form */
           <div className="p-6 space-y-6">
 
             {/* Order summary */}
@@ -264,14 +404,25 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
               <h3 className="text-neutral-400 text-xs uppercase tracking-widest mb-3">Order Summary</h3>
               <div className="space-y-2">
                 {items.map(item => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span className="text-neutral-300">{item.name} × {item.qty}</span>
-                    <span className="text-white">₦{(item.price * item.qty).toLocaleString()}</span>
+                  <div key={item.id} className="flex justify-between gap-3 text-sm">
+                    <span className="text-neutral-300">{item.name} x {item.qty}</span>
+                    <span className="text-white whitespace-nowrap">{formatMoney(item.price * item.qty)}</span>
                   </div>
                 ))}
               </div>
               <div className="h-px bg-white/5 my-3" />
-              <div className="flex justify-between items-center">
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between gap-3">
+                  <span className="text-neutral-400">Subtotal</span>
+                  <span className="text-white">{subtotalDisplay}</span>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <span className="text-neutral-400">Delivery</span>
+                  <span className="text-white">{deliveryFeeDisplay}</span>
+                </div>
+              </div>
+              <div className="h-px bg-white/5 my-3" />
+              <div className="flex justify-between items-center gap-3">
                 <span className="text-neutral-400 text-xs uppercase tracking-widest">Total</span>
                 <span className="text-[#c9a84c] font-bold text-xl">{displayTotal}</span>
               </div>
@@ -297,11 +448,36 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
                   </button>
                 ))}
               </div>
-              {currency.code !== 'NGN' && (
-                <p className="text-neutral-600 text-xs mt-2">
-                  ≈ {displayTotal} (converted from ₦{ngnTotal.toLocaleString()})
-                </p>
+              <p className="text-neutral-600 text-xs mt-2">
+                Card payments are processed in NGN. Other currencies are estimates for comparison.
+              </p>
+            </div>
+
+            {/* Delivery details */}
+            <div className="space-y-3">
+              <h3 className="text-neutral-400 text-xs uppercase tracking-widest">Delivery Location</h3>
+              <select
+                value={deliveryLocationId}
+                onChange={e => setDeliveryLocationId(e.target.value)}
+                className="w-full bg-[#111] border border-white/10 focus:border-[#c9a84c]/50 outline-none px-4 py-3 text-sm text-white transition-colors"
+              >
+                <option value="">Choose delivery area</option>
+                {deliveryLocations.map(location => (
+                  <option key={location.id} value={location.id}>
+                    {location.label} - {formatMoney(location.fee, currencies[0])}
+                  </option>
+                ))}
+              </select>
+              {selectedDelivery && (
+                <p className="text-neutral-600 text-xs">{selectedDelivery.note}</p>
               )}
+              <textarea
+                placeholder="Full delivery address"
+                value={deliveryAddress}
+                onChange={e => setDeliveryAddress(e.target.value)}
+                rows={3}
+                className="w-full bg-[#111] border border-white/10 focus:border-[#c9a84c]/50 outline-none px-4 py-3 text-sm text-white placeholder-neutral-600 transition-colors resize-none"
+              />
             </div>
 
             {/* Customer details */}
@@ -337,11 +513,11 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
               disabled={loading || items.length === 0}
               className="w-full py-4 bg-[#c9a84c] text-black font-bold tracking-[0.2em] text-sm uppercase hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Opening Payment...' : `Pay ${displayTotal}`}
+              {loading ? 'Opening Payment...' : `Pay ${paystackTotal}`}
             </button>
 
             <p className="text-center text-neutral-600 text-xs">
-              🔒 Secured by Paystack · Accepts cards worldwide
+              Secured by Paystack - Accepts cards worldwide
             </p>
           </div>
         )}

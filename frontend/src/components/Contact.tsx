@@ -2,7 +2,7 @@ import { HiLocationMarker, HiPhone, HiMail, HiClock } from 'react-icons/hi'
 import { FaWhatsapp, FaInstagram, FaTiktok } from 'react-icons/fa'
 
 const phones = [
-  { number: '08188030965', display: '0818 803 0965' },
+  // { number: '08188030965', display: '0818 803 0965' },
   { number: '08128288948', display: '0812 828 8948' },
   { number: '+2347072066544', display: '+234 707 206 6544' },
 ]
@@ -40,13 +40,17 @@ export default function Contact() {
               <div>
                 <h3 className="text-white font-semibold tracking-wide mb-1">Our Showroom</h3>
                 <a
-                  href="https://maps.app.goo.gl/wxwPUFEoeazuTs3r5"
+                  href="https://maps.app.goo.gl/p8znThFBibsLGWa39"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-neutral-400 text-sm leading-relaxed hover:text-[#c9a84c] transition-colors"
                 >
-                  Suite FB-53, New Banex Plaza<br />
-                  Wuse 2, Abuja, FCT
+                  Glamoursphair  Studio <br/>
+                  SHOP 28, 
+                  CAPPADOR GALAXY MALL <br/>
+                  AMINU KANO CRESCENT, 
+                  WUSE II, 
+                  Abuja.
                 </a>
               </div>
             </div>
@@ -80,7 +84,7 @@ export default function Contact() {
               <div>
                 <h3 className="text-white font-semibold tracking-wide mb-1">Business Hours</h3>
                 <p className="text-neutral-400 text-sm">Mon – Sat: 9:00 AM – 7:00 PM</p>
-                <p className="text-neutral-400 text-sm">Sunday: 12:00 PM – 5:00 PM</p>
+                <p className="text-neutral-400 text-sm">Sunday – Closed</p>
               </div>
             </div>
 
@@ -91,8 +95,8 @@ export default function Contact() {
               </div>
               <div>
                 <h3 className="text-white font-semibold tracking-wide mb-1">Email</h3>
-                <a href="mailto:info@glamoursphair.com" className="text-neutral-400 text-sm hover:text-[#c9a84c] transition-colors">
-                  info@glamoursphair.com
+                <a href="mailto:info@glamoursphair.com" target="_blank" rel="noopener noreferrer" className="text-neutral-400 text-sm hover:text-[#c9a84c] transition-colors">
+                  glamoursphair@gmail.com
                 </a>
               </div>
             </div>

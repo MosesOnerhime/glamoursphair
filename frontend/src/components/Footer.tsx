@@ -64,11 +64,15 @@ export default function Footer() {
             <h4 className="text-white font-semibold tracking-[0.2em] uppercase text-xs mb-5">Contact</h4>
             <div className="space-y-3 text-sm text-neutral-500">
               <p className="leading-relaxed">
-                Suite FB-53, New Banex Plaza<br />
-                Wuse 2, Abuja, FCT
+                Glamoursphair  Studio <br/>
+                SHOP 28, 
+                CAPPADOR GALAXY MALL <br/>
+                AMINU KANO CRESCENT, 
+                WUSE II, 
+                Abuja.
               </p>
               <div className="space-y-1.5 pt-1">
-                <a href="tel:08188030965" className="block hover:text-[#c9a84c] transition-colors">0818 803 0965</a>
+                {/* <a href="tel:08188030965" className="block hover:text-[#c9a84c] transition-colors">0818 803 0965</a> */}
                 <a href="tel:08128288948" className="block hover:text-[#c9a84c] transition-colors">0812 828 8948</a>
                 <a href="tel:+2347072066544" className="block hover:text-[#c9a84c] transition-colors">+234 707 206 6544</a>
               </div>

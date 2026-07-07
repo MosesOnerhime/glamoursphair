@@ -2,11 +2,13 @@ export interface Product {
   id: number
   name: string
   price: number
+  originalPrice?: number 
   tag?: string
   description: string
   whatsapp?: string
   gradient: string
   image?: string
+  images?: string[] 
   instagramLink?: string
 }
 
