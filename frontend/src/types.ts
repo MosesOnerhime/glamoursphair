@@ -3,6 +3,7 @@ export interface Product {
   name: string
   price: number
   originalPrice?: number 
+  slug?: string
   tag?: string
   description: string
   whatsapp?: string
