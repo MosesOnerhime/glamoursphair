@@ -10,11 +10,11 @@ const PRODUCT_PARAM = 'product'
 const products: Product[] = [
   {
     id: 2,
-    name: 'Wig Kelly in HD Lace',
+    name: 'Wig Kelly in HDlace"',
     slug: 'wig-kelly-hd-lace',
     price: 298000,
     instagramLink: 'https://instagram.com/glamoursphair',
-    tag: 'New',
+    tag: 'Best Seller',
     description: "Our famous wig Kelly in HD lace .. And guess what it is glueless , easy wear and go Not to exaggerate in any way but this is the perfect hair line. It will keep people wondering if it's your real hair",
     gradient: 'from-stone-900 to-neutral-800',
     images: [
@@ -57,7 +57,7 @@ const products: Product[] = [
     name: 'Wig Kelly Regular',
     price: 135000,
     instagramLink: 'https://instagram.com/glamoursphair',
-    tag: 'Best Seller',
+    tag: 'Trending',
     description: '.',
     gradient: 'from-neutral-900 to-neutral-800',
     image: '/images/1.png',
