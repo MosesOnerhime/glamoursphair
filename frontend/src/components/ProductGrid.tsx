@@ -136,7 +136,7 @@ const products: Product[] = [
   {
     id: 13,
     name: 'Luodais Hair Serum',
-    price: 10000,
+    price: 1000,
     instagramLink: 'https://instagram.com/glamoursphair',
     description: '80ml hair serum that nourishes, protects and leaves hair soft, shiny and manageable.',
     gradient: 'from-stone-900 to-zinc-800',
