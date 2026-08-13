@@ -90,7 +90,7 @@ const fallbackCurrencies: Currency[] = [
 const deliveryLocations: DeliveryLocation[] = [
   { id: 'uk', label: 'UK', fee: 80000, note: 'Within the United Kingdom' },
   { id: 'usa', label: 'USA', fee: 98000, note: 'Within the United States of America' },
-  { id: 'uae', label: 'UAE', fee: 125000, note: 'Anywhere in the UUnited Arab Emirates' },
+  { id: 'uae', label: 'UAE', fee: 125000, note: 'Anywhere in the United Arab Emirates' },
   { id: 'african-countries', label: 'Other African Countries', fee: 90000, note: 'Any country within Africa asides Nigeria' },
   { id: 'within-nigeria', label: 'Within Nigeria', fee: 10000, note: 'Any state within Nigeria' },
   { id: 'abuja', label: 'Abuja', fee: 4000, note: 'Within Abuja' },

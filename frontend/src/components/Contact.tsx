@@ -1,136 +1,90 @@
+import { track } from '@vercel/analytics'
 import { HiLocationMarker, HiPhone, HiMail, HiClock } from 'react-icons/hi'
 import { FaWhatsapp, FaInstagram, FaTiktok } from 'react-icons/fa'
 
 const phones = [
-  // { number: '08188030965', display: '0818 803 0965' },
   { number: '08128288948', display: '0812 828 8948' },
   { number: '+2347072066544', display: '+234 707 206 6544' },
 ]
 
+const WHATSAPP_ORDER =
+  'https://wa.me/2348128288948?text=Hello%20GLAMOURSPHAIR!%20I%27d%20like%20to%20place%20an%20order.'
+
 export default function Contact() {
   return (
-    <section id="contact" className="py-24 px-4 bg-[#0a0a0a] relative overflow-hidden">
-      {/* Background accent */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#c9a84c]/50 to-transparent" />
-      <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full bg-[#c9a84c]/5 blur-3xl pointer-events-none" />
+    <section id="contact" className="relative overflow-hidden bg-[#0d0d0d] px-4 py-16 md:py-24">
+      <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-[#c9a84c]/45 to-transparent" />
 
-      <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-16">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="h-px w-12 bg-[#c9a84c]" />
-            <span className="text-[#c9a84c] tracking-[0.4em] text-xs uppercase">Find Us</span>
-            <div className="h-px w-12 bg-[#c9a84c]" />
-          </div>
-          <h2 className="font-display text-5xl md:text-6xl text-white tracking-tight">
-            Get in <span className="text-[#c9a84c]">Touch</span>
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-10 text-center md:mb-14">
+          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a84c]">Talk to us</p>
+          <h2 className="mt-2 font-display text-4xl text-white md:text-6xl">
+            Need help choosing?
           </h2>
-          <p className="mt-4 text-neutral-500 max-w-md mx-auto">
-            Visit our showroom or reach us any time. We're always here to help you find your perfect look.
+          <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-neutral-500">
+            Visit the Abuja studio, order through WhatsApp, or ask us for the best unit for your look.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Info cards */}
-          <div className="space-y-4">
-            {/* Address */}
-            <div className="flex gap-4 p-6 border border-white/5 hover:border-[#c9a84c]/30 transition-colors duration-300 group">
-              <div className="w-10 h-10 rounded-full bg-[#c9a84c]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#c9a84c]/20 transition-colors">
-                <HiLocationMarker className="text-[#c9a84c]" size={20} />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold tracking-wide mb-1">Our Showroom</h3>
-                <a
-                  href="https://maps.app.goo.gl/p8znThFBibsLGWa39"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-neutral-400 text-sm leading-relaxed hover:text-[#c9a84c] transition-colors"
-                >
-                  Glamoursphair  Studio <br/>
-                  SHOP 28, 
-                  CAPPADOR GALAXY MALL <br/>
-                  AMINU KANO CRESCENT, 
-                  WUSE II, 
-                  Abuja.
-                </a>
+        <div className="grid gap-6 md:grid-cols-[1fr_0.9fr]">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <a href="https://maps.app.goo.gl/p8znThFBibsLGWa39" target="_blank" rel="noopener noreferrer" className="group border border-white/8 bg-[#111] p-5 transition-colors hover:border-[#c9a84c]/35">
+              <HiLocationMarker className="text-[#c9a84c]" size={24} />
+              <h3 className="mt-4 text-base font-semibold text-white">Abuja Studio</h3>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-500">
+                Shop 28, Cappador Galaxy Mall, Aminu Kano Crescent, Wuse II, Abuja.
+              </p>
+            </a>
+
+            <div className="border border-white/8 bg-[#111] p-5">
+              <HiPhone className="text-[#c9a84c]" size={24} />
+              <h3 className="mt-4 text-base font-semibold text-white">Phone / WhatsApp</h3>
+              <div className="mt-2 space-y-1.5">
+                {phones.map(phone => (
+                  <a key={phone.number} href={`tel:${phone.number}`} className="block text-sm text-neutral-500 transition-colors hover:text-[#c9a84c]">
+                    {phone.display}
+                  </a>
+                ))}
               </div>
             </div>
 
-            {/* Phone numbers */}
-            <div className="flex gap-4 p-6 border border-white/5 hover:border-[#c9a84c]/30 transition-colors duration-300 group">
-              <div className="w-10 h-10 rounded-full bg-[#c9a84c]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#c9a84c]/20 transition-colors">
-                <HiPhone className="text-[#c9a84c]" size={20} />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold tracking-wide mb-2">Phone / WhatsApp</h3>
-                <div className="space-y-1.5">
-                  {phones.map(p => (
-                    <a
-                      key={p.number}
-                      href={`tel:${p.number}`}
-                      className="block text-neutral-400 text-sm hover:text-[#c9a84c] transition-colors"
-                    >
-                      {p.display}
-                    </a>
-                  ))}
-                </div>
-              </div>
+            <div className="border border-white/8 bg-[#111] p-5">
+              <HiClock className="text-[#c9a84c]" size={24} />
+              <h3 className="mt-4 text-base font-semibold text-white">Business Hours</h3>
+              <p className="mt-2 text-sm text-neutral-500">Mon - Sat: 9:00 AM - 7:00 PM</p>
+              <p className="text-sm text-neutral-500">Sunday: Closed</p>
             </div>
 
-            {/* Hours */}
-            <div className="flex gap-4 p-6 border border-white/5 hover:border-[#c9a84c]/30 transition-colors duration-300 group">
-              <div className="w-10 h-10 rounded-full bg-[#c9a84c]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#c9a84c]/20 transition-colors">
-                <HiClock className="text-[#c9a84c]" size={20} />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold tracking-wide mb-1">Business Hours</h3>
-                <p className="text-neutral-400 text-sm">Mon – Sat: 9:00 AM – 7:00 PM</p>
-                <p className="text-neutral-400 text-sm">Sunday – Closed</p>
-              </div>
-            </div>
-
-            {/* Email */}
-            <div className="flex gap-4 p-6 border border-white/5 hover:border-[#c9a84c]/30 transition-colors duration-300 group">
-              <div className="w-10 h-10 rounded-full bg-[#c9a84c]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#c9a84c]/20 transition-colors">
-                <HiMail className="text-[#c9a84c]" size={20} />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold tracking-wide mb-1">Email</h3>
-                <a href="mailto:info@glamoursphair.com" target="_blank" rel="noopener noreferrer" className="text-neutral-400 text-sm hover:text-[#c9a84c] transition-colors">
-                  glamoursphair@gmail.com
-                </a>
-              </div>
-            </div>
+            <a href="mailto:glamoursphair@gmail.com" className="border border-white/8 bg-[#111] p-5 transition-colors hover:border-[#c9a84c]/35">
+              <HiMail className="text-[#c9a84c]" size={24} />
+              <h3 className="mt-4 text-base font-semibold text-white">Email</h3>
+              <p className="mt-2 text-sm text-neutral-500">glamoursphair@gmail.com</p>
+            </a>
           </div>
 
-          {/* WhatsApp + Social CTA */}
-          <div className="flex flex-col gap-6">
-            <div className="flex-1 border border-[#25D366]/20 bg-[#25D366]/5 p-8 flex flex-col items-center justify-center text-center gap-6">
-              <FaWhatsapp className="text-[#25D366]" size={52} />
-              <div>
-                <h3 className="text-white font-display text-2xl mb-2">Chat with Us</h3>
-                <p className="text-neutral-400 text-sm">Get instant replies, place orders, and ask questions on WhatsApp.</p>
-              </div>
-              <a
-                href="https://wa.me/2348128288948?text=Hello%20GLAMOURSPHAIR!%20I%27d%20like%20to%20place%20an%20order."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-4 bg-[#25D366] text-white font-bold tracking-[0.2em] text-sm uppercase hover:bg-[#20b85a] transition-colors duration-300"
-              >
-                Chat on WhatsApp
-              </a>
+          <div className="flex flex-col justify-between border border-[#25D366]/20 bg-[#25D366]/5 p-6 text-center md:p-8">
+            <div>
+              <FaWhatsapp className="mx-auto text-[#25D366]" size={54} />
+              <h3 className="mt-5 font-display text-3xl text-white">Order on WhatsApp</h3>
+              <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-neutral-400">
+                Get quick replies, confirm availability, request custom pieces and receive order support.
+              </p>
             </div>
-
-            {/* Social links */}
-            <div className="border border-white/5 p-6 flex items-center justify-center gap-6">
-              <span className="text-neutral-500 text-sm tracking-widest uppercase">Follow Us</span>
-              <a href="https://www.instagram.com/glamoursphair" target="_blank" rel="noopener noreferrer" className="w-10 h-10 border border-white/10 flex items-center justify-center text-neutral-400 hover:text-[#c9a84c] hover:border-[#c9a84c]/50 transition-all duration-300">
+            <a
+              href={WHATSAPP_ORDER}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => track('WhatsApp Click', { surface: 'contact-section' })}
+              className="mt-7 flex min-h-12 w-full items-center justify-center bg-[#25D366] px-5 text-sm font-bold uppercase tracking-[0.16em] text-white transition-colors hover:bg-[#20b85a]"
+            >
+              Chat on WhatsApp
+            </a>
+            <div className="mt-6 flex items-center justify-center gap-4">
+              <a href="https://www.instagram.com/glamoursphair" target="_blank" rel="noopener noreferrer" aria-label="Open Instagram" className="flex h-10 w-10 items-center justify-center border border-white/10 text-neutral-400 transition-colors hover:border-[#c9a84c]/50 hover:text-[#c9a84c]">
                 <FaInstagram size={18} />
               </a>
-              <a href="https://www.tiktok.com/@abujahairboss" target="_blank" rel="noopener noreferrer" className="w-10 h-10 border border-white/10 flex items-center justify-center text-neutral-400 hover:text-[#c9a84c] hover:border-[#c9a84c]/50 transition-all duration-300">
+              <a href="https://www.tiktok.com/@abujahairboss" target="_blank" rel="noopener noreferrer" aria-label="Open TikTok" className="flex h-10 w-10 items-center justify-center border border-white/10 text-neutral-400 transition-colors hover:border-[#c9a84c]/50 hover:text-[#c9a84c]">
                 <FaTiktok size={18} />
-              </a>
-              <a href="https://wa.me/2348128288948" target="_blank" rel="noopener noreferrer" className="w-10 h-10 border border-white/10 flex items-center justify-center text-neutral-400 hover:text-[#c9a84c] hover:border-[#c9a84c]/50 transition-all duration-300">
-                <FaWhatsapp size={18} />
               </a>
             </div>
           </div>

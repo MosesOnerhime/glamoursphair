@@ -3,8 +3,12 @@ import { HiX } from 'react-icons/hi'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import PromoBanner from './components/PromoBanner'
+import TrustStrip from './components/TrustStrip'
+import EditorialCollections from './components/EditorialCollections'
 import ChannelHub from './components/ChannelHub'
 import ProductGrid from './components/ProductGrid'
+import BuyerTrust from './components/BuyerTrust'
+import BrandStory from './components/BrandStory'
 import Contact from './components/Contact'
 import Footer from './components/Footer'
 import CartDrawer from './components/CartDrawer'
@@ -52,8 +56,12 @@ export default function App() {
       <Navbar cartCount={cartCount} onCartClick={() => setCartOpen(true)} />
       <PromoBanner />
       <Hero />
-      <ChannelHub />
+      <TrustStrip />
+      <EditorialCollections />
       <ProductGrid onAddToCart={addToCart} />
+      <ChannelHub />
+      <BuyerTrust />
+      <BrandStory />
       <Contact />
       <Footer />
       <CartDrawer

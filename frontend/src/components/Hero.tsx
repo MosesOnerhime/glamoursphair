@@ -1,113 +1,93 @@
+import { FaWhatsapp } from 'react-icons/fa'
+import { HiSparkles } from 'react-icons/hi'
+
+const WHATSAPP_ORDER =
+  'https://wa.me/2348128288948?text=Hello%20GLAMOURSPHAIR!%20I%27d%20like%20to%20shop%20your%20luxury%20hair%20collection.'
+
 export default function Hero() {
   const scrollToShop = () => {
     document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  return (
-    <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#0a0a0a]">
-      {/* Background mesh/grain effect
-      <div className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage: `radial-gradient(ellipse at 20% 50%, #c9a84c22 0%, transparent 60%),
-                            radial-gradient(ellipse at 80% 20%, #8b6914 0%, transparent 50%),
-                            radial-gradient(ellipse at 60% 80%, #c9a84c11 0%, transparent 50%)`
-        }}
-      /> */}
+  const scrollToChannel = () => {
+    document.getElementById('channel')?.scrollIntoView({ behavior: 'smooth' })
+  }
 
-      {/* Video background */}
+  return (
+    <section id="home" className="relative min-h-[calc(100svh-42px)] overflow-hidden bg-[#090807] pt-24 md:min-h-[88vh]">
       <video
         autoPlay
         muted
         loop
         playsInline
-        className="absolute inset-0 w-full h-full object-cover opacity-60"
-        style={{ objectPosition: '50% 20%' }}
+        className="absolute inset-0 h-full w-full object-cover opacity-45"
+        style={{ objectPosition: '50% 18%' }}
       >
         <source src="/videos/hero.mp4" type="video/mp4" />
       </video>
+      <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-[#090807]/66 to-[#0d0d0d]" />
 
-      {/* Dark overlay so text stays readable */}
-      <div className="absolute inset-0 bg-[#0a0a0a]/60" />
+      <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-8 px-4 pb-10 md:grid-cols-[1.02fr_0.98fr] md:px-8 md:pb-16">
+        <div className="max-w-xl pt-4 text-center md:text-left">
+          <div className="mx-auto mb-5 flex w-fit items-center gap-2 border border-[#c9a84c]/25 bg-black/35 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#c9a84c] md:mx-0">
+            <HiSparkles size={14} />
+            Abuja Luxury Hair Studio
+          </div>
 
-      {/* Decorative vertical lines */}
-      <div className="absolute left-8 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#c9a84c]/30 to-transparent hidden md:block" />
-      <div className="absolute right-8 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#c9a84c]/30 to-transparent hidden md:block" />
+          <h1 className="font-display text-5xl leading-[0.95] text-white sm:text-6xl md:text-7xl lg:text-8xl">
+            Luxury wigs for effortless confidence.
+          </h1>
 
-      {/* Floating decorative circles */}
-      <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full border border-[#c9a84c]/10 animate-spin-slow" />
-      <div className="absolute bottom-1/4 right-1/4 w-40 h-40 rounded-full border border-[#c9a84c]/15" />
+          <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-neutral-300 md:mx-0 md:text-lg">
+            Ready-to-wear units, custom installs, secure Paystack checkout and fast delivery from Abuja.
+          </p>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 text-center">
-        {/* Logo */}
-        <div className="flex justify-center mb-1">
-          <img
-            src="/images/logo.png"
-            alt="GLAMOURSPHAIR LOGO"
-            className="w-32 md:w-36 h-36 md:h-40 object-contain opacity-90"
-          />
-        </div>
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center md:justify-start">
+            <button
+              onClick={scrollToShop}
+              className="flex min-h-12 items-center justify-center bg-[#c9a84c] px-6 py-3 text-sm font-bold uppercase tracking-[0.14em] text-black transition-colors hover:bg-white"
+            >
+              Shop Collection
+            </button>
+            <a
+              href={WHATSAPP_ORDER}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex min-h-12 items-center justify-center gap-2 border border-[#25D366]/45 bg-[#25D366]/10 px-6 py-3 text-sm font-bold uppercase tracking-[0.12em] text-[#25D366] transition-colors hover:bg-[#25D366] hover:text-white"
+            >
+              <FaWhatsapp size={17} />
+              Order on WhatsApp
+            </a>
+          </div>
 
-        {/* Eyebrow text */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="h-px w-16 bg-[#c9a84c]" />
-          <span className="text-[#c9a84c] tracking-[0.4em] text-xs uppercase font-medium">Luxury Hair Experience</span>
-          <div className="h-px w-16 bg-[#c9a84c]" />
-        </div>
-
-        {/* Main headline */}
-        <h1 className="font-display text-6xl sm:text-8xl md:text-[8rem] lg:text-[10rem] leading-none tracking-tight mb-4 text-white">
-          YOU
-          <span className="block text-[#c9a84c] italic" style={{ fontStyle: 'italic' }}>deserve</span>
-          <span className="block">LUXURY</span>
-        </h1>
-
-        <p className="mt-8 text-neutral-400 text-lg md:text-xl max-w-xl mx-auto leading-relaxed font-light tracking-wide">
-          Premium wigs &amp; hair extensions crafted for queens. Elevate your crown — because every day deserves to be a great hair day.
-        </p>
-
-        {/* CTAs */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">
           <button
-            onClick={scrollToShop}
-            className="group relative px-10 py-4 bg-[#c9a84c] text-black font-bold tracking-[0.2em] text-sm uppercase overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(201,168,76,0.4)]"
+            onClick={scrollToChannel}
+            className="mt-4 text-sm font-medium text-neutral-400 underline decoration-[#c9a84c]/50 underline-offset-4 transition-colors hover:text-[#c9a84c]"
           >
-            <span className="relative z-10">Shop Luxury Wigs Now</span>
-            <div className="absolute inset-0 bg-white translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300" />
-            <span className="absolute inset-0 flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 text-black font-bold tracking-[0.2em] text-sm uppercase transition-opacity duration-300">
-              Shop Luxury Wigs Now
-            </span>
-          </button>
-          <button
-            onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
-            className="px-10 py-4 border border-[#c9a84c]/50 text-[#c9a84c] font-medium tracking-[0.2em] text-sm uppercase hover:border-[#c9a84c] hover:bg-[#c9a84c]/10 transition-all duration-300"
-          >
-            Contact Us
+            Join our WhatsApp channel for new drops and restocks
           </button>
         </div>
 
-        {/* Stats row */}
-        <div className="mt-20 grid grid-cols-3 gap-8 max-w-md mx-auto border-t border-[#c9a84c]/20 pt-10">
-          {[
-            { num: '500+', label: 'Happy Queens' },
-            { num: '50+', label: 'Hair Styles' },
-            { num: '5★', label: 'Rating' },
-          ].map(stat => (
-            <div key={stat.label} className="text-center">
-              <div className="font-display text-2xl text-[#c9a84c]">{stat.num}</div>
-              <div className="text-neutral-500 text-xs tracking-widest uppercase mt-1">{stat.label}</div>
+        <div className="grid grid-cols-[0.84fr_1fr] items-end gap-3 md:gap-4">
+          <div className="overflow-hidden border border-white/10 bg-[#111] shadow-2xl shadow-black/50">
+            <img src="/images/Wig Kellyin HDlace 2.jpeg" alt="Wig Kelly in HD Lace" className="aspect-[3/4] h-full w-full object-cover" />
+          </div>
+          <div className="space-y-3 md:space-y-4">
+            <div className="overflow-hidden border border-[#c9a84c]/35 bg-[#111] shadow-2xl shadow-black/60">
+              <img src="/images/12a.jpeg" alt="400g Donor bouncy wig" className="aspect-[4/5] h-full w-full object-cover" />
             </div>
-          ))}
+            <div className="border border-white/10 bg-black/60 p-4 text-left backdrop-blur md:p-5">
+              <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">Starting from</p>
+              <p className="mt-1 font-display text-3xl text-[#c9a84c]">NGN 110k</p>
+              <p className="mt-1 text-xs text-neutral-400">Premium units, serum care and worldwide dispatch.</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 hidden md:flex">
-        <span className="text-neutral-600 text-xs tracking-widest uppercase">Scroll</span>
-        <div className="w-px h-8 bg-gradient-to-b from-[#c9a84c]/50 to-transparent animate-bounce" />
+      <div className="relative z-10 mx-auto max-w-7xl px-4 pb-5 md:px-8">
+        <div className="h-px bg-gradient-to-r from-transparent via-[#c9a84c]/30 to-transparent" />
       </div>
-      
-      {/* Bottom fade into next section */}
-      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-b from-transparent to-[#0d0d0d] pointer-events-none" />
     </section>
   )
 }
