@@ -52,8 +52,8 @@ export default function App() {
       <Navbar cartCount={cartCount} onCartClick={() => setCartOpen(true)} />
       <PromoBanner />
       <Hero />
-      <ProductGrid onAddToCart={addToCart} />
       <ChannelHub />
+      <ProductGrid onAddToCart={addToCart} />
       <Contact />
       <Footer />
       <CartDrawer

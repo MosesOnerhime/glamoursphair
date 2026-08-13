@@ -1,19 +1,35 @@
-import { useState } from 'react'
-import { HiShoppingCart, HiCheck, HiX } from 'react-icons/hi'
+import { useEffect, useState } from 'react'
+import { HiShoppingCart, HiCheck, HiX, HiLink } from 'react-icons/hi'
 import { FaWhatsapp, FaInstagram } from 'react-icons/fa'
 import type { Product } from '../types'
 
 const WHATSAPP = '2348128288948'
+const PRODUCT_PARAM = 'product'
 
 
 const products: Product[] = [
+  {
+    id: 2,
+    name: 'Wig Kelly in HDlace"',
+    slug: 'wig-kelly-hd-lace',
+    price: 298000,
+    instagramLink: 'https://instagram.com/glamoursphair',
+    tag: 'Best Seller',
+    description: "Our famous wig Kelly in HD lace .. And guess what it is glueless , easy wear and go Not to exaggerate in any way but this is the perfect hair line. It will keep people wondering if it's your real hair",
+    gradient: 'from-stone-900 to-neutral-800',
+    images: [
+      '/images/Wig Kellyin HDlace 2.jpeg',
+      '/images/Wig Kellyin HDlace 1.jpeg',
+      '/images/Wig Kellyin HDlace 3.jpeg',
+    ],
+  },
   {
     id: 11,
     name: 'Signature straight 22”',
     price: 650000,
     originalPrice: 850000, 
     tag: 'New',
-    description: 'Your product description here.',
+    description: "Experience the perfect blend of comfort and style with our Signature Straight 22\" wig. Designed for those who demand excellence, this wig offers a natural look and feel that will make you feel confident and beautiful.",
     gradient: 'from-neutral-900 to-stone-800',
     images: [
       '/images/11a.jpeg',
@@ -28,7 +44,7 @@ const products: Product[] = [
     price: 850000,
     originalPrice: 1200000, 
     tag: 'New',
-    description: 'Your product description here.',
+    description: '.',
     gradient: 'from-neutral-900 to-stone-800',
     images: [
       '/images/12a.jpeg',
@@ -41,20 +57,10 @@ const products: Product[] = [
     name: 'Wig Kelly Regular',
     price: 135000,
     instagramLink: 'https://instagram.com/glamoursphair',
-    tag: 'Best Seller',
-    description: 'Description',
+    tag: 'Trending',
+    description: '.',
     gradient: 'from-neutral-900 to-neutral-800',
     image: '/images/1.png',
-  },
-  {
-    id: 2,
-    name: 'Wig Kelly 12”',
-    price: 298000,
-    instagramLink: 'https://instagram.com/glamoursphair',
-    tag: 'New',
-    description: 'Description',
-    gradient: 'from-stone-900 to-neutral-800',
-    image: '/images/2.jpeg',
   },
   {
     id: 3,
@@ -62,7 +68,7 @@ const products: Product[] = [
     price: 265000,
     instagramLink: 'https://instagram.com/glamoursphair',
     tag: 'Premium',
-    description: 'Description',
+    description: '.',
     gradient: 'from-zinc-900 to-stone-900',
     image: '/images/3.jpeg',
   },
@@ -71,7 +77,7 @@ const products: Product[] = [
     name: 'Wig Idah',
     price: 185000,
     instagramLink: 'https://instagram.com/glamoursphair',
-    description: 'Description',
+    description: '.',
     gradient: 'from-neutral-800 to-zinc-900',
     image: '/images/4.png',
   },
@@ -81,7 +87,7 @@ const products: Product[] = [
     price: 235000,
     instagramLink: 'https://instagram.com/glamoursphair',
     tag: 'Trending',
-    description: 'Description',
+    description: '.',
     gradient: 'from-stone-800 to-neutral-900',
     image: '/images/5.png',
   },
@@ -90,7 +96,7 @@ const products: Product[] = [
     name: 'Wig Rossette',
     price: 235000,
     instagramLink: 'https://instagram.com/glamoursphair',
-    description: 'Description',
+    description: '.',
     gradient: 'from-zinc-800 to-neutral-900',
     image: '/images/6.png',
   },
@@ -99,7 +105,7 @@ const products: Product[] = [
     name: 'Wig Rossette Honey Blonde',
     price: 235000,
     instagramLink: 'https://instagram.com/glamoursphair',
-    description: 'Description',
+    description: '.',
     gradient: 'from-neutral-900 to-stone-800',
     image: '/images/7.png',
   },
@@ -109,7 +115,7 @@ const products: Product[] = [
     price: 110000,
     instagramLink: 'https://instagram.com/glamoursphair',
     tag: 'Limited',
-    description: 'Description',
+    description: '.',
     gradient: 'from-stone-900 to-zinc-800',
     image: '/images/8.png',
   },
@@ -119,7 +125,7 @@ const products: Product[] = [
     price: 850000,
     instagramLink: 'https://instagram.com/glamoursphair',
     tag: 'Exclusive',
-    description: 'Description',
+    description: '.',
     gradient: 'from-stone-900 to-zinc-800',
     image: '/images/9.png',
   },
@@ -128,7 +134,7 @@ const products: Product[] = [
     name: 'Wig Kelly 14”',
     price: 345000,
     instagramLink: 'https://instagram.com/glamoursphair',
-    description: 'Description',
+    description: '.',
     gradient: 'from-stone-900 to-zinc-800',
     image: '/images/10.png',
   },
@@ -152,6 +158,62 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Product | null>(null)
   const [slideIndexes, setSlideIndexes] = useState<Record<number, number>>({})
+  const [copiedProductId, setCopiedProductId] = useState<number | null>(null)
+
+  const findProductFromUrl = () => {
+    const productParam = new URLSearchParams(window.location.search).get(PRODUCT_PARAM)
+    if (!productParam) return null
+
+    return products.find(product => product.slug === productParam || String(product.id) === productParam) ?? null
+  }
+
+  const productUrl = (product: Product) => {
+    const url = new URL(window.location.href)
+    url.searchParams.set(PRODUCT_PARAM, product.slug ?? String(product.id))
+    url.hash = ''
+    return url.toString()
+  }
+
+  const openProduct = (product: Product) => {
+    setSelected(product)
+
+    const url = new URL(window.location.href)
+    url.searchParams.set(PRODUCT_PARAM, product.slug ?? String(product.id))
+    window.history.pushState({}, '', url)
+  }
+
+  const closeProduct = () => {
+    setSelected(null)
+
+    const url = new URL(window.location.href)
+    url.searchParams.delete(PRODUCT_PARAM)
+    window.history.pushState({}, '', `${url.pathname}${url.search}${url.hash}`)
+  }
+
+  const copyProductLink = async (e: React.MouseEvent, product: Product) => {
+    e.stopPropagation()
+    const link = productUrl(product)
+
+    try {
+      await navigator.clipboard.writeText(link)
+      setCopiedProductId(product.id)
+      setTimeout(() => setCopiedProductId(null), 1800)
+    } catch {
+      window.prompt('Copy this product link:', link)
+    }
+  }
+
+  useEffect(() => {
+    const syncProductFromUrl = () => {
+      const product = findProductFromUrl()
+      setSelected(product)
+      if (product) document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' })
+    }
+
+    syncProductFromUrl()
+    window.addEventListener('popstate', syncProductFromUrl)
+    return () => window.removeEventListener('popstate', syncProductFromUrl)
+  }, [])
 
   const getSlideIndex = (id: number) => slideIndexes[id] ?? 0
 
@@ -225,7 +287,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
           {filtered.map((product) => (
             <div
               key={product.id}
-              onClick={() => setSelected(product)}
+              onClick={() => openProduct(product)}
               className="group relative bg-[#111] border border-white/5 hover:border-[#c9a84c]/40 transition-all duration-500 flex flex-col overflow-hidden cursor-pointer"
             >
               {/* Image placeholder */}
@@ -311,7 +373,9 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                 <h3 className="font-display text-base sm:text-xl text-white tracking-wide group-hover:text-[#c9a84c] transition-colors duration-300">                                             
                   {product.name}
                 </h3>
-                <p className="text-neutral-500 text-sm leading-relaxed flex-1">{product.description}</p>
+                <p className="h-5 overflow-hidden whitespace-nowrap text-neutral-500 text-sm leading-5 [mask-image:linear-gradient(90deg,#000_78%,transparent)]">
+                  {product.description}
+                </p>
 
                 <div className="flex flex-col gap-2 mt-2">
                   <button
@@ -397,13 +461,14 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={() => setSelected(null)}
+            onClick={closeProduct}
           />
           <div className="relative w-full max-w-lg bg-[#0d0d0d] border border-white/10 z-10 animate-dropdown overflow-hidden">
             {/* Close button */}
             <button
-              onClick={() => setSelected(null)}
+              onClick={closeProduct}
               className="absolute top-4 right-4 z-20 text-neutral-400 hover:text-white transition-colors bg-[#0d0d0d]/80 rounded-full p-1"
+              aria-label="Close product preview"
             >
               <HiX size={20} />
             </button>
@@ -494,12 +559,20 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                   onClick={(e) => {
                     e.stopPropagation()
                     handleAdd(selected)
-                    setSelected(null)
+                    closeProduct()
                   }}
                   className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#c9a84c] text-black font-bold tracking-[0.15em] uppercase text-sm hover:bg-white transition-colors"
                 >
                   <HiShoppingCart size={16} />
                   Add to Cart
+                </button>
+
+                <button
+                  onClick={(e) => copyProductLink(e, selected)}
+                  className="w-full flex items-center justify-center gap-2 py-3 border border-[#c9a84c]/30 text-[#c9a84c] text-sm font-semibold hover:bg-[#c9a84c]/10 transition-colors"
+                >
+                  <HiLink size={16} />
+                  {copiedProductId === selected.id ? 'Product Link Copied' : 'Copy Product Link'}
                 </button>
 
                 <a

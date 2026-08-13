@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { HiX, HiCheckCircle, HiDownload } from 'react-icons/hi'
 import { FaWhatsapp } from 'react-icons/fa'
 import emailjs from '@emailjs/browser'
@@ -25,6 +25,18 @@ interface DeliveryLocation {
   label: string
   fee: number
   note: string
+}
+
+interface ExchangeRatesResponse {
+  result: 'success' | 'error'
+  base_code?: CurrencyCode
+  conversion_rates?: Partial<Record<CurrencyCode, number>>
+  time_last_update_utc?: string
+}
+
+interface CachedExchangeRates {
+  rates: Partial<Record<CurrencyCode, number>>
+  updatedAt: string
 }
 
 interface PaystackResponse {
@@ -66,8 +78,10 @@ const EMAILJS_TEMPLATE2 = 'template_4l65g4a'
 const EMAILJS_PUBLIC_KEY = 'picn4x_CNW2nK6hjX'
 const PAYSTACK_PUBLIC_KEY = 'pk_live_5c7866617f9d4c8ce13dfbf6f6592ee4b3705b15'
 const WHATSAPP = '2348128288948'
+const EXCHANGE_RATE_API_URL = 'https://open.er-api.com/v6/latest/NGN'
+const EXCHANGE_RATE_CACHE_KEY = 'glamoursphairExchangeRates'
 
-const currencies: Currency[] = [
+const fallbackCurrencies: Currency[] = [
   { code: 'NGN', symbol: '\u20a6', label: 'Nigeria (NGN)', rate: 1 },
   { code: 'USD', symbol: '$', label: 'United States (USD)', rate: 0.00063 },
   { code: 'GBP', symbol: '\u00a3', label: 'United Kingdom (GBP)', rate: 0.00050 },
@@ -106,10 +120,77 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
   const [phone, setPhone] = useState('')
   const [deliveryLocationId, setDeliveryLocationId] = useState('')
   const [deliveryAddress, setDeliveryAddress] = useState('')
-  const [currency, setCurrency] = useState<Currency>(currencies[0])
+  const [currencies, setCurrencies] = useState<Currency[]>(fallbackCurrencies)
+  const [currency, setCurrency] = useState<Currency>(fallbackCurrencies[0])
+  const [rateStatus, setRateStatus] = useState<'idle' | 'loading' | 'live' | 'cached' | 'fallback'>('idle')
+  const [rateUpdatedAt, setRateUpdatedAt] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [receipt, setReceipt] = useState<Receipt | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+
+    const applyRates = (rates: Partial<Record<CurrencyCode, number>>, updatedAt: string) => {
+      const nextCurrencies = fallbackCurrencies.map(item => ({
+        ...item,
+        rate: item.code === 'NGN' ? 1 : rates[item.code] ?? item.rate,
+      }))
+
+      setCurrencies(nextCurrencies)
+      setCurrency(current => nextCurrencies.find(item => item.code === current.code) ?? nextCurrencies[0])
+      setRateUpdatedAt(updatedAt)
+    }
+
+    const readCachedRates = () => {
+      try {
+        const cached = localStorage.getItem(EXCHANGE_RATE_CACHE_KEY)
+        return cached ? JSON.parse(cached) as CachedExchangeRates : null
+      } catch {
+        return null
+      }
+    }
+
+    const controller = new AbortController()
+
+    const loadRates = async () => {
+      setRateStatus('loading')
+
+      try {
+        const response = await fetch(EXCHANGE_RATE_API_URL, { signal: controller.signal })
+        if (!response.ok) throw new Error('Exchange rate request failed')
+
+        const data = await response.json() as ExchangeRatesResponse
+        const rates = data.conversion_rates
+
+        if (data.result !== 'success' || !rates?.USD || !rates?.GBP) {
+          throw new Error('Exchange rate response was incomplete')
+        }
+
+        const updatedAt = data.time_last_update_utc ?? new Date().toUTCString()
+        applyRates(rates, updatedAt)
+        localStorage.setItem(EXCHANGE_RATE_CACHE_KEY, JSON.stringify({ rates, updatedAt }))
+        setRateStatus('live')
+      } catch {
+        if (controller.signal.aborted) return
+
+        const cached = readCachedRates()
+        if (cached) {
+          applyRates(cached.rates, cached.updatedAt)
+          setRateStatus('cached')
+          return
+        }
+
+        setCurrencies(fallbackCurrencies)
+        setCurrency(current => fallbackCurrencies.find(item => item.code === current.code) ?? fallbackCurrencies[0])
+        setRateUpdatedAt('')
+        setRateStatus('fallback')
+      }
+    }
+
+    loadRates()
+    return () => controller.abort()
+  }, [open])
 
   const selectedDelivery = deliveryLocations.find(location => location.id === deliveryLocationId)
   const subtotalNgn = items.reduce((sum, i) => sum + i.price * i.qty, 0)
@@ -137,6 +218,14 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
     selectedDelivery ? `Delivery (${selectedDelivery.label}): ${deliveryFeeDisplay}` : 'Delivery: Not selected',
     `Total: ${displayTotal}`,
   ].join('\n')
+
+  const rateMessage = {
+    idle: 'Exchange rates will load when checkout opens.',
+    loading: 'Loading live exchange rates...',
+    live: rateUpdatedAt ? `Live exchange rates loaded. Updated: ${rateUpdatedAt}` : 'Live exchange rates loaded.',
+    cached: rateUpdatedAt ? `Using saved exchange rates. Last updated: ${rateUpdatedAt}` : 'Using saved exchange rates.',
+    fallback: 'Using backup exchange rates. Card payments still process in NGN.',
+  }[rateStatus]
 
   const handlePayment = () => {
     const trimmedName = name.trim()
@@ -181,7 +270,7 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
           { display_name: 'Phone', variable_name: 'phone', value: trimmedPhone },
           { display_name: 'Delivery Location', variable_name: 'delivery_location', value: selectedDelivery.label },
           { display_name: 'Delivery Address', variable_name: 'delivery_address', value: trimmedAddress },
-          { display_name: 'Delivery Fee', variable_name: 'delivery_fee', value: formatMoney(deliveryFeeNgn, currencies[0]) },
+          { display_name: 'Delivery Fee', variable_name: 'delivery_fee', value: formatMoney(deliveryFeeNgn, fallbackCurrencies[0]) },
         ],
       },
       callback: (response) => {
@@ -451,6 +540,15 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
               <p className="text-neutral-600 text-xs mt-2">
                 Card payments are processed in NGN. Other currencies are estimates for comparison.
               </p>
+              <p className="text-neutral-600 text-xs mt-1">{rateMessage}</p>
+              <a
+                href="https://www.exchangerate-api.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 inline-block text-[11px] text-neutral-700 hover:text-[#c9a84c] transition-colors"
+              >
+                Rates by Exchange Rate API
+              </a>
             </div>
 
             {/* Delivery details */}
@@ -464,7 +562,7 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
                 <option value="">Choose delivery area</option>
                 {deliveryLocations.map(location => (
                   <option key={location.id} value={location.id}>
-                    {location.label} - {formatMoney(location.fee, currencies[0])}
+                    {location.label} - {formatMoney(location.fee, fallbackCurrencies[0])}
                   </option>
                 ))}
               </select>
