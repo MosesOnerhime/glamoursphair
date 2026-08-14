@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, DragEvent, FormEvent, MouseEvent, PointerEvent as ReactPointerEvent } from 'react'
 import { track } from '@vercel/analytics'
-import { HiShoppingCart, HiCheck, HiX, HiLink, HiChevronLeft, HiChevronRight, HiLockClosed, HiPlus, HiTrash, HiUpload, HiPencil, HiCollection, HiSwitchVertical } from 'react-icons/hi'
+import { HiShoppingCart, HiCheck, HiX, HiLink, HiChevronLeft, HiChevronRight, HiLockClosed, HiPlus, HiTrash, HiUpload, HiPencil, HiCollection, HiSwitchVertical, HiEye, HiEyeOff } from 'react-icons/hi'
 import { FaWhatsapp, FaInstagram } from 'react-icons/fa'
 import type { Product } from '../types'
 import {
@@ -554,7 +554,9 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     return !isProductApiConfigured() && storedAccessCode === LOCAL_ADMIN_PASSWORD
   })
   const [adminPassword, setAdminPassword] = useState('')
+  const [showAdminPassword, setShowAdminPassword] = useState(false)
   const [adminError, setAdminError] = useState('')
+  const adminErrorTimer = useRef<number | null>(null)
   const [productForm, setProductForm] = useState<ProductForm>(emptyProductForm)
   const [productOverrides, setProductOverrides] = useState<ProductOverrides>(() => readProductOverrides())
   const [hiddenProductIds, setHiddenProductIds] = useState<number[]>(() => readHiddenProductIds())
@@ -790,6 +792,20 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     localStorage.setItem(ADMIN_PRODUCT_ORDER_KEY, JSON.stringify(nextOrder))
   }, [])
 
+  const showTemporaryAdminError = useCallback((message: string) => {
+    if (adminErrorTimer.current) window.clearTimeout(adminErrorTimer.current)
+
+    setAdminError(message)
+    adminErrorTimer.current = window.setTimeout(() => {
+      setAdminError(currentMessage => currentMessage === message ? '' : currentMessage)
+      adminErrorTimer.current = null
+    }, 3500)
+  }, [])
+
+  useEffect(() => () => {
+    if (adminErrorTimer.current) window.clearTimeout(adminErrorTimer.current)
+  }, [])
+
   const unlockAdmin = async (event: FormEvent) => {
     event.preventDefault()
     const cleanPassword = adminPassword.trim()
@@ -805,7 +821,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
         : cleanPassword === LOCAL_ADMIN_PASSWORD
 
       if (!passwordIsValid) {
-        setAdminError('Incorrect admin password.')
+        showTemporaryAdminError('Incorrect password.')
         return
       }
     } catch {
@@ -1505,13 +1521,24 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                     Enter the product admin password to upload new images and product details.
                   </p>
                 </div>
-                <input
-                  type="password"
-                  value={adminPassword}
-                  onChange={event => setAdminPassword(event.target.value)}
-                  placeholder="Admin password"
-                  className="border border-white/10 bg-[#111] px-4 py-3 text-center text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/55"
-                />
+                <div className="relative">
+                  <input
+                    type={showAdminPassword ? 'text' : 'password'}
+                    value={adminPassword}
+                    onChange={event => setAdminPassword(event.target.value)}
+                    placeholder="Admin password"
+                    className="w-full border border-white/10 bg-[#111] px-4 py-3 pr-12 text-center text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/55"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminPassword(value => !value)}
+                    className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center text-neutral-500 transition-colors hover:text-[#c9a84c]"
+                    aria-label={showAdminPassword ? 'Hide admin password' : 'Show admin password'}
+                    title={showAdminPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showAdminPassword ? <HiEyeOff size={18} /> : <HiEye size={18} />}
+                  </button>
+                </div>
                 {adminError && <p className="text-sm text-red-400">{adminError}</p>}
                 <button className="min-h-12 bg-[#c9a84c] px-5 text-sm font-bold uppercase tracking-[0.16em] text-black transition-colors hover:bg-white">
                   Unlock
