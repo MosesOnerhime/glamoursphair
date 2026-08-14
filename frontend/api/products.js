@@ -87,6 +87,12 @@ module.exports = async function handler(req, res) {
   if (!assertConfig(res)) return
 
   try {
+    if (req.method === 'POST' && req.query.admin === 'verify') {
+      if (!requireAdmin(req, res)) return
+      res.status(204).end()
+      return
+    }
+
     if (req.method === 'GET') {
       const rows = await supabase('/rest/v1/products?select=*&order=sort_order.asc.nullslast,id.asc')
       const activeRows = rows.filter(row => !row.is_deleted)

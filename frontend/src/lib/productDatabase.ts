@@ -43,6 +43,10 @@ export function isProductDatabaseConfigured() {
   return Boolean(PRODUCTS_API_URL || (SUPABASE_URL && SUPABASE_ANON_KEY))
 }
 
+export function isProductApiConfigured() {
+  return Boolean(PRODUCTS_API_URL)
+}
+
 function supabaseHeaders(extra?: HeadersInit) {
   return {
     apikey: SUPABASE_ANON_KEY,
@@ -138,6 +142,19 @@ export async function fetchDatabaseProducts(): Promise<ProductDatabaseSnapshot |
     hiddenIds: rows.filter(row => row.is_deleted).map(row => row.id),
     order: activeRows.map(row => row.id),
   }
+}
+
+export async function verifyAdminPassword(adminPassword: string) {
+  if (!PRODUCTS_API_URL) return false
+
+  const response = await fetch(`${PRODUCTS_API_URL}?admin=verify`, {
+    method: 'POST',
+    headers: {
+      'x-admin-password': adminPassword,
+    },
+  })
+
+  return response.ok
 }
 
 export async function saveDatabaseProduct(product: Product, sortOrder: number, adminPassword: string) {

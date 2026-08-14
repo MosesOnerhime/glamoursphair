@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { ChangeEvent, DragEvent, FormEvent, MouseEvent } from 'react'
+import type { ChangeEvent, DragEvent, FormEvent, MouseEvent, PointerEvent as ReactPointerEvent } from 'react'
 import { track } from '@vercel/analytics'
 import { HiShoppingCart, HiCheck, HiX, HiLink, HiChevronLeft, HiChevronRight, HiLockClosed, HiPlus, HiTrash, HiUpload, HiPencil, HiCollection, HiSwitchVertical } from 'react-icons/hi'
 import { FaWhatsapp, FaInstagram } from 'react-icons/fa'
@@ -7,10 +7,12 @@ import type { Product } from '../types'
 import {
   deleteDatabaseProduct,
   fetchDatabaseProducts,
+  isProductApiConfigured,
   isProductDatabaseConfigured,
   reorderDatabaseProducts,
   saveDatabaseProduct,
   uploadProductImage,
+  verifyAdminPassword,
 } from '../lib/productDatabase'
 
 const WHATSAPP = '2348128288948'
@@ -547,7 +549,10 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   const [adminProducts, setAdminProducts] = useState<Product[]>(() => readAdminProducts())
   const [adminOpen, setAdminOpen] = useState(false)
   const [adminAccessCode, setAdminAccessCode] = useState(() => sessionStorage.getItem(ADMIN_AUTH_KEY) ?? '')
-  const [adminUnlocked, setAdminUnlocked] = useState(() => Boolean(sessionStorage.getItem(ADMIN_AUTH_KEY)))
+  const [adminUnlocked, setAdminUnlocked] = useState(() => {
+    const storedAccessCode = sessionStorage.getItem(ADMIN_AUTH_KEY) ?? ''
+    return !isProductApiConfigured() && storedAccessCode === LOCAL_ADMIN_PASSWORD
+  })
   const [adminPassword, setAdminPassword] = useState('')
   const [adminError, setAdminError] = useState('')
   const [productForm, setProductForm] = useState<ProductForm>(emptyProductForm)
@@ -563,6 +568,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   const [activeCollection, setActiveCollection] = useState(ALL_COLLECTIONS)
   const [draggedProductId, setDraggedProductId] = useState<number | null>(null)
   const [dragOverProductId, setDragOverProductId] = useState<number | null>(null)
+  const [pointerSortProductId, setPointerSortProductId] = useState<number | null>(null)
 
   const allProducts = useMemo(() => {
     const seedIds = new Set(products.map(product => product.id))
@@ -779,12 +785,12 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     localStorage.setItem(ADMIN_HIDDEN_PRODUCTS_KEY, JSON.stringify(nextIds))
   }
 
-  const updateProductOrder = (nextOrder: number[]) => {
+  const updateProductOrder = useCallback((nextOrder: number[]) => {
     setProductOrder(nextOrder)
     localStorage.setItem(ADMIN_PRODUCT_ORDER_KEY, JSON.stringify(nextOrder))
-  }
+  }, [])
 
-  const unlockAdmin = (event: FormEvent) => {
+  const unlockAdmin = async (event: FormEvent) => {
     event.preventDefault()
     const cleanPassword = adminPassword.trim()
 
@@ -793,8 +799,17 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
       return
     }
 
-    if (!isProductDatabaseConfigured() && cleanPassword !== LOCAL_ADMIN_PASSWORD) {
-      setAdminError('Incorrect admin password.')
+    try {
+      const passwordIsValid = isProductApiConfigured()
+        ? await verifyAdminPassword(cleanPassword)
+        : cleanPassword === LOCAL_ADMIN_PASSWORD
+
+      if (!passwordIsValid) {
+        setAdminError('Incorrect admin password.')
+        return
+      }
+    } catch {
+      setAdminError('Could not verify admin password. Check the deployed environment variables and try again.')
       return
     }
 
@@ -926,7 +941,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     if (selected?.id === id) closeProduct()
   }
 
-  const reorderProduct = (fromId: number, toId: number) => {
+  const reorderProduct = useCallback((fromId: number, toId: number) => {
     if (fromId === toId) return
 
     const currentOrder = allProducts.map(product => product.id)
@@ -948,7 +963,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
         setDatabaseStatus('Database unavailable. Sort saved locally only.')
       })
     }
-  }
+  }, [adminAccessCode, allProducts, updateProductOrder])
 
   const handleProductDragStart = (event: DragEvent<HTMLDivElement>, id: number) => {
     setDraggedProductId(id)
@@ -974,6 +989,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   const endProductDrag = () => {
     setDraggedProductId(null)
     setDragOverProductId(null)
+    setPointerSortProductId(null)
   }
 
   const dragHoverClass = (id: number) => {
@@ -985,6 +1001,50 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
     return draggedIndex < hoveredIndex ? '-translate-y-2' : 'translate-y-2'
   }
+
+  const startProductPointerSort = (event: ReactPointerEvent<HTMLButtonElement>, id: number) => {
+    if (event.button !== 0) return
+
+    event.preventDefault()
+    event.stopPropagation()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    setPointerSortProductId(id)
+    setDraggedProductId(id)
+    setDragOverProductId(null)
+  }
+
+  useEffect(() => {
+    if (!pointerSortProductId) return
+
+    const handlePointerMove = (event: PointerEvent) => {
+      event.preventDefault()
+      const hoveredElement = document.elementFromPoint(event.clientX, event.clientY)
+      const hoveredCard = hoveredElement?.closest<HTMLElement>('[data-admin-product-id]')
+      const hoveredId = Number(hoveredCard?.dataset.adminProductId)
+
+      if (hoveredId && hoveredId !== pointerSortProductId) {
+        setDragOverProductId(hoveredId)
+      }
+    }
+
+    const handlePointerEnd = () => {
+      if (dragOverProductId && dragOverProductId !== pointerSortProductId) {
+        reorderProduct(pointerSortProductId, dragOverProductId)
+      }
+
+      endProductDrag()
+    }
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: false })
+    window.addEventListener('pointerup', handlePointerEnd)
+    window.addEventListener('pointercancel', handlePointerEnd)
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerEnd)
+      window.removeEventListener('pointercancel', handlePointerEnd)
+    }
+  }, [dragOverProductId, pointerSortProductId, reorderProduct])
 
   const renderProductImage = (product: Product, compact = false) => (
     <div className={`relative overflow-hidden bg-gradient-to-br ${product.gradient} ${compact ? 'h-44 sm:h-56' : 'h-48 sm:h-64'}`}>
@@ -1598,6 +1658,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                       allProducts.map((product, index) => (
                         <div
                           key={product.id}
+                          data-admin-product-id={product.id}
                           draggable
                           onDragStart={event => handleProductDragStart(event, product.id)}
                           onDragEnter={() => {
@@ -1607,7 +1668,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                           onDrop={event => handleProductDrop(event, product.id)}
                           onDragEnd={endProductDrag}
                           className={`grid cursor-grab grid-cols-[72px_1fr] gap-3 border bg-[#111] p-3 transition-all duration-200 ease-out active:cursor-grabbing ${dragHoverClass(product.id)} ${
-                            draggedProductId === product.id
+                            draggedProductId === product.id || pointerSortProductId === product.id
                               ? 'scale-[0.985] border-[#c9a84c]/70 opacity-55 shadow-lg shadow-[#c9a84c]/10'
                               : dragOverProductId === product.id
                                 ? 'border-[#c9a84c]/55 bg-[#15130f] shadow-md shadow-black/40'
@@ -1630,7 +1691,8 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                             <div className="mt-3 flex flex-wrap gap-2">
                               <button
                                 type="button"
-                                className="flex h-9 items-center justify-center gap-2 border border-white/10 px-3 text-xs font-semibold text-neutral-400"
+                                onPointerDown={event => startProductPointerSort(event, product.id)}
+                                className="flex h-9 touch-none select-none items-center justify-center gap-2 border border-white/10 px-3 text-xs font-semibold text-neutral-400 transition-colors hover:border-[#c9a84c]/40 hover:text-[#c9a84c]"
                                 aria-label={`Drag ${product.name} to sort`}
                                 title="Drag to sort"
                               >
