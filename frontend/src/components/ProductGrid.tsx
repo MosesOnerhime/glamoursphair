@@ -1,9 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { ChangeEvent, FormEvent, MouseEvent } from 'react'
+import type { ChangeEvent, DragEvent, FormEvent, MouseEvent } from 'react'
 import { track } from '@vercel/analytics'
-import { HiShoppingCart, HiCheck, HiX, HiLink, HiChevronLeft, HiChevronRight, HiLockClosed, HiPlus, HiTrash, HiUpload } from 'react-icons/hi'
+import { HiShoppingCart, HiCheck, HiX, HiLink, HiChevronLeft, HiChevronRight, HiLockClosed, HiPlus, HiTrash, HiUpload, HiPencil, HiCollection, HiSwitchVertical } from 'react-icons/hi'
 import { FaWhatsapp, FaInstagram } from 'react-icons/fa'
 import type { Product } from '../types'
+import {
+  deleteDatabaseProduct,
+  fetchDatabaseProducts,
+  isProductDatabaseConfigured,
+  reorderDatabaseProducts,
+  saveDatabaseProduct,
+  uploadProductImage,
+} from '../lib/productDatabase'
 
 const WHATSAPP = '2348128288948'
 const PRODUCT_PARAM = 'product'
@@ -12,8 +20,14 @@ const ADMIN_PARAM = 'admin'
 const ADMIN_PARAM_VALUE = 'products'
 const ADMIN_HASH = '#admin-products'
 const ADMIN_PRODUCTS_KEY = 'glamoursphair_admin_products'
+const ADMIN_PRODUCT_OVERRIDES_KEY = 'glamoursphair_product_overrides'
+const ADMIN_HIDDEN_PRODUCTS_KEY = 'glamoursphair_hidden_products'
+const ADMIN_PRODUCT_ORDER_KEY = 'glamoursphair_product_order'
 const ADMIN_AUTH_KEY = 'glamoursphair_admin_access'
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? 'glamoursphair-admin'
+const LOCAL_ADMIN_PASSWORD = import.meta.env.VITE_LOCAL_ADMIN_PASSWORD ?? 'glamoursphair-admin'
+const AWOOF_GROUP = 'Awoof Sales'
+const DEFAULT_GROUP = 'Signature Collection'
+const ALL_COLLECTIONS = 'All Collections'
 
 type ProductForm = {
   name: string
@@ -25,8 +39,11 @@ type ProductForm = {
   fitting: string
   link: string
   tag: string
+  group: string
   image: string
 }
+
+type ProductOverrides = Record<string, Product>
 
 const emptyProductForm: ProductForm = {
   name: '',
@@ -38,6 +55,7 @@ const emptyProductForm: ProductForm = {
   fitting: '',
   link: '',
   tag: 'New',
+  group: '',
   image: '',
 }
 
@@ -63,6 +81,7 @@ const products: Product[] = [
     slug: 'sdd-luxury-bone-straight-18-13x4-swiss-lace',
     price: 240000,
     tag: 'New',
+    group: AWOOF_GROUP,
     source: 'Vietnamese',
     length: '18"',
     volume: '373g',
@@ -78,6 +97,7 @@ const products: Product[] = [
     slug: 'sdd-luxury-bone-straight-28-5x5',
     price: 480000,
     tag: 'New',
+    group: AWOOF_GROUP,
     length: '28"',
     volume: '350g',
     fitting: '5 by 5',
@@ -92,6 +112,7 @@ const products: Product[] = [
     slug: 'sdd-luxury-bone-straight-16-5x5-373g',
     price: 230000,
     tag: 'New',
+    group: AWOOF_GROUP,
     length: '16"',
     volume: '373g',
     fitting: '5 by 5',
@@ -106,6 +127,7 @@ const products: Product[] = [
     slug: 'sdd-luxury-bone-straight-26-5x5-650k',
     price: 650000,
     tag: 'Premium',
+    group: AWOOF_GROUP,
     length: '26"',
     volume: '330g',
     fitting: '5 by 5',
@@ -120,6 +142,7 @@ const products: Product[] = [
     slug: 'sdd-luxury-bone-straight-16-13x4-250g',
     price: 190000,
     tag: 'New',
+    group: AWOOF_GROUP,
     length: '16"',
     volume: '250g',
     fitting: '13 by 4',
@@ -134,6 +157,7 @@ const products: Product[] = [
     slug: 'sdd-luxury-bone-straight-26-5x5-385k',
     price: 385000,
     tag: 'New',
+    group: AWOOF_GROUP,
     length: '26"',
     volume: '330g',
     fitting: '5 by 5',
@@ -148,6 +172,7 @@ const products: Product[] = [
     slug: 'sdd-luxury-bone-straight-28-5x5-395k',
     price: 395000,
     tag: 'New',
+    group: AWOOF_GROUP,
     length: '28"',
     volume: '330g',
     fitting: '5 by 5',
@@ -162,6 +187,7 @@ const products: Product[] = [
     slug: 'sdd-luxury-bone-straight-16-5x5-350g',
     price: 175000,
     tag: 'New',
+    group: AWOOF_GROUP,
     length: '16"',
     volume: '350g',
     fitting: '5 by 5',
@@ -176,6 +202,7 @@ const products: Product[] = [
     slug: 'sdd-luxury-bone-straight-20-13x4',
     price: 320000,
     tag: 'New',
+    group: AWOOF_GROUP,
     length: '20"',
     volume: '330g',
     fitting: '13 by 4',
@@ -190,6 +217,7 @@ const products: Product[] = [
     slug: 'sdd-luxury-bone-straight-18-5x5',
     price: 180000,
     tag: 'New',
+    group: AWOOF_GROUP,
     length: '18"',
     volume: '330g',
     fitting: '5 by 5',
@@ -204,6 +232,7 @@ const products: Product[] = [
     slug: 'sdd-luxury-bone-straight-22-hd-13x6',
     price: 480000,
     tag: 'Premium',
+    group: AWOOF_GROUP,
     length: '22"',
     volume: '330g',
     fitting: 'HD 13 by 6',
@@ -218,6 +247,7 @@ const products: Product[] = [
     slug: 'sdd-luxury-bone-straight-18-13x4',
     price: 370000,
     tag: 'Premium',
+    group: AWOOF_GROUP,
     length: '18"',
     volume: '330g',
     fitting: '13 by 4',
@@ -232,6 +262,7 @@ const products: Product[] = [
     slug: 'sdd-luxury-bone-straight-24-5x5',
     price: 380000,
     tag: 'New',
+    group: AWOOF_GROUP,
     length: '24"',
     volume: '330g',
     fitting: '5 by 5',
@@ -246,6 +277,7 @@ const products: Product[] = [
     slug: 'sdd-luxury-bone-straight-28-2x4',
     price: 390000,
     tag: 'New',
+    group: AWOOF_GROUP,
     length: '28"',
     volume: '330g',
     fitting: '2 by 4',
@@ -412,24 +444,98 @@ function parsePrice(value: string) {
   return Number(clean)
 }
 
-function readAdminProducts(): Product[] {
+function readStorageValue<T>(key: string, fallback: T): T {
   try {
-    const stored = localStorage.getItem(ADMIN_PRODUCTS_KEY)
-    if (!stored) return []
+    const stored = localStorage.getItem(key)
+    if (!stored) return fallback
     const parsed = JSON.parse(stored)
-    return Array.isArray(parsed) ? parsed : []
+    return parsed ?? fallback
   } catch {
-    return []
+    return fallback
   }
+}
+
+function readAdminProducts(): Product[] {
+  const parsed = readStorageValue<unknown>(ADMIN_PRODUCTS_KEY, [])
+  return Array.isArray(parsed) ? parsed : []
+}
+
+function readProductOverrides(): ProductOverrides {
+  const parsed = readStorageValue<unknown>(ADMIN_PRODUCT_OVERRIDES_KEY, {})
+  return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as ProductOverrides : {}
+}
+
+function readHiddenProductIds(): number[] {
+  const parsed = readStorageValue<unknown>(ADMIN_HIDDEN_PRODUCTS_KEY, [])
+  return Array.isArray(parsed) ? parsed.filter((id): id is number => typeof id === 'number') : []
+}
+
+function readProductOrder(): number[] {
+  const parsed = readStorageValue<unknown>(ADMIN_PRODUCT_ORDER_KEY, [])
+  return Array.isArray(parsed) ? parsed.filter((id): id is number => typeof id === 'number') : []
 }
 
 function productSpecs(product: Product) {
   return [
+    product.group ? { label: 'Collection', value: product.group } : null,
     product.length ? { label: 'Length', value: product.length } : null,
     product.volume ? { label: 'Volume', value: product.volume } : null,
     product.fitting ? { label: 'Fitting', value: product.fitting } : null,
     product.source ? { label: 'Source', value: product.source } : null,
   ].filter(Boolean) as Array<{ label: string; value: string }>
+}
+
+function groupNameForProduct(product: Product) {
+  return product.group?.trim() || DEFAULT_GROUP
+}
+
+function groupProducts(productList: Product[]) {
+  const grouped = new Map<string, Product[]>()
+
+  productList.forEach(product => {
+    const groupName = groupNameForProduct(product)
+    grouped.set(groupName, [...(grouped.get(groupName) ?? []), product])
+  })
+
+  return Array.from(grouped, ([name, groupedProducts]) => ({ name, products: groupedProducts }))
+}
+
+function orderProducts(productList: Product[], productOrder: number[]) {
+  if (productOrder.length === 0) return productList
+
+  const orderLookup = new Map(productOrder.map((id, index) => [id, index]))
+
+  return productList
+    .map((product, index) => ({ product, index }))
+    .sort((a, b) => {
+      const aOrder = orderLookup.get(a.product.id) ?? Number.MAX_SAFE_INTEGER
+      const bOrder = orderLookup.get(b.product.id) ?? Number.MAX_SAFE_INTEGER
+      if (aOrder !== bOrder) return aOrder - bOrder
+      return a.index - b.index
+    })
+    .map(item => item.product)
+}
+
+function mergeProductsById(productList: Product[]) {
+  const productsById = new Map<number, Product>()
+  productList.forEach(product => productsById.set(product.id, product))
+  return Array.from(productsById.values())
+}
+
+function productToForm(product: Product): ProductForm {
+  return {
+    name: product.name,
+    price: String(product.price),
+    description: product.description,
+    source: product.source ?? '',
+    length: product.length ?? '',
+    volume: product.volume ?? '',
+    fitting: product.fitting ?? '',
+    link: product.instagramLink ?? '',
+    tag: product.tag ?? 'New',
+    group: product.group ?? '',
+    image: imageForProduct(product) ?? '',
+  }
 }
 
 export default function ProductGrid({ onAddToCart }: ProductGridProps) {
@@ -440,12 +546,37 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   const [copiedProductId, setCopiedProductId] = useState<number | null>(null)
   const [adminProducts, setAdminProducts] = useState<Product[]>(() => readAdminProducts())
   const [adminOpen, setAdminOpen] = useState(false)
-  const [adminUnlocked, setAdminUnlocked] = useState(() => localStorage.getItem(ADMIN_AUTH_KEY) === 'true')
+  const [adminAccessCode, setAdminAccessCode] = useState(() => sessionStorage.getItem(ADMIN_AUTH_KEY) ?? '')
+  const [adminUnlocked, setAdminUnlocked] = useState(() => Boolean(sessionStorage.getItem(ADMIN_AUTH_KEY)))
   const [adminPassword, setAdminPassword] = useState('')
   const [adminError, setAdminError] = useState('')
   const [productForm, setProductForm] = useState<ProductForm>(emptyProductForm)
+  const [productOverrides, setProductOverrides] = useState<ProductOverrides>(() => readProductOverrides())
+  const [hiddenProductIds, setHiddenProductIds] = useState<number[]>(() => readHiddenProductIds())
+  const [productOrder, setProductOrder] = useState<number[]>(() => readProductOrder())
+  const [editingProductId, setEditingProductId] = useState<number | null>(null)
+  const [databaseProducts, setDatabaseProducts] = useState<Product[]>([])
+  const [databaseHiddenIds, setDatabaseHiddenIds] = useState<number[]>([])
+  const [databaseOrder, setDatabaseOrder] = useState<number[]>([])
+  const [databaseStatus, setDatabaseStatus] = useState(isProductDatabaseConfigured() ? 'Connecting to database...' : 'Local mode: add Supabase env values to enable database sync.')
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null)
+  const [activeCollection, setActiveCollection] = useState(ALL_COLLECTIONS)
+  const [draggedProductId, setDraggedProductId] = useState<number | null>(null)
+  const [dragOverProductId, setDragOverProductId] = useState<number | null>(null)
 
-  const allProducts = useMemo(() => [...products, ...adminProducts], [adminProducts])
+  const allProducts = useMemo(() => {
+    const seedIds = new Set(products.map(product => product.id))
+    const databaseProductsById = new Map(databaseProducts.map(product => [product.id, product]))
+    const hiddenIds = Array.from(new Set([...hiddenProductIds, ...databaseHiddenIds]))
+    const visibleSeedProducts = products
+      .map(product => databaseProductsById.get(product.id) ?? productOverrides[String(product.id)] ?? product)
+      .filter(product => !hiddenIds.includes(product.id))
+    const persistedAdminProducts = databaseProducts.filter(product => !seedIds.has(product.id) && !hiddenIds.includes(product.id))
+    const localAdminProducts = adminProducts.filter(product => !databaseProductsById.has(product.id) && !hiddenIds.includes(product.id))
+    const order = productOrder.length > 0 ? productOrder : databaseOrder
+
+    return orderProducts(mergeProductsById([...visibleSeedProducts, ...persistedAdminProducts, ...localAdminProducts]), order)
+  }, [adminProducts, databaseHiddenIds, databaseOrder, databaseProducts, hiddenProductIds, productOrder, productOverrides])
 
   const featuredProducts = useMemo(
     () => allProducts.filter(product => ['Best Seller', 'New', 'Exclusive'].includes(product.tag ?? '')).slice(0, 4),
@@ -459,7 +590,16 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     (product.volume ?? '').toLowerCase().includes(search.toLowerCase()) ||
     (product.fitting ?? '').toLowerCase().includes(search.toLowerCase()) ||
     (product.source ?? '').toLowerCase().includes(search.toLowerCase()) ||
+    (product.group ?? '').toLowerCase().includes(search.toLowerCase()) ||
     (product.tag ?? '').toLowerCase().includes(search.toLowerCase())
+  )
+
+  const groupedFiltered = useMemo(() => groupProducts(filtered), [filtered])
+  const visibleCollectionGroups = useMemo(
+    () => activeCollection === ALL_COLLECTIONS
+      ? groupedFiltered
+      : groupedFiltered.filter(collection => collection.name === activeCollection),
+    [activeCollection, groupedFiltered]
   )
 
   const findProductFromUrl = useCallback(() => {
@@ -567,6 +707,39 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     }
   }, [])
 
+  useEffect(() => {
+    let mounted = true
+
+    const loadDatabaseProducts = async () => {
+      if (!isProductDatabaseConfigured()) return
+
+      try {
+        const snapshot = await fetchDatabaseProducts()
+        if (!mounted || !snapshot) return
+
+        setDatabaseProducts(snapshot.products)
+        setDatabaseHiddenIds(snapshot.hiddenIds)
+        setDatabaseOrder(snapshot.order)
+        setDatabaseStatus('Database connected.')
+      } catch {
+        if (mounted) setDatabaseStatus('Database unavailable. Using local fallback for now.')
+      }
+    }
+
+    void loadDatabaseProducts()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (activeCollection === ALL_COLLECTIONS) return
+    if (!groupedFiltered.some(collection => collection.name === activeCollection)) {
+      setActiveCollection(ALL_COLLECTIONS)
+    }
+  }, [activeCollection, groupedFiltered])
+
   const getSlideIndex = (id: number) => slideIndexes[id] ?? 0
 
   const nextSlide = (e: MouseEvent, id: number, total: number) => {
@@ -596,14 +769,37 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     localStorage.setItem(ADMIN_PRODUCTS_KEY, JSON.stringify(nextProducts))
   }
 
+  const updateProductOverrides = (nextOverrides: ProductOverrides) => {
+    setProductOverrides(nextOverrides)
+    localStorage.setItem(ADMIN_PRODUCT_OVERRIDES_KEY, JSON.stringify(nextOverrides))
+  }
+
+  const updateHiddenProductIds = (nextIds: number[]) => {
+    setHiddenProductIds(nextIds)
+    localStorage.setItem(ADMIN_HIDDEN_PRODUCTS_KEY, JSON.stringify(nextIds))
+  }
+
+  const updateProductOrder = (nextOrder: number[]) => {
+    setProductOrder(nextOrder)
+    localStorage.setItem(ADMIN_PRODUCT_ORDER_KEY, JSON.stringify(nextOrder))
+  }
+
   const unlockAdmin = (event: FormEvent) => {
     event.preventDefault()
-    if (adminPassword.trim() !== ADMIN_PASSWORD) {
+    const cleanPassword = adminPassword.trim()
+
+    if (!cleanPassword) {
+      setAdminError('Enter the admin password.')
+      return
+    }
+
+    if (!isProductDatabaseConfigured() && cleanPassword !== LOCAL_ADMIN_PASSWORD) {
       setAdminError('Incorrect admin password.')
       return
     }
 
-    localStorage.setItem(ADMIN_AUTH_KEY, 'true')
+    sessionStorage.setItem(ADMIN_AUTH_KEY, cleanPassword)
+    setAdminAccessCode(cleanPassword)
     setAdminUnlocked(true)
     setAdminError('')
     setAdminPassword('')
@@ -614,6 +810,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     const file = event.target.files?.[0]
     if (!file) return
 
+    setSelectedImageFile(file)
     const reader = new FileReader()
     reader.onload = () => {
       setProductForm(prev => ({ ...prev, image: String(reader.result) }))
@@ -621,7 +818,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     reader.readAsDataURL(file)
   }
 
-  const addAdminProduct = (event: FormEvent) => {
+  const saveProduct = async (event: FormEvent) => {
     event.preventDefault()
     const price = parsePrice(productForm.price)
 
@@ -630,31 +827,163 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
       return
     }
 
-    const product: Product = {
-      id: Date.now(),
-      name: productForm.name.trim(),
-      slug: slugify(productForm.name),
-      price,
-      tag: productForm.tag || undefined,
-      description: productForm.description.trim(),
-      source: productForm.source.trim() || undefined,
-      length: productForm.length.trim() || undefined,
-      volume: productForm.volume.trim() || undefined,
-      fitting: productForm.fitting.trim() || undefined,
-      instagramLink: productForm.link.trim() || 'https://instagram.com/glamoursphair',
-      gradient: 'from-neutral-950 to-stone-900',
-      image: productForm.image || '/images/bone-straight.jpeg',
-    }
+    try {
+      const existingProduct = editingProductId ? allProducts.find(product => product.id === editingProductId) : null
+      const imageUrl = selectedImageFile && isProductDatabaseConfigured()
+        ? await uploadProductImage(selectedImageFile, productForm.name.trim(), adminAccessCode)
+        : productForm.image
+      const imageChanged = existingProduct ? imageUrl !== imageForProduct(existingProduct) : true
+      const product: Product = {
+        ...(existingProduct ?? { id: Date.now(), gradient: 'from-neutral-950 to-stone-900' }),
+        name: productForm.name.trim(),
+        slug: slugify(productForm.name),
+        price,
+        tag: productForm.tag || undefined,
+        description: productForm.description.trim(),
+        source: productForm.source.trim() || undefined,
+        length: productForm.length.trim() || undefined,
+        volume: productForm.volume.trim() || undefined,
+        fitting: productForm.fitting.trim() || undefined,
+        group: productForm.group.trim() || undefined,
+        instagramLink: productForm.link.trim() || 'https://instagram.com/glamoursphair',
+        image: imageUrl || '/images/bone-straight.jpeg',
+      }
 
-    updateAdminProducts([product, ...adminProducts])
-    setProductForm(emptyProductForm)
-    setAdminError('')
-    trackBuyerEvent('Admin Product Added', { product: product.name, price: product.price })
+      if (imageChanged) product.images = undefined
+
+      if (editingProductId) {
+        const isSeedProduct = products.some(seedProduct => seedProduct.id === editingProductId)
+        if (isSeedProduct) {
+          updateProductOverrides({ ...productOverrides, [String(editingProductId)]: product })
+        } else {
+          updateAdminProducts(adminProducts.map(adminProduct => adminProduct.id === editingProductId ? product : adminProduct))
+        }
+        if (isProductDatabaseConfigured()) {
+          await saveDatabaseProduct(product, allProducts.findIndex(item => item.id === product.id), adminAccessCode)
+          setDatabaseProducts(prev => mergeProductsById([...prev.filter(item => item.id !== product.id), product]))
+          setDatabaseHiddenIds(prev => prev.filter(id => id !== product.id))
+          setDatabaseStatus('Database saved.')
+        }
+        trackBuyerEvent('Admin Product Edited', { product: product.name, price: product.price })
+      } else {
+        updateAdminProducts([product, ...adminProducts])
+        updateProductOrder([product.id, ...allProducts.map(item => item.id)])
+        if (isProductDatabaseConfigured()) {
+          await saveDatabaseProduct(product, 0, adminAccessCode)
+          setDatabaseProducts(prev => mergeProductsById([product, ...prev]))
+          setDatabaseOrder([product.id, ...allProducts.map(item => item.id)])
+          setDatabaseStatus('Database saved.')
+        }
+        trackBuyerEvent('Admin Product Added', { product: product.name, price: product.price })
+      }
+
+      setProductForm(emptyProductForm)
+      setEditingProductId(null)
+      setSelectedImageFile(null)
+      setAdminError('')
+    } catch {
+      setAdminError('Could not save to the database. Check Supabase settings and try again.')
+      setDatabaseStatus('Database save failed.')
+    }
   }
 
-  const removeAdminProduct = (id: number) => {
-    updateAdminProducts(adminProducts.filter(product => product.id !== id))
+  const startEditingProduct = (product: Product) => {
+    setEditingProductId(product.id)
+    setProductForm(productToForm(product))
+    setAdminError('')
+  }
+
+  const cancelEditingProduct = () => {
+    setEditingProductId(null)
+    setProductForm(emptyProductForm)
+    setSelectedImageFile(null)
+    setAdminError('')
+  }
+
+  const deleteProduct = async (id: number) => {
+    const isSeedProduct = products.some(product => product.id === id)
+
+    if (isSeedProduct) {
+      updateHiddenProductIds(Array.from(new Set([...hiddenProductIds, id])))
+    } else {
+      updateAdminProducts(adminProducts.filter(product => product.id !== id))
+    }
+
+    updateProductOrder(productOrder.filter(productId => productId !== id))
+    if (isProductDatabaseConfigured()) {
+      try {
+        await deleteDatabaseProduct(id, adminAccessCode)
+        setDatabaseProducts(prev => prev.filter(product => product.id !== id))
+        setDatabaseHiddenIds(prev => Array.from(new Set([...prev, id])))
+        setDatabaseOrder(prev => prev.filter(productId => productId !== id))
+        setDatabaseStatus('Database saved.')
+      } catch {
+        setAdminError('Could not delete from the database. It was removed locally for now.')
+        setDatabaseStatus('Database delete failed.')
+      }
+    }
+    if (editingProductId === id) cancelEditingProduct()
     if (selected?.id === id) closeProduct()
+  }
+
+  const reorderProduct = (fromId: number, toId: number) => {
+    if (fromId === toId) return
+
+    const currentOrder = allProducts.map(product => product.id)
+    const fromIndex = currentOrder.indexOf(fromId)
+    const toIndex = currentOrder.indexOf(toId)
+    if (fromIndex < 0 || toIndex < 0) return
+
+    const nextOrder = [...currentOrder]
+    const [moved] = nextOrder.splice(fromIndex, 1)
+    nextOrder.splice(toIndex, 0, moved)
+    updateProductOrder(nextOrder)
+
+    const reorderedProducts = orderProducts(allProducts, nextOrder)
+    if (isProductDatabaseConfigured()) {
+      void reorderDatabaseProducts(reorderedProducts, adminAccessCode).then(() => {
+        setDatabaseOrder(nextOrder)
+        setDatabaseStatus('Database saved.')
+      }).catch(() => {
+        setDatabaseStatus('Database unavailable. Sort saved locally only.')
+      })
+    }
+  }
+
+  const handleProductDragStart = (event: DragEvent<HTMLDivElement>, id: number) => {
+    setDraggedProductId(id)
+    setDragOverProductId(null)
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', String(id))
+  }
+
+  const handleProductDragOver = (event: DragEvent<HTMLDivElement>, id: number) => {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+    if (draggedProductId && draggedProductId !== id) setDragOverProductId(id)
+  }
+
+  const handleProductDrop = (event: DragEvent<HTMLDivElement>, id: number) => {
+    event.preventDefault()
+    const droppedId = Number(event.dataTransfer.getData('text/plain')) || draggedProductId
+    if (droppedId) reorderProduct(droppedId, id)
+    setDraggedProductId(null)
+    setDragOverProductId(null)
+  }
+
+  const endProductDrag = () => {
+    setDraggedProductId(null)
+    setDragOverProductId(null)
+  }
+
+  const dragHoverClass = (id: number) => {
+    if (!draggedProductId || dragOverProductId !== id || draggedProductId === id) return ''
+
+    const draggedIndex = allProducts.findIndex(product => product.id === draggedProductId)
+    const hoveredIndex = allProducts.findIndex(product => product.id === id)
+    if (draggedIndex < 0 || hoveredIndex < 0) return ''
+
+    return draggedIndex < hoveredIndex ? '-translate-y-2' : 'translate-y-2'
   }
 
   const renderProductImage = (product: Product, compact = false) => (
@@ -838,8 +1167,57 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4 md:gap-6">
-            {filtered.map(product => renderProductCard(product))}
+          <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+            <button
+              onClick={() => setActiveCollection(ALL_COLLECTIONS)}
+              className={`min-h-24 border p-4 text-left transition-colors ${
+                activeCollection === ALL_COLLECTIONS
+                  ? 'border-[#c9a84c] bg-[#c9a84c] text-black'
+                  : 'border-white/10 bg-[#111] text-white hover:border-[#c9a84c]/50'
+              }`}
+            >
+              <HiCollection size={20} />
+              <span className="mt-3 block text-xs font-bold uppercase tracking-[0.18em]">All collections</span>
+              <span className={`mt-1 block text-xs ${activeCollection === ALL_COLLECTIONS ? 'text-black/60' : 'text-neutral-500'}`}>
+                {filtered.length} item{filtered.length === 1 ? '' : 's'}
+              </span>
+            </button>
+            {groupedFiltered.map(collection => (
+              <button
+                key={collection.name}
+                onClick={() => setActiveCollection(collection.name)}
+                className={`min-h-24 border p-4 text-left transition-colors ${
+                  activeCollection === collection.name
+                    ? 'border-[#c9a84c] bg-[#c9a84c] text-black'
+                    : 'border-white/10 bg-[#111] text-white hover:border-[#c9a84c]/50'
+                }`}
+              >
+                <HiCollection size={20} />
+                <span className="mt-3 block text-xs font-bold uppercase tracking-[0.18em]">{collection.name}</span>
+                <span className={`mt-1 block text-xs ${activeCollection === collection.name ? 'text-black/60' : 'text-neutral-500'}`}>
+                  {collection.products.length} item{collection.products.length === 1 ? '' : 's'}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="grid gap-12">
+            {visibleCollectionGroups.map(collection => (
+              <div key={collection.name}>
+                <div className="mb-4 flex items-end justify-between gap-4 border-b border-white/8 pb-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#c9a84c]">Collection</p>
+                    <h3 className="mt-1 font-display text-3xl text-white">{collection.name}</h3>
+                  </div>
+                  <span className="shrink-0 text-xs uppercase tracking-[0.18em] text-neutral-600">
+                    {collection.products.length} item{collection.products.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4 md:gap-6">
+                  {collection.products.map(product => renderProductCard(product))}
+                </div>
+              </div>
+            ))}
           </div>
 
           {filtered.length === 0 && (
@@ -1041,7 +1419,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
       {adminOpen && (
         <div className="fixed inset-0 z-[55] flex items-center justify-center p-3 md:p-6">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={closeAdmin} />
-          <div className="relative z-10 max-h-[92vh] w-full max-w-5xl overflow-y-auto border border-white/10 bg-[#0d0d0d] shadow-2xl shadow-black/70">
+          <div className="relative z-10 flex h-[92vh] w-full max-w-6xl flex-col overflow-hidden border border-white/10 bg-[#0d0d0d] shadow-2xl shadow-black/70">
             <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 bg-[#0d0d0d]/95 px-5 py-4 backdrop-blur">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#c9a84c]">Admin inventory</p>
@@ -1080,18 +1458,18 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                 </button>
               </form>
             ) : (
-              <div className="grid gap-8 p-5 lg:grid-cols-[1.1fr_0.9fr] lg:p-8">
-                <form onSubmit={addAdminProduct} className="grid gap-4">
+              <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[0.92fr_1.08fr]">
+                <form onSubmit={saveProduct} className="grid content-start gap-3 overflow-y-auto p-5 lg:p-6">
                   <div>
-                    <h4 className="font-display text-3xl text-white">New product</h4>
+                    <h4 className="font-display text-3xl text-white">{editingProductId ? 'Edit product' : 'New product'}</h4>
                     <p className="mt-2 text-sm leading-relaxed text-neutral-500">
-                      Upload an image, add the product details, then it will appear in the grid immediately on this device.
+                      Upload an image, add product details, choose a collection, then save it to the storefront.
                     </p>
                   </div>
 
-                  <label className="grid min-h-56 cursor-pointer place-items-center border border-dashed border-white/15 bg-[#111] p-5 text-center transition-colors hover:border-[#c9a84c]/50">
+                  <label className="grid min-h-36 cursor-pointer place-items-center border border-dashed border-white/15 bg-[#111] p-4 text-center transition-colors hover:border-[#c9a84c]/50">
                     {productForm.image ? (
-                      <img src={productForm.image} alt="Product upload preview" className="max-h-72 w-full object-contain" />
+                      <img src={productForm.image} alt="Product upload preview" className="max-h-44 w-full object-contain" />
                     ) : (
                       <span className="grid gap-3 text-neutral-500">
                         <HiUpload size={32} className="mx-auto text-[#c9a84c]" />
@@ -1145,6 +1523,12 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                       placeholder="Product or Instagram link"
                       className="border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/55 md:col-span-2"
                     />
+                    <input
+                      value={productForm.group}
+                      onChange={event => setProductForm(prev => ({ ...prev, group: event.target.value }))}
+                      placeholder="Collection, e.g. Awoof Sales"
+                      className="border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/55 md:col-span-2"
+                    />
                     <select
                       value={productForm.tag}
                       onChange={event => setProductForm(prev => ({ ...prev, tag: event.target.value }))}
@@ -1169,21 +1553,34 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
                   {adminError && <p className="text-sm text-red-400">{adminError}</p>}
 
-                  <button className="flex min-h-12 items-center justify-center gap-2 bg-[#c9a84c] px-5 text-sm font-bold uppercase tracking-[0.16em] text-black transition-colors hover:bg-white">
-                    <HiPlus size={17} />
-                    Add product
-                  </button>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button className="flex min-h-10 w-fit items-center justify-center gap-2 bg-[#c9a84c] px-4 text-xs font-bold uppercase tracking-[0.14em] text-black transition-colors hover:bg-white">
+                      {editingProductId ? <HiCheck size={17} /> : <HiPlus size={17} />}
+                      {editingProductId ? 'Save changes' : 'Add product'}
+                    </button>
+                    {editingProductId && (
+                      <button
+                        type="button"
+                        onClick={cancelEditingProduct}
+                        className="min-h-10 border border-white/10 px-4 text-xs font-semibold uppercase tracking-[0.12em] text-neutral-300 transition-colors hover:border-white/25 hover:text-white"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                 </form>
 
-                <div>
+                <div className="min-h-0 overflow-y-auto border-t border-white/10 p-5 lg:border-l lg:border-t-0 lg:p-6">
                   <div className="mb-4 flex items-center justify-between gap-4">
                     <div>
-                      <h4 className="font-display text-3xl text-white">Uploaded</h4>
-                      <p className="mt-1 text-sm text-neutral-500">{adminProducts.length} admin product{adminProducts.length === 1 ? '' : 's'}</p>
+                      <h4 className="font-display text-3xl text-white">Products</h4>
+                      <p className="mt-1 text-sm text-neutral-500">{allProducts.length} visible product{allProducts.length === 1 ? '' : 's'}</p>
+                      <p className="mt-1 text-xs text-neutral-600">{databaseStatus}</p>
                     </div>
                     <button
                       onClick={() => {
-                        localStorage.removeItem(ADMIN_AUTH_KEY)
+                        sessionStorage.removeItem(ADMIN_AUTH_KEY)
+                        setAdminAccessCode('')
                         setAdminUnlocked(false)
                       }}
                       className="text-xs uppercase tracking-[0.16em] text-neutral-500 transition-colors hover:text-white"
@@ -1193,26 +1590,69 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                   </div>
 
                   <div className="grid gap-3">
-                    {adminProducts.length === 0 ? (
+                    {allProducts.length === 0 ? (
                       <div className="border border-white/10 bg-[#111] p-5 text-sm leading-relaxed text-neutral-500">
-                        No admin uploads yet. Add a product from the form and it will show up here.
+                        No visible products. Add a product from the form and it will show up here.
                       </div>
                     ) : (
-                      adminProducts.map(product => (
-                        <div key={product.id} className="grid grid-cols-[72px_1fr_auto] gap-3 border border-white/10 bg-[#111] p-3">
+                      allProducts.map((product, index) => (
+                        <div
+                          key={product.id}
+                          draggable
+                          onDragStart={event => handleProductDragStart(event, product.id)}
+                          onDragEnter={() => {
+                            if (draggedProductId && draggedProductId !== product.id) setDragOverProductId(product.id)
+                          }}
+                          onDragOver={event => handleProductDragOver(event, product.id)}
+                          onDrop={event => handleProductDrop(event, product.id)}
+                          onDragEnd={endProductDrag}
+                          className={`grid cursor-grab grid-cols-[72px_1fr] gap-3 border bg-[#111] p-3 transition-all duration-200 ease-out active:cursor-grabbing ${dragHoverClass(product.id)} ${
+                            draggedProductId === product.id
+                              ? 'scale-[0.985] border-[#c9a84c]/70 opacity-55 shadow-lg shadow-[#c9a84c]/10'
+                              : dragOverProductId === product.id
+                                ? 'border-[#c9a84c]/55 bg-[#15130f] shadow-md shadow-black/40'
+                                : 'border-white/10 hover:border-[#c9a84c]/35'
+                          }`}
+                        >
                           <img src={imageForProduct(product)} alt={product.name} className="h-20 w-[72px] object-cover" />
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-white">{product.name}</p>
-                            <p className="mt-1 text-sm text-[#c9a84c]">{formatNgn(product.price)}</p>
-                            <p className="mt-1 truncate text-xs text-neutral-500">{product.description}</p>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-white">{product.name}</p>
+                                <p className="mt-1 text-sm text-[#c9a84c]">{formatNgn(product.price)}</p>
+                                <p className="mt-1 truncate text-xs text-neutral-500">{groupNameForProduct(product)}</p>
+                              </div>
+                              <span className="shrink-0 text-[10px] uppercase tracking-[0.16em] text-neutral-600">
+                                {index + 1}
+                              </span>
+                            </div>
+                            <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-neutral-500">{product.description}</p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                className="flex h-9 items-center justify-center gap-2 border border-white/10 px-3 text-xs font-semibold text-neutral-400"
+                                aria-label={`Drag ${product.name} to sort`}
+                                title="Drag to sort"
+                              >
+                                <HiSwitchVertical size={15} />
+                                Drag
+                              </button>
+                              <button
+                                onClick={() => startEditingProduct(product)}
+                                className="flex h-9 items-center justify-center gap-2 border border-white/10 px-3 text-xs font-semibold text-neutral-300 transition-colors hover:border-[#c9a84c]/40 hover:text-[#c9a84c]"
+                              >
+                                <HiPencil size={15} />
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => deleteProduct(product.id)}
+                                className="flex h-9 items-center justify-center gap-2 border border-white/10 px-3 text-xs font-semibold text-neutral-400 transition-colors hover:border-red-400/40 hover:text-red-400"
+                              >
+                                <HiTrash size={15} />
+                                Delete
+                              </button>
+                            </div>
                           </div>
-                          <button
-                            onClick={() => removeAdminProduct(product.id)}
-                            className="flex h-9 w-9 items-center justify-center text-neutral-500 transition-colors hover:text-red-400"
-                            aria-label={`Delete ${product.name}`}
-                          >
-                            <HiTrash size={18} />
-                          </button>
                         </div>
                       ))
                     )}

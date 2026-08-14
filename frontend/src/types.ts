@@ -10,6 +10,7 @@ export interface Product {
   length?: string
   volume?: string
   fitting?: string
+  group?: string
   whatsapp?: string
   gradient: string
   image?: string
