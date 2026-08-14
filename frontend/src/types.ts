@@ -6,6 +6,10 @@ export interface Product {
   slug?: string
   tag?: string
   description: string
+  source?: string
+  length?: string
+  volume?: string
+  fitting?: string
   whatsapp?: string
   gradient: string
   image?: string

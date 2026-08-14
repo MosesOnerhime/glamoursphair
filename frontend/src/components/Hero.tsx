@@ -31,15 +31,19 @@ export default function Hero() {
         <div className="max-w-xl pt-4 text-center md:text-left">
           <div className="mx-auto mb-5 flex w-fit items-center gap-2 border border-[#c9a84c]/25 bg-black/35 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#c9a84c] md:mx-0">
             <HiSparkles size={14} />
-            Abuja Luxury Hair Studio
+            Luxury Hair Experience
           </div>
 
-          <h1 className="font-display text-5xl leading-[0.95] text-white sm:text-6xl md:text-7xl lg:text-8xl">
-            Luxury wigs for effortless confidence.
+          <h1 className="font-display text-5xl uppercase leading-[0.9] text-white sm:text-6xl md:text-7xl lg:text-8xl">
+            <span className="block">You</span>
+            <span className="block text-4xl normal-case leading-none text-[#c9a84c] sm:text-5xl md:text-6xl lg:text-7xl">
+              deserve
+            </span>
+            <span className="block">Luxury</span>
           </h1>
 
           <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-neutral-300 md:mx-0 md:text-lg">
-            Ready-to-wear units, custom installs, secure Paystack checkout and fast delivery from Abuja.
+            Premium wigs and hair extensions crafted for queens. Elevate your crown - because every day deserves to be a great hair day.
           </p>
 
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center md:justify-start">
@@ -47,7 +51,7 @@ export default function Hero() {
               onClick={scrollToShop}
               className="flex min-h-12 items-center justify-center bg-[#c9a84c] px-6 py-3 text-sm font-bold uppercase tracking-[0.14em] text-black transition-colors hover:bg-white"
             >
-              Shop Collection
+              Shop Luxury Wigs Now
             </button>
             <a
               href={WHATSAPP_ORDER}
