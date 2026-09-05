@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { HiX } from 'react-icons/hi'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import PromoBanner from './components/PromoBanner'
@@ -12,16 +11,42 @@ import BrandStory from './components/BrandStory'
 import Contact from './components/Contact'
 import Footer from './components/Footer'
 import CartDrawer from './components/CartDrawer'
-import CheckoutModal from './components/CheckoutModal'
 import type { CartItem, Product } from './types'
+
+const CheckoutModal = lazy(() => import('./components/CheckoutModal'))
+const CART_STORAGE_KEY = 'glamoursphair_cart'
+
+function readSavedCart(): CartItem[] {
+  try {
+    const stored = localStorage.getItem(CART_STORAGE_KEY)
+    const parsed: unknown = stored ? JSON.parse(stored) : []
+    if (!Array.isArray(parsed)) return []
+
+    return parsed.filter((item): item is CartItem => (
+      typeof item === 'object' && item !== null &&
+      typeof (item as CartItem).id === 'number' &&
+      typeof (item as CartItem).name === 'string' &&
+      typeof (item as CartItem).price === 'number' &&
+      typeof (item as CartItem).qty === 'number' &&
+      (item as CartItem).qty > 0
+    ))
+  } catch {
+    return []
+  }
+}
 
 export default function App() {
   const [cartOpen, setCartOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
-  const [cartItems, setCartItems] = useState<CartItem[]>([])
-  const [showPaystackPopup, setShowPaystackPopup] = useState(() => {
-  return !localStorage.getItem('paystackPopupSeen')
-  })
+  const [cartItems, setCartItems] = useState<CartItem[]>(readSavedCart)
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems))
+    } catch {
+      // Checkout remains usable when storage is unavailable or full.
+    }
+  }, [cartItems])
 
   const addToCart = (product: Product) => {
     setCartItems(prev => {
@@ -36,7 +61,7 @@ export default function App() {
 
   const removeFromCart = (id: number) => setCartItems(prev => prev.filter(i => i.id !== id))
   const updateQty = (id: number, qty: number) => {
-    setCartItems(prev => prev.map(i => i.id === id ? { ...i, qty } : i))
+    setCartItems(prev => prev.map(i => i.id === id ? { ...i, qty: Math.max(1, qty) } : i))
   }
   const clearCart = () => setCartItems([])
   const cartCount = cartItems.reduce((sum, i) => sum + i.qty, 0)
@@ -46,23 +71,26 @@ export default function App() {
     setCartOpen(false)
   }
 
-  const dismissPaystackPopup = () => {
-  localStorage.setItem('paystackPopupSeen', 'true')
-  setShowPaystackPopup(false)
-  }
-
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white font-body overflow-x-hidden">
+      <a
+        href="#main-content"
+        className="fixed left-4 top-4 z-[100] -translate-y-24 bg-[#c9a84c] px-4 py-3 text-sm font-bold text-black transition-transform focus:translate-y-0"
+      >
+        Skip to shopping content
+      </a>
       <Navbar cartCount={cartCount} onCartClick={() => setCartOpen(true)} />
       <PromoBanner />
-      <Hero />
-      <TrustStrip />
-      <EditorialCollections />
-      <ProductGrid onAddToCart={addToCart} />
-      <ChannelHub />
-      <BuyerTrust />
-      <BrandStory />
-      <Contact />
+      <main id="main-content" tabIndex={-1}>
+        <Hero />
+        <TrustStrip />
+        <EditorialCollections />
+        <ProductGrid onAddToCart={addToCart} />
+        <ChannelHub />
+        <BuyerTrust />
+        <BrandStory />
+        <Contact />
+      </main>
       <Footer />
       <CartDrawer
         open={cartOpen}
@@ -73,57 +101,14 @@ export default function App() {
         onUpdateQty={updateQty}
         onClear={clearCart}
       />
-      <CheckoutModal
-        open={checkoutOpen}
-        onClose={() => setCheckoutOpen(false)}
-        items={cartItems}
-        onSuccess={handleCheckoutSuccess}
-      />
-
-      {/* Paystack One-Time Popup */}
-      {showPaystackPopup && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={dismissPaystackPopup}
-          />
-          <div className="relative w-full max-w-sm bg-[#0a1628] border border-white/10 z-10 animate-dropdown overflow-hidden">
-            {/* Close button */}
-            <button
-              onClick={dismissPaystackPopup}
-              className="absolute top-3 right-3 z-20 text-neutral-400 hover:text-white transition-colors"
-            >
-              <HiX size={20} />
-            </button>
-
-            {/* Banner image */}
-            <img
-              src="/images/paystack-banner.png"
-              alt="Pay with Paystack"
-              className="w-full object-contain"
-            />
-
-            {/* Bottom actions */}
-            <div className="p-5 space-y-3">
-              <button
-                onClick={() => {
-                  dismissPaystackPopup()
-                  document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' })
-                }}
-                className="w-full flex items-center justify-center py-3.5 bg-[#0ba4db] text-white font-bold tracking-[0.15em] uppercase text-sm hover:bg-[#0993c5] transition-colors"
-              >
-                Shop Now
-              </button>
-              <button
-                onClick={dismissPaystackPopup}
-                className="w-full py-2.5 border border-white/10 text-neutral-400 text-sm hover:text-white transition-colors"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Suspense fallback={null}>
+        <CheckoutModal
+          open={checkoutOpen}
+          onClose={() => setCheckoutOpen(false)}
+          items={cartItems}
+          onSuccess={handleCheckoutSuccess}
+        />
+      </Suspense>
     </div>
   )
 }

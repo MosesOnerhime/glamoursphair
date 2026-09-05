@@ -1,25 +1,23 @@
-import { useState } from 'react'
-import { track } from '@vercel/analytics'
 import { FaWhatsapp, FaInstagram, FaTiktok } from 'react-icons/fa'
 
+const WHATSAPP_CHANNEL = 'https://whatsapp.com/channel/0029Vb8gQMqK5cDJFIwnVk2y'
+
 const shopLinks = [
-  { label: 'New Arrivals', target: 'shop' },
+  { label: 'New Arrivals', target: 'collection', search: 'New' },
   { label: 'HD Lace', target: 'shop', search: 'HD Lace' },
   { label: 'Bouncy', target: 'shop', search: 'Bouncy' },
-  { label: 'Hair Care', target: 'shop', search: 'Serum' },
+  { label: 'Awoof Sales', target: 'collection', search: 'Awoof Sales' },
 ]
 
 const helpLinks = [
   { label: 'Contact', target: 'contact' },
-  { label: 'Shipping', target: 'contact' },
-  { label: 'Hair Care', target: 'shop', search: 'Serum' },
+  { label: 'Delivery Support', href: 'https://wa.me/2348128288948?text=Hello%20GLAMOURSPHAIR!%20I%20have%20a%20delivery%20question.' },
+  { label: 'Book Consultation', href: 'https://wa.me/2348128288948?text=Hello%20GLAMOURSPHAIR!%20I%27d%20like%20a%20consultation.' },
   { label: 'WhatsApp Support', href: 'https://wa.me/2348128288948' },
 ]
 
 export default function Footer() {
   const year = new Date().getFullYear()
-  const [email, setEmail] = useState('')
-  const [joined, setJoined] = useState(false)
 
   const goTo = (item: { target?: string; href?: string; search?: string }) => {
     if (item.href) {
@@ -34,20 +32,12 @@ export default function Footer() {
     if (item.target) document.getElementById(item.target)?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const joinNewsletter = (event: React.FormEvent) => {
-    event.preventDefault()
-    if (!email.trim()) return
-    track('Newsletter Signup', { source: 'footer' })
-    setJoined(true)
-    setEmail('')
-  }
-
   return (
     <footer className="border-t border-white/10 bg-[#070707] px-4 py-14 text-white">
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-10 border-b border-white/10 pb-10 md:grid-cols-[1.15fr_0.55fr_0.55fr_0.95fr]">
           <div>
-            <img src="/images/logo.png" alt="GLAMOURSPHAIR" className="h-24 w-24 object-contain" />
+            <img src="/images/logo.png" alt="GLAMOURSPHAIR" width="196" height="168" loading="lazy" className="h-24 w-24 object-contain" />
             <h2 className="mt-5 font-display text-4xl leading-none">GLAMOURSPHAIR</h2>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-neutral-400">
               Luxury hair designed to make every entrance memorable. Ready-to-wear units, custom support and secure checkout from Abuja.
@@ -86,23 +76,19 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 className="mb-4 text-xs font-bold uppercase tracking-[0.22em] text-[#c9a84c]">Newsletter</h3>
+            <h3 className="mb-4 text-xs font-bold uppercase tracking-[0.22em] text-[#c9a84c]">Shopping updates</h3>
             <p className="text-sm leading-relaxed text-neutral-400">
-              Join for restocks, new drops and private shopping updates.
+              Join our WhatsApp channel for restocks, new drops, offers and shopping updates.
             </p>
-            <form onSubmit={joinNewsletter} className="mt-5 flex border border-white/10 bg-[#101010]">
-              <input
-                type="email"
-                value={email}
-                onChange={event => setEmail(event.target.value)}
-                placeholder="Email address"
-                className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-neutral-600 focus-visible:ring-1 focus-visible:ring-[#c9a84c]"
-              />
-              <button className="bg-[#c9a84c] px-5 text-xs font-bold uppercase tracking-[0.16em] text-black">
-                Join
-              </button>
-            </form>
-            {joined && <p className="mt-3 text-sm text-neutral-400">You're on the list.</p>}
+            <a
+              href={WHATSAPP_CHANNEL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 border border-[#25D366]/35 px-5 text-sm font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10"
+            >
+              <FaWhatsapp size={17} />
+              Join WhatsApp channel
+            </a>
           </div>
         </div>
 

@@ -7,6 +7,7 @@ const collections = [
     copy: 'Barely-there lace, glueless wear and a hairline made for close-up confidence.',
     image: '/images/Wig Kellyin HDlace 1.jpeg',
     align: 'left',
+    search: 'HD Lace',
   },
   {
     title: 'The Bouncy Collection',
@@ -14,12 +15,14 @@ const collections = [
     copy: 'Soft donor hair with body, shine and a camera-ready finish.',
     image: '/images/12a.jpeg',
     align: 'right',
+    search: 'Bouncy',
   },
 ]
 
 export default function EditorialCollections() {
-  const scrollToShop = () => {
-    document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth' })
+  const scrollToShop = (search: string) => {
+    window.dispatchEvent(new CustomEvent('glamoursphair:search', { detail: search }))
+    document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })
   }
 
   return (
@@ -30,6 +33,8 @@ export default function EditorialCollections() {
             <img
               src={collection.image}
               alt={collection.title}
+              width="750"
+              height="1000"
               className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 hover:scale-[1.025]"
               loading="lazy"
             />
@@ -45,7 +50,7 @@ export default function EditorialCollections() {
               <h2 className="mt-4 font-display text-5xl leading-none text-white md:text-7xl">{collection.title}</h2>
               <p className="mt-5 text-base leading-relaxed text-neutral-400">{collection.copy}</p>
               <button
-                onClick={scrollToShop}
+                onClick={() => scrollToShop(collection.search)}
                 className="mt-8 inline-flex items-center gap-2 border-b border-[#c9a84c] pb-1 text-sm font-bold uppercase tracking-[0.16em] text-[#c9a84c] transition-colors hover:text-white"
               >
                 Shop collection

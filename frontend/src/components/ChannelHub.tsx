@@ -13,15 +13,17 @@ interface HubLink {
   href: string
   image: string
   icon: IconType
+  search?: string
 }
 
 const hubLinks: HubLink[] = [
   {
     title: 'Shop New Arrivals',
-    subtitle: 'Fresh drops before they sell out',
+    subtitle: 'Browse fresh drops and new arrivals',
     href: '#shop',
     image: '/images/Wig Kellyin HDlace 1.jpeg',
     icon: HiSparkles,
+    search: 'New',
   },
   {
     title: 'Shop Collection',
@@ -29,13 +31,15 @@ const hubLinks: HubLink[] = [
     href: '#shop',
     image: '/images/11a.jpeg',
     icon: HiShoppingBag,
+    search: '',
   },
   {
-    title: 'Ready to Ship Hair',
-    subtitle: 'Buy today and arrange dispatch',
+    title: 'Signature Collection',
+    subtitle: 'Explore polished statement units',
     href: '#shop',
-    image: '/images/9.png',
+    image: '/images/9.webp',
     icon: HiTruck,
+    search: 'Signature Collection',
   },
   {
     title: 'Book Consultation',
@@ -56,6 +60,8 @@ export default function ChannelHub() {
             <img
               src="/images/logo.png"
               alt="GLAMOURSPHAIR"
+              width="196"
+              height="168"
               className="relative h-20 w-20 object-contain"
             />
           </div>
@@ -84,7 +90,7 @@ export default function ChannelHub() {
             href={WHATSAPP_CHANNEL}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-7 flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-[#c9a84c]/80 bg-[#c9a84c]/8 px-6 py-4 text-[#c9a84c] transition-all duration-300 hover:bg-[#c9a84c] hover:text-black md:max-w-md"
+            className="mt-7 flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-[#c9a84c]/80 bg-[#c9a84c]/8 px-6 py-4 text-[#c9a84c] transition-[background-color,color] duration-300 hover:bg-[#c9a84c] hover:text-black md:max-w-md"
           >
             <FaWhatsapp size={19} />
             <span className="font-semibold tracking-wide">Join WhatsApp Channel</span>
@@ -102,10 +108,16 @@ export default function ChannelHub() {
                 href={link.href}
                 target={external ? '_blank' : undefined}
                 rel={external ? 'noopener noreferrer' : undefined}
-                className="group flex items-center gap-4 rounded-[8px] border border-white/10 bg-[#101010] p-3 text-left transition-all duration-300 hover:border-[#c9a84c]/60 hover:bg-[#151310]"
+                onClick={event => {
+                  if (external || link.search === undefined) return
+                  event.preventDefault()
+                  window.dispatchEvent(new CustomEvent('glamoursphair:search', { detail: link.search }))
+                  document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                className="group flex items-center gap-4 rounded-[8px] border border-white/10 bg-[#101010] p-3 text-left transition-[border-color,background-color] duration-300 hover:border-[#c9a84c]/60 hover:bg-[#151310]"
               >
                 <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-[8px] bg-black">
-                  <img src={link.image} alt="" className="h-full w-full object-cover" />
+                  <img src={link.image} alt="" width="64" height="64" loading="lazy" className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-black/25" />
                   <div className="absolute inset-0 flex items-center justify-center text-white">
                     <Icon size={22} />
