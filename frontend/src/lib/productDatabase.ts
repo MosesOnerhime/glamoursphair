@@ -2,7 +2,6 @@ import type { Product } from '../types'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
-const PRODUCT_IMAGE_BUCKET = import.meta.env.VITE_SUPABASE_PRODUCT_IMAGE_BUCKET ?? 'product-images'
 const PRODUCTS_API_URL = import.meta.env.VITE_PRODUCTS_API_URL
 const PRODUCT_IMAGE_API_URL = import.meta.env.VITE_PRODUCT_IMAGE_API_URL
 
@@ -26,11 +25,6 @@ type DatabaseProduct = {
   instagram_link: string | null
   sort_order: number | null
   is_deleted: boolean | null
-}
-
-type DatabasePayload = Omit<DatabaseProduct, 'sort_order' | 'is_deleted'> & {
-  sort_order: number
-  is_deleted: boolean
 }
 
 export type ProductDatabaseSnapshot = {
@@ -97,30 +91,6 @@ function fromDatabaseProduct(product: DatabaseProduct): Product {
   }
 }
 
-function toDatabasePayload(product: Product, sortOrder: number): DatabasePayload {
-  return {
-    id: product.id,
-    name: product.name,
-    slug: product.slug ?? null,
-    price: product.price,
-    original_price: product.originalPrice ?? null,
-    tag: product.tag ?? null,
-    description: product.description,
-    source: product.source ?? null,
-    length: product.length ?? null,
-    volume: product.volume ?? null,
-    fitting: product.fitting ?? null,
-    collection: product.group ?? null,
-    whatsapp: product.whatsapp ?? null,
-    gradient: product.gradient ?? 'from-neutral-950 to-stone-900',
-    image: product.image ?? null,
-    images: product.images ?? null,
-    instagram_link: product.instagramLink ?? null,
-    sort_order: sortOrder,
-    is_deleted: false,
-  }
-}
-
 export async function fetchDatabaseProducts(): Promise<ProductDatabaseSnapshot | null> {
   if (!isProductDatabaseConfigured()) return null
 
@@ -154,135 +124,60 @@ export async function verifyAdminPassword(adminPassword: string) {
     },
   })
 
-  return response.ok
+  return response.status === 204
 }
 
 export async function saveDatabaseProduct(product: Product, sortOrder: number, adminPassword: string) {
-  if (!isProductDatabaseConfigured()) return
-
-  try {
-    if (!PRODUCTS_API_URL) throw new Error('Products API is not configured.')
-    const response = await fetch(PRODUCTS_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-admin-password': adminPassword,
-      },
-      body: JSON.stringify({ product, sortOrder }),
-    })
-    if (response.ok) return await response.json() as Product
-  } catch {
-    // Fall through to direct Supabase fallback for non-Vercel local previews.
-  }
-
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) throw new Error('Product database is not configured.')
-
-  const rows = await databaseRequest<DatabaseProduct[]>('/rest/v1/products?on_conflict=id', {
+  if (!PRODUCTS_API_URL) throw new Error('The protected products API is not configured.')
+  const response = await fetch(PRODUCTS_API_URL, {
     method: 'POST',
     headers: {
-      Prefer: 'resolution=merge-duplicates,return=representation',
+      'Content-Type': 'application/json',
+      'x-admin-password': adminPassword,
     },
-    body: JSON.stringify(toDatabasePayload(product, sortOrder)),
+    body: JSON.stringify({ product, sortOrder }),
   })
-
-  return rows[0] ? fromDatabaseProduct(rows[0]) : product
+  if (!response.ok) throw new Error(await response.text() || 'Could not save product.')
+  return await response.json() as Product
 }
 
 export async function deleteDatabaseProduct(id: number, adminPassword: string) {
-  if (!isProductDatabaseConfigured()) return
-
-  try {
-    if (!PRODUCTS_API_URL) throw new Error('Products API is not configured.')
-    const response = await fetch(PRODUCTS_API_URL, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-admin-password': adminPassword,
-      },
-      body: JSON.stringify({ id }),
-    })
-    if (response.ok) return
-  } catch {
-    // Fall through to direct Supabase fallback for non-Vercel local previews.
-  }
-
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) throw new Error('Product database is not configured.')
-
-  await databaseRequest(`/rest/v1/products?id=eq.${id}`, {
-    method: 'PATCH',
+  if (!PRODUCTS_API_URL) throw new Error('The protected products API is not configured.')
+  const response = await fetch(PRODUCTS_API_URL, {
+    method: 'DELETE',
     headers: {
-      Prefer: 'return=minimal',
+      'Content-Type': 'application/json',
+      'x-admin-password': adminPassword,
     },
-    body: JSON.stringify({ is_deleted: true }),
+    body: JSON.stringify({ id }),
   })
+  if (!response.ok) throw new Error(await response.text() || 'Could not delete product.')
 }
 
 export async function reorderDatabaseProducts(products: Product[], adminPassword: string) {
-  if (!isProductDatabaseConfigured()) return
-
-  try {
-    if (!PRODUCTS_API_URL) throw new Error('Products API is not configured.')
-    const response = await fetch(PRODUCTS_API_URL, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-admin-password': adminPassword,
-      },
-      body: JSON.stringify({ products }),
-    })
-    if (response.ok) return
-  } catch {
-    // Fall through to direct Supabase fallback for non-Vercel local previews.
-  }
-
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) throw new Error('Product database is not configured.')
-
-  await Promise.all(products.map((product, index) => saveDatabaseProduct(product, index, adminPassword)))
+  if (!PRODUCTS_API_URL) throw new Error('The protected products API is not configured.')
+  const response = await fetch(PRODUCTS_API_URL, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-password': adminPassword,
+    },
+    body: JSON.stringify({ products }),
+  })
+  if (!response.ok) throw new Error(await response.text() || 'Could not reorder products.')
 }
 
 export async function uploadProductImage(file: File, productName: string, adminPassword: string) {
-  if (!isProductDatabaseConfigured()) return null
-
-  try {
-    if (!PRODUCT_IMAGE_API_URL) throw new Error('Product image API is not configured.')
-    const response = await fetch(`${PRODUCT_IMAGE_API_URL}?name=${encodeURIComponent(productName)}&type=${encodeURIComponent(file.type)}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': file.type || 'application/octet-stream',
-        'x-admin-password': adminPassword,
-      },
-      body: file,
-    })
-    if (response.ok) {
-      const data = await response.json() as { publicUrl: string }
-      return data.publicUrl
-    }
-  } catch {
-    // Fall through to direct Supabase fallback for non-Vercel local previews.
-  }
-
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) throw new Error('Product database is not configured.')
-
-  const safeName = productName
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '') || 'product'
-  const extension = file.name.split('.').pop() || 'jpg'
-  const path = `${safeName}-${Date.now()}.${extension}`
-
-  const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${PRODUCT_IMAGE_BUCKET}/${path}`, {
+  if (!PRODUCT_IMAGE_API_URL) throw new Error('The protected product image API is not configured.')
+  const response = await fetch(`${PRODUCT_IMAGE_API_URL}?name=${encodeURIComponent(productName)}&type=${encodeURIComponent(file.type)}`, {
     method: 'POST',
-    headers: supabaseHeaders({
+    headers: {
       'Content-Type': file.type || 'application/octet-stream',
-      'x-upsert': 'true',
-    }),
+      'x-admin-password': adminPassword,
+    },
     body: file,
   })
-
-  if (!response.ok) {
-    const message = await response.text()
-    throw new Error(message || 'Product image upload failed.')
-  }
-
-  return `${SUPABASE_URL}/storage/v1/object/public/${PRODUCT_IMAGE_BUCKET}/${path}`
+  if (!response.ok) throw new Error(await response.text() || 'Product image upload failed.')
+  const data = await response.json() as { publicUrl: string }
+  return data.publicUrl
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { HiShoppingBag, HiMenu, HiX, HiSearch, HiArrowRight } from 'react-icons/hi'
 import { track } from '@vercel/analytics'
+import { useDialogA11y } from '../hooks/useDialogA11y'
 
 interface NavbarProps {
   cartCount: number
@@ -9,7 +10,7 @@ interface NavbarProps {
 
 const links = [
   { label: 'Shop', id: 'shop' },
-  { label: 'New Arrivals', id: 'shop' },
+  { label: 'New Arrivals', id: 'collection', search: 'New' },
   { label: 'Collections', id: 'collections' },
   { label: 'About', id: 'about' },
 ]
@@ -21,6 +22,8 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const menuRef = useDialogA11y<HTMLDivElement>(menuOpen, () => setMenuOpen(false))
+  const searchRef = useDialogA11y<HTMLDivElement>(searchOpen, () => setSearchOpen(false))
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -28,7 +31,8 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const scrollTo = (id: string) => {
+  const scrollTo = (id: string, search?: string) => {
+    if (search) window.dispatchEvent(new CustomEvent('glamoursphair:search', { detail: search }))
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
     setMenuOpen(false)
   }
@@ -47,30 +51,31 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
 
   return (
     <>
-      <nav className={`fixed left-0 right-0 top-0 z-50 transition-all duration-500 ${
+      <nav aria-label="Main navigation" className={`fixed left-0 right-0 top-0 z-50 transition-[background-color,border-color,box-shadow,padding] duration-300 ${
         scrolled
           ? 'border-b border-white/10 bg-[#090807]/92 py-3 text-white shadow-[0_18px_45px_rgba(0,0,0,0.35)] backdrop-blur-md'
           : 'bg-transparent py-4 text-white'
       }`}>
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 md:px-8">
-          <button className="text-left leading-none" onClick={() => scrollTo('home')} aria-label="Go to homepage">
+          <a href="#home" className="text-left leading-none" onClick={() => scrollTo('home')} aria-label="Go to homepage">
             <span className="font-display text-2xl tracking-[0.12em] md:text-3xl">
               GLAMOURSPHAIR
             </span>
             <span className={`mt-1 block h-px w-24 ${scrolled ? 'bg-[#c9a84c]/70' : 'bg-[#c9a84c]'}`} />
-          </button>
+          </a>
 
           <ul className="hidden items-center gap-8 md:flex">
             {links.map(link => (
               <li key={link.label}>
-                <button
-                  onClick={() => scrollTo(link.id)}
+                <a
+                  href={`#${link.id}`}
+                  onClick={() => scrollTo(link.id, link.search)}
                   className={`relative text-xs font-semibold uppercase tracking-[0.18em] transition-colors ${
                     scrolled ? 'text-neutral-300 hover:text-[#c9a84c]' : 'text-neutral-200 hover:text-[#c9a84c]'
                   }`}
                 >
                   {link.label}
-                </button>
+                </a>
               </li>
             ))}
           </ul>
@@ -86,7 +91,7 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
             <button
               onClick={onCartClick}
               className={`relative flex h-10 w-10 items-center justify-center transition-colors ${scrolled ? 'text-neutral-200 hover:text-[#c9a84c]' : 'hover:text-[#c9a84c]'}`}
-              aria-label="Open cart"
+              aria-label={`Open cart, ${cartCount} item${cartCount === 1 ? '' : 's'}`}
             >
               <HiShoppingBag size={22} />
               {cartCount > 0 && (
@@ -107,7 +112,14 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
       </nav>
 
       {menuOpen && (
-        <div className="fixed inset-0 z-[60] bg-[#090807] text-white md:hidden">
+        <div
+          ref={menuRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Mobile navigation"
+          tabIndex={-1}
+          className="fixed inset-0 z-[60] bg-[#090807] text-white outline-none md:hidden"
+        >
           <div className="flex items-center justify-between border-b border-white/10 px-5 py-5">
             <span className="font-display text-2xl tracking-[0.12em]">GLAMOURSPHAIR</span>
             <button onClick={() => setMenuOpen(false)} className="flex h-10 w-10 items-center justify-center" aria-label="Close menu">
@@ -118,19 +130,23 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
           <div className="px-5 py-8">
             <div className="space-y-5">
               {links.map(link => (
-                <button
+                <a
                   key={link.label}
-                  onClick={() => scrollTo(link.id)}
+                  href={`#${link.id}`}
+                  onClick={() => scrollTo(link.id, link.search)}
                   className="flex w-full items-center justify-between border-b border-white/10 pb-5 text-left font-display text-4xl transition-colors hover:text-[#c9a84c]"
                 >
                   {link.label}
                   <HiArrowRight size={22} className="text-[#c9a84c]" />
-                </button>
+                </a>
               ))}
             </div>
 
             <button
-              onClick={() => setSearchOpen(true)}
+              onClick={() => {
+                setMenuOpen(false)
+                setSearchOpen(true)
+              }}
               className="mt-8 flex w-full items-center justify-center gap-2 bg-[#c9a84c] px-5 py-4 text-sm font-bold uppercase tracking-[0.16em] text-black"
             >
               <HiSearch size={18} />
@@ -146,11 +162,18 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
 
       {searchOpen && (
         <div className="fixed inset-0 z-[70] bg-black/75 p-4 backdrop-blur-md">
-          <div className="mx-auto mt-20 max-w-2xl border border-white/10 bg-[#0d0d0d] p-5 shadow-2xl shadow-black/70 md:p-8">
+          <div
+            ref={searchRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="search-dialog-title"
+            tabIndex={-1}
+            className="mx-auto mt-20 max-w-2xl border border-white/10 bg-[#0d0d0d] p-5 shadow-2xl shadow-black/70 outline-none md:p-8"
+          >
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#c9a84c]">Search</p>
-                <h2 className="mt-1 font-display text-3xl text-white">Search Glamoursphair</h2>
+                <h2 id="search-dialog-title" className="mt-1 font-display text-3xl text-white">Search Glamoursphair</h2>
               </div>
               <button onClick={() => setSearchOpen(false)} className="flex h-10 w-10 items-center justify-center text-neutral-400 hover:text-white" aria-label="Close search">
                 <HiX size={24} />
@@ -162,9 +185,13 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
                 e.preventDefault()
                 submitSearch()
               }}
+              role="search"
               className="flex gap-2"
             >
+              <label htmlFor="site-search" className="sr-only">Search products</label>
               <input
+                id="site-search"
+                name="q"
                 autoFocus
                 value={query}
                 onChange={e => setQuery(e.target.value)}

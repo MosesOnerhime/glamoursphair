@@ -3,8 +3,8 @@ export default function BrandStory() {
     <section id="about" className="bg-[#0d0d0d] px-4 py-18 text-white md:py-24">
       <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-[0.9fr_1.1fr] md:items-center">
         <div className="grid grid-cols-2 gap-3">
-          <img src="/images/11b.jpeg" alt="Signature straight luxury hair detail" className="aspect-[3/4] w-full object-cover" loading="lazy" />
-          <img src="/images/7.png" alt="Honey blonde Glamoursphair unit" className="mt-10 aspect-[3/4] w-full object-cover" loading="lazy" />
+          <img src="/images/11b.jpeg" alt="Signature straight luxury hair detail" width="603" height="1080" className="aspect-[3/4] w-full object-cover" loading="lazy" />
+          <img src="/images/7.webp" alt="Honey blonde Glamoursphair unit" width="992" height="1280" className="mt-10 aspect-[3/4] w-full object-cover" loading="lazy" />
         </div>
 
         <div className="md:pl-10">

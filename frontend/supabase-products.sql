@@ -46,7 +46,7 @@ drop policy if exists "Products are readable by everyone" on public.products;
 create policy "Products are readable by everyone"
 on public.products
 for select
-using (true);
+using (coalesce(is_deleted, false) = false);
 
 -- Keep writes private. The Vercel API functions use SUPABASE_SERVICE_ROLE_KEY
 -- to create, update, reorder, and soft-delete products after admin validation.

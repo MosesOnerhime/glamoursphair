@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ChangeEvent, DragEvent, FormEvent, MouseEvent, PointerEvent as ReactPointerEvent } from 'react'
+import type { ChangeEvent, DragEvent, FormEvent, MouseEvent, PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import { track } from '@vercel/analytics'
-import { HiShoppingCart, HiCheck, HiX, HiLink, HiChevronLeft, HiChevronRight, HiLockClosed, HiPlus, HiTrash, HiUpload, HiPencil, HiCollection, HiSwitchVertical, HiEye, HiEyeOff } from 'react-icons/hi'
+import { HiShoppingCart, HiCheck, HiX, HiLink, HiChevronLeft, HiChevronRight, HiLockClosed, HiPlus, HiTrash, HiUpload, HiPencil, HiCollection, HiSwitchVertical, HiEye, HiEyeOff, HiAdjustments, HiSearch } from 'react-icons/hi'
 import { FaWhatsapp, FaInstagram } from 'react-icons/fa'
 import type { Product } from '../types'
 import {
@@ -14,6 +14,7 @@ import {
   uploadProductImage,
   verifyAdminPassword,
 } from '../lib/productDatabase'
+import { useDialogA11y } from '../hooks/useDialogA11y'
 
 const WHATSAPP = '2348128288948'
 const PRODUCT_PARAM = 'product'
@@ -25,15 +26,20 @@ const ADMIN_PRODUCTS_KEY = 'glamoursphair_admin_products'
 const ADMIN_PRODUCT_OVERRIDES_KEY = 'glamoursphair_product_overrides'
 const ADMIN_HIDDEN_PRODUCTS_KEY = 'glamoursphair_hidden_products'
 const ADMIN_PRODUCT_ORDER_KEY = 'glamoursphair_product_order'
-const ADMIN_AUTH_KEY = 'glamoursphair_admin_access'
-const LOCAL_ADMIN_PASSWORD = import.meta.env.VITE_LOCAL_ADMIN_PASSWORD ?? 'glamoursphair-admin'
+const LOCAL_ADMIN_PASSWORD = import.meta.env.DEV ? import.meta.env.VITE_LOCAL_ADMIN_PASSWORD ?? '' : ''
 const AWOOF_GROUP = 'Awoof Sales'
 const DEFAULT_GROUP = 'Signature Collection'
 const ALL_COLLECTIONS = 'All Collections'
+const ALL_LENGTHS = 'All lengths'
+const ALL_FITTINGS = 'All fittings'
+const PRODUCTION_URL = 'https://www.glamoursphairluxury.com/'
+
+type SortOption = 'featured' | 'price-asc' | 'price-desc'
 
 type ProductForm = {
   name: string
   price: string
+  originalPrice: string
   description: string
   source: string
   length: string
@@ -47,9 +53,21 @@ type ProductForm = {
 
 type ProductOverrides = Record<string, Product>
 
+const adminInputClass = 'w-full border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/55'
+
+function AdminField({ label, wide = false, children }: { label: string; wide?: boolean; children: ReactNode }) {
+  return (
+    <label className={`grid gap-1.5 text-xs font-medium text-neutral-400 ${wide ? 'md:col-span-2' : ''}`}>
+      <span>{label}</span>
+      {children}
+    </label>
+  )
+}
+
 const emptyProductForm: ProductForm = {
   name: '',
   price: '',
+  originalPrice: '',
   description: '',
   source: '',
   length: '',
@@ -291,6 +309,7 @@ const products: Product[] = [
   {
     id: 11,
     name: 'Signature Straight 22"',
+    slug: 'signature-straight-22',
     price: 650000,
     originalPrice: 850000,
     tag: 'New',
@@ -302,6 +321,7 @@ const products: Product[] = [
   {
     id: 12,
     name: '400g Donor Bouncy 28"',
+    slug: '400g-donor-bouncy-28',
     price: 850000,
     originalPrice: 1200000,
     tag: 'New',
@@ -313,16 +333,18 @@ const products: Product[] = [
   {
     id: 1,
     name: 'Wig Kelly Regular',
+    slug: 'wig-kelly-regular',
     price: 135000,
     instagramLink: 'https://instagram.com/glamoursphair',
     tag: 'Trending',
     description: 'An everyday ready-to-wear Kelly unit with a clean finish and easy styling.',
     gradient: 'from-neutral-900 to-neutral-800',
-    image: '/images/1.png',
+    image: '/images/1.webp',
   },
   {
     id: 3,
     name: 'Wig Tasha',
+    slug: 'wig-tasha',
     price: 265000,
     instagramLink: 'https://instagram.com/glamoursphair',
     tag: 'Premium',
@@ -333,68 +355,75 @@ const products: Product[] = [
   {
     id: 4,
     name: 'Wig Idah',
+    slug: 'wig-idah',
     price: 185000,
     instagramLink: 'https://instagram.com/glamoursphair',
     description: 'A neat ready-to-style unit for polished everyday looks.',
     gradient: 'from-neutral-800 to-zinc-900',
-    image: '/images/4.png',
+    image: '/images/4.webp',
   },
   {
     id: 5,
     name: 'Wig Rossette',
+    slug: 'wig-rossette-1',
     price: 235000,
     instagramLink: 'https://instagram.com/glamoursphair',
     tag: 'Trending',
     description: 'Soft, feminine and easy to style for elegant day-to-night wear.',
     gradient: 'from-stone-800 to-neutral-900',
-    image: '/images/5.png',
+    image: '/images/5.webp',
   },
   {
     id: 6,
     name: 'Wig Rossette',
+    slug: 'wig-rossette-2',
     price: 235000,
     instagramLink: 'https://instagram.com/glamoursphair',
     description: 'A refined Rossette unit with a flattering shape and premium finish.',
     gradient: 'from-zinc-800 to-neutral-900',
-    image: '/images/6.png',
+    image: '/images/6.webp',
   },
   {
     id: 7,
     name: 'Wig Rossette Honey Blonde',
+    slug: 'wig-rossette-honey-blonde',
     price: 235000,
     instagramLink: 'https://instagram.com/glamoursphair',
     description: 'A warm honey blonde finish for soft glam and standout styling.',
     gradient: 'from-neutral-900 to-stone-800',
-    image: '/images/7.png',
+    image: '/images/7.webp',
   },
   {
     id: 8,
     name: 'Signature Afro',
+    slug: 'signature-afro',
     price: 110000,
     instagramLink: 'https://instagram.com/glamoursphair',
     tag: 'Limited',
     description: 'A bold signature afro unit made for volume, texture and confident wear.',
     gradient: 'from-stone-900 to-zinc-800',
-    image: '/images/8.png',
+    image: '/images/8.webp',
   },
   {
     id: 9,
     name: 'Signature Straight 28"',
+    slug: 'signature-straight-28',
     price: 850000,
     instagramLink: 'https://instagram.com/glamoursphair',
     tag: 'Exclusive',
     description: 'Long, sleek and premium with a high-shine finish for luxury styling.',
     gradient: 'from-stone-900 to-zinc-800',
-    image: '/images/9.png',
+    image: '/images/9.webp',
   },
   {
     id: 10,
     name: 'Wig Kelly 14"',
+    slug: 'wig-kelly-14',
     price: 345000,
     instagramLink: 'https://instagram.com/glamoursphair',
     description: 'A shorter Kelly unit with a natural finish and easy daily styling.',
     gradient: 'from-stone-900 to-zinc-800',
-    image: '/images/10.png',
+    image: '/images/10.webp',
   },
 ]
 
@@ -430,7 +459,7 @@ function inferTexture(product: Product) {
   if (text.includes('straight')) return 'Straight'
   if (text.includes('serum')) return 'Hair care'
   if (text.includes('blonde')) return 'Honey blonde'
-  return 'Ready-to-wear'
+  return undefined
 }
 
 function slugify(value: string) {
@@ -439,6 +468,21 @@ function slugify(value: string) {
     .replace(/["']/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
+}
+
+function discoveryParam(name: string, fallback = '') {
+  return new URLSearchParams(window.location.search).get(name) ?? fallback
+}
+
+function sortProducts(productList: Product[], sort: SortOption) {
+  if (sort === 'price-asc') return [...productList].sort((a, b) => a.price - b.price)
+  if (sort === 'price-desc') return [...productList].sort((a, b) => b.price - a.price)
+  return productList
+}
+
+function absoluteImageUrl(path?: string) {
+  if (!path) return undefined
+  return new URL(path, PRODUCTION_URL).toString()
 }
 
 function parsePrice(value: string) {
@@ -528,6 +572,7 @@ function productToForm(product: Product): ProductForm {
   return {
     name: product.name,
     price: String(product.price),
+    originalPrice: product.originalPrice ? String(product.originalPrice) : '',
     description: product.description,
     source: product.source ?? '',
     length: product.length ?? '',
@@ -542,20 +587,27 @@ function productToForm(product: Product): ProductForm {
 
 export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   const [added, setAdded] = useState<number | null>(null)
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => discoveryParam('q'))
+  const [activeCollection, setActiveCollection] = useState(() => discoveryParam('collection', ALL_COLLECTIONS))
+  const [lengthFilter, setLengthFilter] = useState(() => discoveryParam('length', ALL_LENGTHS))
+  const [fittingFilter, setFittingFilter] = useState(() => discoveryParam('fitting', ALL_FITTINGS))
+  const [saleOnly, setSaleOnly] = useState(() => discoveryParam('sale') === '1')
+  const [sort, setSort] = useState<SortOption>(() => {
+    const value = discoveryParam('sort')
+    return value === 'price-asc' || value === 'price-desc' ? value : 'featured'
+  })
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [selected, setSelected] = useState<Product | null>(null)
   const [slideIndexes, setSlideIndexes] = useState<Record<number, number>>({})
   const [copiedProductId, setCopiedProductId] = useState<number | null>(null)
   const [adminProducts, setAdminProducts] = useState<Product[]>(() => readAdminProducts())
   const [adminOpen, setAdminOpen] = useState(false)
-  const [adminAccessCode, setAdminAccessCode] = useState(() => sessionStorage.getItem(ADMIN_AUTH_KEY) ?? '')
-  const [adminUnlocked, setAdminUnlocked] = useState(() => {
-    const storedAccessCode = sessionStorage.getItem(ADMIN_AUTH_KEY) ?? ''
-    return !isProductApiConfigured() && storedAccessCode === LOCAL_ADMIN_PASSWORD
-  })
+  const [adminAccessCode, setAdminAccessCode] = useState('')
+  const [adminUnlocked, setAdminUnlocked] = useState(false)
   const [adminPassword, setAdminPassword] = useState('')
   const [showAdminPassword, setShowAdminPassword] = useState(false)
   const [adminError, setAdminError] = useState('')
+  const [adminSaving, setAdminSaving] = useState(false)
   const adminErrorTimer = useRef<number | null>(null)
   const [productForm, setProductForm] = useState<ProductForm>(emptyProductForm)
   const [productOverrides, setProductOverrides] = useState<ProductOverrides>(() => readProductOverrides())
@@ -567,7 +619,6 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   const [databaseOrder, setDatabaseOrder] = useState<number[]>([])
   const [databaseStatus, setDatabaseStatus] = useState(isProductDatabaseConfigured() ? 'Connecting to database...' : 'Local mode: add Supabase env values to enable database sync.')
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null)
-  const [activeCollection, setActiveCollection] = useState(ALL_COLLECTIONS)
   const [draggedProductId, setDraggedProductId] = useState<number | null>(null)
   const [dragOverProductId, setDragOverProductId] = useState<number | null>(null)
   const [pointerSortProductId, setPointerSortProductId] = useState<number | null>(null)
@@ -591,16 +642,34 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     [allProducts]
   )
 
-  const filtered = allProducts.filter(product =>
-    product.name.toLowerCase().includes(search.toLowerCase()) ||
-    product.description.toLowerCase().includes(search.toLowerCase()) ||
-    (product.length ?? '').toLowerCase().includes(search.toLowerCase()) ||
-    (product.volume ?? '').toLowerCase().includes(search.toLowerCase()) ||
-    (product.fitting ?? '').toLowerCase().includes(search.toLowerCase()) ||
-    (product.source ?? '').toLowerCase().includes(search.toLowerCase()) ||
-    (product.group ?? '').toLowerCase().includes(search.toLowerCase()) ||
-    (product.tag ?? '').toLowerCase().includes(search.toLowerCase())
-  )
+  const lengthOptions = useMemo(() => Array.from(new Set(allProducts.map(product => product.length).filter(Boolean) as string[]))
+    .sort((a, b) => Number.parseInt(a) - Number.parseInt(b)), [allProducts])
+  const fittingOptions = useMemo(() => Array.from(new Set(allProducts.map(product => product.fitting).filter(Boolean) as string[]))
+    .sort((a, b) => a.localeCompare(b)), [allProducts])
+
+  const filtered = useMemo(() => {
+    const cleanSearch = search.trim().toLowerCase()
+    const matches = allProducts.filter(product => {
+      const searchable = [
+        product.name,
+        product.description,
+        product.length,
+        product.volume,
+        product.fitting,
+        product.source,
+        groupNameForProduct(product),
+        product.tag,
+        inferTexture(product),
+      ].filter(Boolean).join(' ').toLowerCase()
+
+      return (!cleanSearch || searchable.includes(cleanSearch)) &&
+        (lengthFilter === ALL_LENGTHS || product.length === lengthFilter) &&
+        (fittingFilter === ALL_FITTINGS || product.fitting === fittingFilter) &&
+        (!saleOnly || Boolean(product.originalPrice && product.originalPrice > product.price))
+    })
+
+    return sortProducts(matches, sort)
+  }, [allProducts, fittingFilter, lengthFilter, saleOnly, search, sort])
 
   const groupedFiltered = useMemo(() => groupProducts(filtered), [filtered])
   const visibleCollectionGroups = useMemo(
@@ -609,6 +678,15 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
       : groupedFiltered.filter(collection => collection.name === activeCollection),
     [activeCollection, groupedFiltered]
   )
+  const visibleProductCount = visibleCollectionGroups.reduce((sum, collection) => sum + collection.products.length, 0)
+  const activeFilterCount = [
+    lengthFilter !== ALL_LENGTHS,
+    fittingFilter !== ALL_FITTINGS,
+    saleOnly,
+  ].filter(Boolean).length
+  const relatedProducts = selected
+    ? allProducts.filter(product => product.id !== selected.id && groupNameForProduct(product) === groupNameForProduct(selected)).slice(0, 3)
+    : []
 
   const findProductFromUrl = useCallback(() => {
     const productParam = new URLSearchParams(window.location.search).get(PRODUCT_PARAM)
@@ -618,19 +696,19 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   }, [allProducts])
 
   const productUrl = (product: Product) => {
-    const url = new URL(window.location.href)
+    const url = new URL(PRODUCTION_URL)
     url.searchParams.set(PRODUCT_PARAM, product.slug ?? String(product.id))
-    url.hash = ''
     return url.toString()
   }
 
   const openProduct = (product: Product) => {
+    const replacingOpenProduct = Boolean(selected)
     setSelected(product)
     trackBuyerEvent('Product View', { product: product.name, price: product.price })
 
     const url = new URL(window.location.href)
     url.searchParams.set(PRODUCT_PARAM, product.slug ?? String(product.id))
-    window.history.pushState({}, '', url)
+    window.history[replacingOpenProduct ? 'replaceState' : 'pushState']({}, '', url)
   }
 
   const closeProduct = () => {
@@ -638,7 +716,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
     const url = new URL(window.location.href)
     url.searchParams.delete(PRODUCT_PARAM)
-    window.history.pushState({}, '', `${url.pathname}${url.search}${url.hash}`)
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
   }
 
   const copyProductLink = async (e: MouseEvent, product: Product) => {
@@ -674,10 +752,27 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     if (changed) window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
   }
 
+  const productDialogRef = useDialogA11y<HTMLDivElement>(Boolean(selected), closeProduct)
+  const adminDialogRef = useDialogA11y<HTMLDivElement>(adminOpen, closeAdmin)
+
+  const resetDiscovery = () => {
+    setSearch('')
+    setActiveCollection(ALL_COLLECTIONS)
+    setLengthFilter(ALL_LENGTHS)
+    setFittingFilter(ALL_FITTINGS)
+    setSaleOnly(false)
+    setSort('featured')
+  }
+
   useEffect(() => {
     const handleExternalSearch = (event: Event) => {
-      const term = (event as CustomEvent<string>).detail
-      if (term) setSearch(term)
+      const term = (event as CustomEvent<string>).detail ?? ''
+      setSearch(term)
+      setActiveCollection(ALL_COLLECTIONS)
+      setLengthFilter(ALL_LENGTHS)
+      setFittingFilter(ALL_FITTINGS)
+      setSaleOnly(false)
+      setSort('featured')
     }
 
     const syncProductFromUrl = () => {
@@ -698,6 +793,111 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
       window.removeEventListener('glamoursphair:search', handleExternalSearch)
     }
   }, [findProductFromUrl])
+
+  useEffect(() => {
+    const syncDiscoveryFromUrl = () => {
+      const params = new URLSearchParams(window.location.search)
+      const nextSort = params.get('sort')
+      setSearch(params.get('q') ?? '')
+      setActiveCollection(params.get('collection') ?? ALL_COLLECTIONS)
+      setLengthFilter(params.get('length') ?? ALL_LENGTHS)
+      setFittingFilter(params.get('fitting') ?? ALL_FITTINGS)
+      setSaleOnly(params.get('sale') === '1')
+      setSort(nextSort === 'price-asc' || nextSort === 'price-desc' ? nextSort : 'featured')
+    }
+
+    window.addEventListener('popstate', syncDiscoveryFromUrl)
+    return () => window.removeEventListener('popstate', syncDiscoveryFromUrl)
+  }, [])
+
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    const setOptionalParam = (name: string, value: string, fallback: string) => {
+      if (value && value !== fallback) url.searchParams.set(name, value)
+      else url.searchParams.delete(name)
+    }
+
+    setOptionalParam('q', search.trim(), '')
+    setOptionalParam('collection', activeCollection, ALL_COLLECTIONS)
+    setOptionalParam('length', lengthFilter, ALL_LENGTHS)
+    setOptionalParam('fitting', fittingFilter, ALL_FITTINGS)
+    setOptionalParam('sort', sort, 'featured')
+    if (saleOnly) url.searchParams.set('sale', '1')
+    else url.searchParams.delete('sale')
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+  }, [activeCollection, fittingFilter, lengthFilter, saleOnly, search, sort])
+
+  useEffect(() => {
+    const defaultTitle = 'GLAMOURSPHAIR | Luxury Hair & Wigs - Abuja'
+    const defaultDescription = 'Shop premium luxury wigs and hair extensions from GLAMOURSPHAIR in Abuja, Nigeria, with secure Paystack checkout and local or international delivery.'
+    const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]')
+    const structuredDataId = 'product-structured-data'
+    const upsertMeta = (selector: string, attribute: 'name' | 'property', key: string, content: string) => {
+      let element = document.querySelector<HTMLMetaElement>(selector)
+      if (!element) {
+        element = document.createElement('meta')
+        element.setAttribute(attribute, key)
+        document.head.appendChild(element)
+      }
+      element.content = content
+    }
+
+    document.getElementById(structuredDataId)?.remove()
+
+    if (!selected) {
+      document.title = defaultTitle
+      canonical?.setAttribute('href', PRODUCTION_URL)
+      upsertMeta('meta[name="description"]', 'name', 'description', defaultDescription)
+      upsertMeta('meta[property="og:title"]', 'property', 'og:title', defaultTitle)
+      upsertMeta('meta[property="og:description"]', 'property', 'og:description', defaultDescription)
+      upsertMeta('meta[property="og:url"]', 'property', 'og:url', PRODUCTION_URL)
+      upsertMeta('meta[property="og:type"]', 'property', 'og:type', 'website')
+      upsertMeta('meta[property="og:image"]', 'property', 'og:image', `${PRODUCTION_URL}images/Wig%20Kellyin%20HDlace%202.jpeg`)
+      upsertMeta('meta[name="twitter:title"]', 'name', 'twitter:title', defaultTitle)
+      upsertMeta('meta[name="twitter:description"]', 'name', 'twitter:description', defaultDescription)
+      upsertMeta('meta[name="twitter:image"]', 'name', 'twitter:image', `${PRODUCTION_URL}images/Wig%20Kellyin%20HDlace%202.jpeg`)
+      return
+    }
+
+    const url = new URL(PRODUCTION_URL)
+    url.searchParams.set(PRODUCT_PARAM, selected.slug ?? String(selected.id))
+    const title = `${selected.name} | GLAMOURSPHAIR Luxury`
+    const imageUrls = (selected.images ?? [selected.image]).map(absoluteImageUrl).filter(Boolean) as string[]
+    document.title = title
+    canonical?.setAttribute('href', url.toString())
+    upsertMeta('meta[name="description"]', 'name', 'description', selected.description)
+    upsertMeta('meta[property="og:title"]', 'property', 'og:title', title)
+    upsertMeta('meta[property="og:description"]', 'property', 'og:description', selected.description)
+    upsertMeta('meta[property="og:url"]', 'property', 'og:url', url.toString())
+    upsertMeta('meta[property="og:type"]', 'property', 'og:type', 'product')
+    upsertMeta('meta[name="twitter:title"]', 'name', 'twitter:title', title)
+    upsertMeta('meta[name="twitter:description"]', 'name', 'twitter:description', selected.description)
+    if (imageUrls[0]) {
+      upsertMeta('meta[property="og:image"]', 'property', 'og:image', imageUrls[0])
+      upsertMeta('meta[name="twitter:image"]', 'name', 'twitter:image', imageUrls[0])
+    }
+
+    const script = document.createElement('script')
+    script.id = structuredDataId
+    script.type = 'application/ld+json'
+    script.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: selected.name,
+      description: selected.description,
+      image: imageUrls,
+      brand: { '@type': 'Brand', name: 'GLAMOURSPHAIR Luxury' },
+      offers: {
+        '@type': 'Offer',
+        url: url.toString(),
+        priceCurrency: 'NGN',
+        price: selected.price,
+      },
+    })
+    document.head.appendChild(script)
+
+    return () => script.remove()
+  }, [selected])
 
   useEffect(() => {
     const syncAdminFromUrl = () => {
@@ -768,7 +968,14 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   }
 
   const whatsappLink = (product: Product) => {
-    const msg = encodeURIComponent(`Hello GLAMOURSPHAIR! I'm interested in the *${product.name}* (${formatNgn(product.price)}). Please provide more details.`)
+    const specs = [
+      product.length ? `Length: ${product.length}` : '',
+      product.fitting ? `Fitting: ${product.fitting}` : '',
+      product.source ? `Source: ${product.source}` : '',
+    ].filter(Boolean).join('\n')
+    const msg = encodeURIComponent(
+      `Hello GLAMOURSPHAIR! I'm interested in the *${product.name}* (${formatNgn(product.price)}).${specs ? `\n${specs}` : ''}\n${productUrl(product)}\n\nPlease help me confirm the details for this unit.`
+    )
     return `https://wa.me/${WHATSAPP}?text=${msg}`
   }
 
@@ -815,6 +1022,11 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
       return
     }
 
+    if (!isProductApiConfigured() && !LOCAL_ADMIN_PASSWORD) {
+      setAdminError('Local admin access is not configured. Add VITE_LOCAL_ADMIN_PASSWORD for local development.')
+      return
+    }
+
     try {
       const passwordIsValid = isProductApiConfigured()
         ? await verifyAdminPassword(cleanPassword)
@@ -829,7 +1041,6 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
       return
     }
 
-    sessionStorage.setItem(ADMIN_AUTH_KEY, cleanPassword)
     setAdminAccessCode(cleanPassword)
     setAdminUnlocked(true)
     setAdminError('')
@@ -841,7 +1052,22 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     const file = event.target.files?.[0]
     if (!file) return
 
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setSelectedImageFile(null)
+      setAdminError('Upload a JPG, PNG, or WebP image.')
+      event.target.value = ''
+      return
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      setSelectedImageFile(null)
+      setAdminError('Product images must be 8 MB or smaller.')
+      event.target.value = ''
+      return
+    }
+
     setSelectedImageFile(file)
+    setAdminError('')
     const reader = new FileReader()
     reader.onload = () => {
       setProductForm(prev => ({ ...prev, image: String(reader.result) }))
@@ -851,16 +1077,26 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
   const saveProduct = async (event: FormEvent) => {
     event.preventDefault()
+    if (adminSaving) return
+
     const price = parsePrice(productForm.price)
+    const originalPrice = productForm.originalPrice ? parsePrice(productForm.originalPrice) : 0
 
     if (!productForm.name.trim() || !price || !productForm.description.trim()) {
       setAdminError('Add a product name, price and description.')
       return
     }
 
+    if (originalPrice && originalPrice <= price) {
+      setAdminError('The original price must be higher than the current sale price.')
+      return
+    }
+
+    setAdminSaving(true)
+
     try {
       const existingProduct = editingProductId ? allProducts.find(product => product.id === editingProductId) : null
-      const imageUrl = selectedImageFile && isProductDatabaseConfigured()
+      const imageUrl = selectedImageFile && isProductApiConfigured()
         ? await uploadProductImage(selectedImageFile, productForm.name.trim(), adminAccessCode)
         : productForm.image
       const imageChanged = existingProduct ? imageUrl !== imageForProduct(existingProduct) : true
@@ -869,6 +1105,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
         name: productForm.name.trim(),
         slug: slugify(productForm.name),
         price,
+        originalPrice: originalPrice || undefined,
         tag: productForm.tag || undefined,
         description: productForm.description.trim(),
         source: productForm.source.trim() || undefined,
@@ -889,7 +1126,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
         } else {
           updateAdminProducts(adminProducts.map(adminProduct => adminProduct.id === editingProductId ? product : adminProduct))
         }
-        if (isProductDatabaseConfigured()) {
+        if (isProductApiConfigured()) {
           await saveDatabaseProduct(product, allProducts.findIndex(item => item.id === product.id), adminAccessCode)
           setDatabaseProducts(prev => mergeProductsById([...prev.filter(item => item.id !== product.id), product]))
           setDatabaseHiddenIds(prev => prev.filter(id => id !== product.id))
@@ -899,7 +1136,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
       } else {
         updateAdminProducts([product, ...adminProducts])
         updateProductOrder([product.id, ...allProducts.map(item => item.id)])
-        if (isProductDatabaseConfigured()) {
+        if (isProductApiConfigured()) {
           await saveDatabaseProduct(product, 0, adminAccessCode)
           setDatabaseProducts(prev => mergeProductsById([product, ...prev]))
           setDatabaseOrder([product.id, ...allProducts.map(item => item.id)])
@@ -915,6 +1152,8 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     } catch {
       setAdminError('Could not save to the database. Check Supabase settings and try again.')
       setDatabaseStatus('Database save failed.')
+    } finally {
+      setAdminSaving(false)
     }
   }
 
@@ -932,6 +1171,9 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   }
 
   const deleteProduct = async (id: number) => {
+    const productToDelete = allProducts.find(product => product.id === id)
+    if (!window.confirm(`Delete ${productToDelete?.name ?? 'this product'} from the storefront?`)) return
+
     const isSeedProduct = products.some(product => product.id === id)
 
     if (isSeedProduct) {
@@ -941,7 +1183,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     }
 
     updateProductOrder(productOrder.filter(productId => productId !== id))
-    if (isProductDatabaseConfigured()) {
+    if (isProductApiConfigured()) {
       try {
         await deleteDatabaseProduct(id, adminAccessCode)
         setDatabaseProducts(prev => prev.filter(product => product.id !== id))
@@ -971,7 +1213,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     updateProductOrder(nextOrder)
 
     const reorderedProducts = orderProducts(allProducts, nextOrder)
-    if (isProductDatabaseConfigured()) {
+    if (isProductApiConfigured()) {
       void reorderDatabaseProducts(reorderedProducts, adminAccessCode).then(() => {
         setDatabaseOrder(nextOrder)
         setDatabaseStatus('Database saved.')
@@ -1063,24 +1305,31 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   }, [dragOverProductId, pointerSortProductId, reorderProduct])
 
   const renderProductImage = (product: Product, compact = false) => (
-    <div className={`relative overflow-hidden bg-gradient-to-br ${product.gradient} ${compact ? 'h-44 sm:h-56' : 'h-48 sm:h-64'}`}>
+    <div className={`relative aspect-[4/5] overflow-hidden bg-gradient-to-br ${product.gradient} ${compact ? 'max-h-72' : ''}`}>
       {product.images && product.images.length > 1 ? (
         <>
-          <img
-            src={product.images[getSlideIndex(product.id)]}
-            alt={product.name}
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
+          <button type="button" onClick={() => openProduct(product)} className="absolute inset-0 h-full w-full text-left" aria-label={`View details for ${product.name}`}>
+            <img
+              src={product.images[getSlideIndex(product.id)]}
+              alt={product.name}
+              width="750"
+              height="1000"
+              loading="lazy"
+              decoding="async"
+              sizes={compact ? '(max-width: 767px) 50vw, 25vw' : '(max-width: 479px) 100vw, (max-width: 1023px) 50vw, 25vw'}
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025]"
+            />
+          </button>
           <button
             onClick={(e) => prevSlide(e, product.id, product.images!.length)}
-            className="absolute left-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center bg-black/55 text-white transition-colors hover:bg-black/85"
+            className="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center bg-black/55 text-white transition-colors hover:bg-black/85"
             aria-label={`Previous ${product.name} image`}
           >
             <HiChevronLeft size={17} />
           </button>
           <button
             onClick={(e) => nextSlide(e, product.id, product.images!.length)}
-            className="absolute right-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center bg-black/55 text-white transition-colors hover:bg-black/85"
+            className="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center bg-black/55 text-white transition-colors hover:bg-black/85"
             aria-label={`Next ${product.name} image`}
           >
             <HiChevronRight size={17} />
@@ -1093,27 +1342,35 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                   e.stopPropagation()
                   setSlideIndexes(prev => ({ ...prev, [product.id]: i }))
                 }}
-                className={`h-1.5 rounded-full transition-all duration-200 ${
-                  i === getSlideIndex(product.id) ? 'w-4 bg-[#c9a84c]' : 'w-1.5 bg-white/45'
-                }`}
+                className="flex h-8 w-8 items-center justify-center"
                 aria-label={`Show ${product.name} image ${i + 1}`}
-              />
+                aria-current={i === getSlideIndex(product.id) ? 'true' : undefined}
+              >
+                <span className={`block h-1.5 rounded-full transition-[width,background-color] duration-200 ${i === getSlideIndex(product.id) ? 'w-4 bg-[#c9a84c]' : 'w-2 bg-white/50'}`} />
+              </button>
             ))}
           </div>
         </>
       ) : imageForProduct(product) ? (
-        <img
-          src={imageForProduct(product)}
-          alt={product.name}
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
+        <button type="button" onClick={() => openProduct(product)} className="absolute inset-0 h-full w-full text-left" aria-label={`View details for ${product.name}`}>
+          <img
+            src={imageForProduct(product)}
+            alt={product.name}
+            width="750"
+            height="1000"
+            loading="lazy"
+            decoding="async"
+            sizes={compact ? '(max-width: 767px) 50vw, 25vw' : '(max-width: 479px) 100vw, (max-width: 1023px) 50vw, 25vw'}
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025]"
+          />
+        </button>
       ) : (
-        <div className="absolute inset-0 flex items-center justify-center text-[#c9a84c]/30">
+        <button type="button" onClick={() => openProduct(product)} className="absolute inset-0 flex items-center justify-center text-[#c9a84c]/30" aria-label={`View details for ${product.name}`}>
           <HiShoppingCart size={44} />
-        </div>
+        </button>
       )}
 
-      <div className="absolute inset-0 bg-gradient-to-t from-[#111]/88 via-transparent to-black/15" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#111]/88 via-transparent to-black/15" />
       {product.tag && (
         <span className={`absolute left-3 top-3 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${tagColors[product.tag]}`}>
           {product.tag}
@@ -1121,9 +1378,9 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
       )}
       <div className="absolute bottom-3 right-3 bg-black/80 px-3 py-1.5 backdrop-blur">
         {product.originalPrice && (
-          <p className="text-[11px] text-neutral-400 line-through">Was {formatNgn(product.originalPrice)}</p>
+          <p className="text-[11px] text-neutral-300 line-through">Original {formatNgn(product.originalPrice)}</p>
         )}
-        <p className="text-base font-bold leading-tight text-[#c9a84c] sm:text-lg">{formatNgn(product.price)}</p>
+        <p className="text-base font-bold leading-tight text-[#c9a84c] sm:text-lg"><span className="sr-only">Current price </span>{formatNgn(product.price)}</p>
       </div>
     </div>
   )
@@ -1131,14 +1388,15 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   const renderProductCard = (product: Product, compact = false) => (
     <article
       key={`${compact ? 'featured' : 'grid'}-${product.id}`}
-      onClick={() => openProduct(product)}
-      className="group relative flex cursor-pointer flex-col overflow-hidden border border-white/8 bg-[#111] transition-all duration-500 hover:border-[#c9a84c]/45 hover:bg-[#15130f]"
+      className="group relative flex flex-col overflow-hidden border border-white/8 bg-[#111] transition-[border-color,background-color] duration-300 hover:border-[#c9a84c]/45 hover:bg-[#15130f]"
     >
       {renderProductImage(product, compact)}
 
       <div className="flex flex-1 flex-col gap-2 p-3 sm:p-5">
-        <h3 className="min-h-[2.6rem] text-base font-semibold leading-tight text-white transition-colors duration-300 group-hover:text-[#c9a84c] sm:text-lg">
-          {product.name}
+        <h3 className="min-h-[2.6rem] text-base font-semibold leading-tight sm:text-lg">
+          <button type="button" onClick={() => openProduct(product)} className="text-left text-white transition-colors duration-300 group-hover:text-[#c9a84c]">
+            {product.name}
+          </button>
         </h3>
         <p className="h-5 overflow-hidden whitespace-nowrap text-sm leading-5 text-neutral-500 [mask-image:linear-gradient(90deg,#000_78%,transparent)]">
           {product.description}
@@ -1155,10 +1413,18 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
         <div className="mt-auto flex flex-col gap-2 pt-2">
           <button
+            type="button"
+            onClick={() => openProduct(product)}
+            className="min-h-10 w-full border border-white/10 px-3 text-xs font-semibold text-neutral-300 transition-colors hover:border-[#c9a84c]/45 hover:text-[#c9a84c]"
+          >
+            View details
+          </button>
+          <button
             onClick={(e) => {
               e.stopPropagation()
               handleAdd(product)
             }}
+            aria-live="polite"
             className={`flex min-h-11 w-full items-center justify-center gap-2 px-3 text-[11px] font-bold uppercase tracking-[0.1em] transition-colors sm:text-sm ${
               added === product.id ? 'bg-emerald-500 text-white' : 'bg-[#c9a84c] text-black hover:bg-white'
             }`}
@@ -1194,13 +1460,16 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
         <div className="mb-12">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a84c]">Best sellers</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a84c]">Featured pieces</p>
               <h2 className="mt-2 font-display text-4xl leading-tight text-white md:text-6xl">
-                Shop new drops before they sell out.
+                Discover the latest Glamoursphair edit.
               </h2>
             </div>
             <button
-              onClick={() => document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={() => {
+                resetDiscovery()
+                document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })
+              }}
               className="w-fit border border-[#c9a84c]/40 px-5 py-3 text-xs font-bold uppercase tracking-[0.16em] text-[#c9a84c] transition-colors hover:bg-[#c9a84c] hover:text-black"
             >
               View All Products
@@ -1224,20 +1493,85 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
             </div>
 
             <div className="relative w-full md:max-w-sm">
+              <label htmlFor="product-search" className="sr-only">Search products</label>
+              <HiSearch aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={18} />
               <input
+                id="product-search"
+                name="q"
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search wigs, serum, blonde..."
-                className="w-full border border-white/10 bg-[#111] px-4 py-3 pr-10 text-sm text-white outline-none transition-colors placeholder:text-neutral-600 focus:border-[#c9a84c]/55"
+                className="w-full border border-white/10 bg-[#111] py-3 pl-11 pr-11 text-sm text-white outline-none transition-colors placeholder:text-neutral-600 focus:border-[#c9a84c]/55"
               />
               {search && (
                 <button
+                  type="button"
                   onClick={() => setSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-neutral-500 transition-colors hover:text-white"
+                  className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center text-lg text-neutral-500 transition-colors hover:text-white"
                   aria-label="Clear product search"
                 >
                   <HiX size={18} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="mb-5 mt-6 flex flex-wrap items-center justify-between gap-3 border-y border-white/8 py-4">
+            <p role="status" aria-live="polite" className="text-sm text-neutral-400">
+              <span className="font-semibold text-white">{visibleProductCount}</span> product{visibleProductCount === 1 ? '' : 's'} shown
+            </p>
+            <button
+              type="button"
+              onClick={() => setMobileFiltersOpen(open => !open)}
+              aria-expanded={mobileFiltersOpen}
+              aria-controls="product-filters"
+              className="flex min-h-11 items-center gap-2 border border-white/10 px-4 text-sm font-semibold text-neutral-300 md:hidden"
+            >
+              <HiAdjustments size={18} />
+              Filter and sort{activeFilterCount ? ` (${activeFilterCount})` : ''}
+            </button>
+          </div>
+
+          <div
+            id="product-filters"
+            className={`${mobileFiltersOpen ? 'grid' : 'hidden'} mb-8 gap-3 border-b border-white/8 pb-6 md:grid md:grid-cols-4 md:items-end`}
+          >
+            <label className="grid gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
+              Length
+              <select value={lengthFilter} onChange={event => setLengthFilter(event.target.value)} className="min-h-11 border border-white/10 bg-[#111] px-3 text-sm normal-case tracking-normal text-white outline-none focus:border-[#c9a84c]/55">
+                <option>{ALL_LENGTHS}</option>
+                {lengthOptions.map(length => <option key={length}>{length}</option>)}
+              </select>
+            </label>
+            <label className="grid gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
+              Lace / fitting
+              <select value={fittingFilter} onChange={event => setFittingFilter(event.target.value)} className="min-h-11 border border-white/10 bg-[#111] px-3 text-sm normal-case tracking-normal text-white outline-none focus:border-[#c9a84c]/55">
+                <option>{ALL_FITTINGS}</option>
+                {fittingOptions.map(fitting => <option key={fitting}>{fitting}</option>)}
+              </select>
+            </label>
+            <label className="grid gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
+              Sort by
+              <select value={sort} onChange={event => setSort(event.target.value as SortOption)} className="min-h-11 border border-white/10 bg-[#111] px-3 text-sm normal-case tracking-normal text-white outline-none focus:border-[#c9a84c]/55">
+                <option value="featured">Featured</option>
+                <option value="price-asc">Price: low to high</option>
+                <option value="price-desc">Price: high to low</option>
+              </select>
+            </label>
+            <div className="flex min-h-11 items-center justify-between gap-3">
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-neutral-300">
+                <input type="checkbox" checked={saleOnly} onChange={event => setSaleOnly(event.target.checked)} className="h-5 w-5 accent-[#c9a84c]" />
+                On sale only
+              </label>
+              {(activeFilterCount > 0 || sort !== 'featured') && (
+                <button type="button" onClick={() => {
+                  setLengthFilter(ALL_LENGTHS)
+                  setFittingFilter(ALL_FITTINGS)
+                  setSaleOnly(false)
+                  setSort('featured')
+                }} className="min-h-11 text-xs font-semibold text-[#c9a84c] underline underline-offset-4">
+                  Reset
                 </button>
               )}
             </div>
@@ -1289,23 +1623,26 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                     {collection.products.length} item{collection.products.length === 1 ? '' : 's'}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4 md:gap-6">
+                <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
                   {collection.products.map(product => renderProductCard(product))}
                 </div>
               </div>
             ))}
           </div>
 
-          {filtered.length === 0 && (
+          {visibleProductCount === 0 && (
             <div className="py-20 text-center">
-              <p className="mb-2 text-lg text-neutral-500">No results for "<span className="text-[#c9a84c]">{search}</span>"</p>
-              <p className="text-sm text-neutral-600">Try searching for a different style or texture.</p>
+              <p className="mb-2 text-lg text-neutral-300">We could not find a matching product.</p>
+              <p className="text-sm text-neutral-500">Try a different name, length or fitting, or clear the current choices.</p>
               <button
-                onClick={() => setSearch('')}
+                onClick={resetDiscovery}
                 className="mt-6 border border-[#c9a84c]/30 px-6 py-2.5 text-sm uppercase tracking-widest text-[#c9a84c] transition-colors hover:bg-[#c9a84c]/10"
               >
-                Clear Search
+                Clear search and filters
               </button>
+              <a href={`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Hello GLAMOURSPHAIR! I need help finding a product${search ? ` like ${search}` : ''}.`)}`} target="_blank" rel="noopener noreferrer" className="mx-auto mt-3 flex w-fit min-h-11 items-center gap-2 px-4 text-sm text-[#25D366]">
+                <FaWhatsapp size={16} /> Ask on WhatsApp
+              </a>
             </div>
           )}
         </div>
@@ -1330,8 +1667,15 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
       {selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6">
-          <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={closeProduct} />
-          <div className="relative z-10 grid max-h-[92vh] w-full max-w-5xl overflow-y-auto border border-white/10 bg-[#0d0d0d] shadow-2xl shadow-black/70 md:grid-cols-[1.05fr_0.95fr]">
+          <div aria-hidden="true" className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={closeProduct} />
+          <div
+            ref={productDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="product-dialog-title"
+            tabIndex={-1}
+            className="relative z-10 grid max-h-[92vh] w-full max-w-5xl overflow-y-auto border border-white/10 bg-[#0d0d0d] shadow-2xl shadow-black/70 outline-none md:grid-cols-[1.05fr_0.95fr]"
+          >
             <button
               onClick={closeProduct}
               className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-neutral-300 transition-colors hover:text-white"
@@ -1340,21 +1684,24 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
               <HiX size={20} />
             </button>
 
-            <div className={`relative min-h-[320px] bg-gradient-to-br ${selected.gradient} md:min-h-[620px]`}>
+            <div className={`relative aspect-[4/5] bg-gradient-to-br ${selected.gradient} md:min-h-[620px] md:aspect-auto`}>
               {selected.images && selected.images.length > 1 ? (
                 <>
                   <img
                     src={selected.images[slideIndexes[selected.id] ?? 0]}
-                    alt={selected.name}
+                    alt={`${selected.name}, view ${(slideIndexes[selected.id] ?? 0) + 1} of ${selected.images.length}`}
+                    width="750"
+                    height="1000"
+                    decoding="async"
                     className="absolute inset-0 h-full w-full object-cover"
                   />
-                  <button onClick={(e) => prevSlide(e, selected.id, selected.images!.length)} className="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center bg-black/60 text-white transition-colors hover:bg-black/90" aria-label={`Previous ${selected.name} image`}>
+                  <button onClick={(e) => prevSlide(e, selected.id, selected.images!.length)} className="absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center bg-black/60 text-white transition-colors hover:bg-black/90" aria-label={`Previous ${selected.name} image`}>
                     <HiChevronLeft size={22} />
                   </button>
-                  <button onClick={(e) => nextSlide(e, selected.id, selected.images!.length)} className="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center bg-black/60 text-white transition-colors hover:bg-black/90" aria-label={`Next ${selected.name} image`}>
+                  <button onClick={(e) => nextSlide(e, selected.id, selected.images!.length)} className="absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center bg-black/60 text-white transition-colors hover:bg-black/90" aria-label={`Next ${selected.name} image`}>
                     <HiChevronRight size={22} />
                   </button>
-                  <div className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
+                  <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1">
                     {selected.images.map((_, i) => (
                       <button
                         key={i}
@@ -1362,16 +1709,17 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                           e.stopPropagation()
                           setSlideIndexes(prev => ({ ...prev, [selected.id]: i }))
                         }}
-                        className={`h-1.5 rounded-full transition-all duration-200 ${
-                          i === (slideIndexes[selected.id] ?? 0) ? 'w-5 bg-[#c9a84c]' : 'w-1.5 bg-white/40'
-                        }`}
+                        className="flex h-10 w-10 items-center justify-center"
                         aria-label={`Show ${selected.name} image ${i + 1}`}
-                      />
+                        aria-current={i === (slideIndexes[selected.id] ?? 0) ? 'true' : undefined}
+                      >
+                        <span className={`block h-1.5 rounded-full transition-[width,background-color] duration-200 ${i === (slideIndexes[selected.id] ?? 0) ? 'w-6 bg-[#c9a84c]' : 'w-2 bg-white/50'}`} />
+                      </button>
                     ))}
                   </div>
                 </>
               ) : imageForProduct(selected) ? (
-                <img src={imageForProduct(selected)} alt={selected.name} className="absolute inset-0 h-full w-full object-cover" />
+                <img src={imageForProduct(selected)} alt={selected.name} width="750" height="1000" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-[#c9a84c]/30">
                   <HiShoppingCart size={56} />
@@ -1388,22 +1736,24 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
             <div className="p-5 md:flex md:flex-col md:justify-center md:p-8">
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#c9a84c]">Product details</p>
               <div className="mt-3 flex items-start justify-between gap-4">
-                <h3 className="font-display text-3xl leading-tight text-white md:text-5xl">{selected.name}</h3>
+                <h3 id="product-dialog-title" className="font-display text-3xl leading-tight text-white md:text-5xl">{selected.name}</h3>
                 <div className="text-right">
                   {selected.originalPrice && (
-                    <p className="text-xs text-neutral-500 line-through">Was {formatNgn(selected.originalPrice)}</p>
+                    <p className="text-xs text-neutral-400 line-through">Original {formatNgn(selected.originalPrice)}</p>
                   )}
-                  <p className="whitespace-nowrap text-xl font-bold text-[#c9a84c]">{formatNgn(selected.price)}</p>
+                  <p className="whitespace-nowrap text-xl font-bold text-[#c9a84c]"><span className="sr-only">Current price </span>{formatNgn(selected.price)}</p>
                 </div>
               </div>
 
               <p className="mt-5 text-sm leading-relaxed text-neutral-400 md:text-base">{selected.description}</p>
 
               <div className="mt-6 grid grid-cols-2 gap-2 text-sm">
-                <div className="border border-white/8 p-3">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-600">Texture</p>
-                  <p className="mt-1 text-white">{inferTexture(selected)}</p>
-                </div>
+                {inferTexture(selected) && (
+                  <div className="border border-white/8 p-3">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-600">Texture</p>
+                    <p className="mt-1 text-white">{inferTexture(selected)}</p>
+                  </div>
+                )}
                 {productSpecs(selected).map(spec => (
                   <div key={`${selected.id}-${spec.label}-modal`} className="border border-white/8 p-3">
                     <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-600">{spec.label}</p>
@@ -1424,15 +1774,21 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                   </p>
                 </details>
                 <details className="group py-4">
-                  <summary className="cursor-pointer list-none text-sm font-semibold text-white">Hair Care</summary>
+                  <summary className="cursor-pointer list-none text-sm font-semibold text-white">Care guidance</summary>
                   <p className="mt-3 text-sm leading-relaxed text-neutral-500">
-                    Use gentle detangling, lightweight serum and proper storage to maintain softness, shine and shape.
+                    Ask our WhatsApp team for care guidance specific to this unit before or after ordering.
                   </p>
                 </details>
                 <details className="group py-4">
                   <summary className="cursor-pointer list-none text-sm font-semibold text-white">Delivery</summary>
                   <p className="mt-3 text-sm leading-relaxed text-neutral-500">
                     Delivery fees are calculated in checkout after location selection. Abuja pickup and WhatsApp confirmation are available.
+                  </p>
+                </details>
+                <details className="group py-4">
+                  <summary className="cursor-pointer list-none text-sm font-semibold text-white">Returns</summary>
+                  <p className="mt-3 text-sm leading-relaxed text-neutral-500">
+                    Return terms are not published on this site yet. Confirm eligibility for this unit with our WhatsApp team before payment.
                   </p>
                 </details>
               </div>
@@ -1471,7 +1827,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                   className="flex min-h-12 w-full items-center justify-center gap-2 border border-[#25D366]/30 px-4 text-sm font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10"
                 >
                   <FaWhatsapp size={16} />
-                  Order via WhatsApp
+                  Ask about this unit
                 </a>
 
                 {selected.instagramLink && (
@@ -1487,6 +1843,28 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                   </a>
                 )}
               </div>
+
+              <p className="mt-4 text-center text-xs leading-relaxed text-neutral-500">
+                Secure Paystack checkout in NGN. Delivery fee is added after you select your location.
+              </p>
+
+              {relatedProducts.length > 0 && (
+                <div className="mt-7 border-t border-white/8 pt-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">More from {groupNameForProduct(selected)}</p>
+                  <div className="mt-3 grid gap-2">
+                    {relatedProducts.map(product => (
+                      <button key={product.id} type="button" onClick={() => openProduct(product)} className="flex min-h-14 items-center gap-3 border border-white/8 p-2 text-left transition-colors hover:border-[#c9a84c]/40">
+                        <img src={imageForProduct(product)} alt="" width="44" height="44" loading="lazy" className="h-11 w-11 shrink-0 object-cover" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold text-white">{product.name}</span>
+                          <span className="block text-xs text-[#c9a84c]">{formatNgn(product.price)}</span>
+                        </span>
+                        <HiChevronRight className="shrink-0 text-neutral-500" size={18} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1494,12 +1872,19 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
       {adminOpen && (
         <div className="fixed inset-0 z-[55] flex items-center justify-center p-3 md:p-6">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={closeAdmin} />
-          <div className="relative z-10 flex h-[92vh] w-full max-w-6xl flex-col overflow-hidden border border-white/10 bg-[#0d0d0d] shadow-2xl shadow-black/70">
+          <div aria-hidden="true" className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={closeAdmin} />
+          <div
+            ref={adminDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-dialog-title"
+            tabIndex={-1}
+            className="relative z-10 flex h-[92vh] w-full max-w-6xl flex-col overflow-hidden border border-white/10 bg-[#0d0d0d] shadow-2xl shadow-black/70 outline-none"
+          >
             <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 bg-[#0d0d0d]/95 px-5 py-4 backdrop-blur">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#c9a84c]">Admin inventory</p>
-                <h3 className="mt-1 font-display text-2xl text-white">Upload products</h3>
+                <h3 id="admin-dialog-title" className="mt-1 font-display text-2xl text-white">Upload products</h3>
               </div>
               <button
                 onClick={closeAdmin}
@@ -1521,14 +1906,22 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                     Enter the product admin password to upload new images and product details.
                   </p>
                 </div>
-                <div className="relative">
-                  <input
-                    type={showAdminPassword ? 'text' : 'password'}
-                    value={adminPassword}
-                    onChange={event => setAdminPassword(event.target.value)}
-                    placeholder="Admin password"
-                    className="w-full border border-white/10 bg-[#111] px-4 py-3 pr-12 text-center text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/55"
-                  />
+                <label htmlFor="admin-password" className="grid gap-2 text-left text-xs font-semibold uppercase tracking-[0.14em] text-neutral-400">
+                  Password
+                  <span className="relative block">
+                   <input
+                      id="admin-password"
+                      name="admin-password"
+                      type={showAdminPassword ? 'text' : 'password'}
+                      value={adminPassword}
+                      onChange={event => setAdminPassword(event.target.value)}
+                      placeholder="Admin password"
+                      autoComplete="current-password"
+                      aria-invalid={Boolean(adminError)}
+                      aria-describedby={adminError ? 'admin-access-error' : undefined}
+                      required
+                      className="w-full border border-white/10 bg-[#111] px-4 py-3 pr-12 text-center text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/55"
+                    />
                   <button
                     type="button"
                     onClick={() => setShowAdminPassword(value => !value)}
@@ -1536,10 +1929,11 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                     aria-label={showAdminPassword ? 'Hide admin password' : 'Show admin password'}
                     title={showAdminPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showAdminPassword ? <HiEyeOff size={18} /> : <HiEye size={18} />}
-                  </button>
-                </div>
-                {adminError && <p className="text-sm text-red-400">{adminError}</p>}
+                      {showAdminPassword ? <HiEyeOff size={18} /> : <HiEye size={18} />}
+                    </button>
+                  </span>
+                </label>
+                {adminError && <p id="admin-access-error" role="alert" className="text-sm text-red-400">{adminError}</p>}
                 <button className="min-h-12 bg-[#c9a84c] px-5 text-sm font-bold uppercase tracking-[0.16em] text-black transition-colors hover:bg-white">
                   Unlock
                 </button>
@@ -1556,7 +1950,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
                   <label className="grid min-h-36 cursor-pointer place-items-center border border-dashed border-white/15 bg-[#111] p-4 text-center transition-colors hover:border-[#c9a84c]/50">
                     {productForm.image ? (
-                      <img src={productForm.image} alt="Product upload preview" className="max-h-44 w-full object-contain" />
+                      <img src={productForm.image} alt="Product upload preview" width="750" height="1000" className="max-h-44 w-full object-contain" />
                     ) : (
                       <span className="grid gap-3 text-neutral-500">
                         <HiUpload size={32} className="mx-auto text-[#c9a84c]" />
@@ -1567,83 +1961,116 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                   </label>
 
                   <div className="grid gap-3 md:grid-cols-2">
-                    <input
-                      value={productForm.name}
-                      onChange={event => setProductForm(prev => ({ ...prev, name: event.target.value }))}
-                      placeholder="Product name"
-                      className="border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/55"
-                    />
-                    <input
-                      value={productForm.price}
-                      onChange={event => setProductForm(prev => ({ ...prev, price: event.target.value }))}
-                      placeholder="Price, e.g. 240000"
-                      inputMode="numeric"
-                      className="border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/55"
-                    />
-                    <input
-                      value={productForm.source}
-                      onChange={event => setProductForm(prev => ({ ...prev, source: event.target.value }))}
-                      placeholder="Source, e.g. Vietnamese"
-                      className="border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/55"
-                    />
-                    <input
-                      value={productForm.length}
-                      onChange={event => setProductForm(prev => ({ ...prev, length: event.target.value }))}
-                      placeholder="Wig length, e.g. 18&quot;"
-                      className="border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/55"
-                    />
-                    <input
-                      value={productForm.volume}
-                      onChange={event => setProductForm(prev => ({ ...prev, volume: event.target.value }))}
-                      placeholder="Volume, e.g. 373g"
-                      className="border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/55"
-                    />
-                    <input
-                      value={productForm.fitting}
-                      onChange={event => setProductForm(prev => ({ ...prev, fitting: event.target.value }))}
-                      placeholder="Fitting, e.g. 13 by 4"
-                      className="border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/55"
-                    />
-                    <input
-                      value={productForm.link}
-                      onChange={event => setProductForm(prev => ({ ...prev, link: event.target.value }))}
-                      placeholder="Product or Instagram link"
-                      className="border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/55 md:col-span-2"
-                    />
-                    <input
-                      value={productForm.group}
-                      onChange={event => setProductForm(prev => ({ ...prev, group: event.target.value }))}
-                      placeholder="Collection, e.g. Awoof Sales"
-                      className="border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/55 md:col-span-2"
-                    />
-                    <select
-                      value={productForm.tag}
-                      onChange={event => setProductForm(prev => ({ ...prev, tag: event.target.value }))}
-                      className="border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none focus:border-[#c9a84c]/55 md:col-span-2"
-                    >
-                      <option>New</option>
-                      <option>Premium</option>
-                      <option>Best Seller</option>
-                      <option>Trending</option>
-                      <option>Exclusive</option>
-                      <option>Limited</option>
-                    </select>
+                    <AdminField label="Product name">
+                      <input
+                        value={productForm.name}
+                        onChange={event => setProductForm(prev => ({ ...prev, name: event.target.value }))}
+                        placeholder="Wig Kelly in HD Lace"
+                        required
+                        className={adminInputClass}
+                      />
+                    </AdminField>
+                    <AdminField label="Price (NGN)">
+                      <input
+                        value={productForm.price}
+                        onChange={event => setProductForm(prev => ({ ...prev, price: event.target.value }))}
+                        placeholder="240000"
+                        inputMode="numeric"
+                        required
+                        className={adminInputClass}
+                      />
+                    </AdminField>
+                    <AdminField label="Original price (NGN, optional)">
+                      <input
+                        value={productForm.originalPrice}
+                        onChange={event => setProductForm(prev => ({ ...prev, originalPrice: event.target.value }))}
+                        placeholder="280000"
+                        inputMode="numeric"
+                        className={adminInputClass}
+                      />
+                    </AdminField>
+                    <AdminField label="Source (optional)">
+                      <input
+                        value={productForm.source}
+                        onChange={event => setProductForm(prev => ({ ...prev, source: event.target.value }))}
+                        placeholder="Vietnamese"
+                        className={adminInputClass}
+                      />
+                    </AdminField>
+                    <AdminField label="Wig length (optional)">
+                      <input
+                        value={productForm.length}
+                        onChange={event => setProductForm(prev => ({ ...prev, length: event.target.value }))}
+                        placeholder="18 inches"
+                        className={adminInputClass}
+                      />
+                    </AdminField>
+                    <AdminField label="Volume (optional)">
+                      <input
+                        value={productForm.volume}
+                        onChange={event => setProductForm(prev => ({ ...prev, volume: event.target.value }))}
+                        placeholder="373g"
+                        className={adminInputClass}
+                      />
+                    </AdminField>
+                    <AdminField label="Fitting (optional)">
+                      <input
+                        value={productForm.fitting}
+                        onChange={event => setProductForm(prev => ({ ...prev, fitting: event.target.value }))}
+                        placeholder="13 by 4 Swiss lace"
+                        className={adminInputClass}
+                      />
+                    </AdminField>
+                    <AdminField label="Product or Instagram link (optional)" wide>
+                      <input
+                        type="url"
+                        value={productForm.link}
+                        onChange={event => setProductForm(prev => ({ ...prev, link: event.target.value }))}
+                        placeholder="https://..."
+                        className={adminInputClass}
+                      />
+                    </AdminField>
+                    <AdminField label="Collection" wide>
+                      <input
+                        value={productForm.group}
+                        onChange={event => setProductForm(prev => ({ ...prev, group: event.target.value }))}
+                        placeholder="Awoof Sales"
+                        className={adminInputClass}
+                      />
+                    </AdminField>
+                    <AdminField label="Storefront tag" wide>
+                      <select
+                        value={productForm.tag}
+                        onChange={event => setProductForm(prev => ({ ...prev, tag: event.target.value }))}
+                        className={adminInputClass}
+                      >
+                        <option>New</option>
+                        <option>Premium</option>
+                        <option>Best Seller</option>
+                        <option>Trending</option>
+                        <option>Exclusive</option>
+                        <option>Limited</option>
+                      </select>
+                    </AdminField>
                   </div>
 
-                  <textarea
-                    value={productForm.description}
-                    onChange={event => setProductForm(prev => ({ ...prev, description: event.target.value }))}
-                    placeholder="Product description"
-                    rows={4}
-                    className="resize-none border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/55"
-                  />
+                  <AdminField label="Product description">
+                    <textarea
+                      value={productForm.description}
+                      onChange={event => setProductForm(prev => ({ ...prev, description: event.target.value }))}
+                      placeholder="Describe this unit using verified details only."
+                      rows={4}
+                      required
+                      className={`${adminInputClass} resize-none`}
+                    />
+                  </AdminField>
 
-                  {adminError && <p className="text-sm text-red-400">{adminError}</p>}
+                  {adminError && <p role="alert" className="text-sm text-red-400">{adminError}</p>}
 
                   <div className="flex flex-wrap items-center gap-3">
-                    <button className="flex min-h-10 w-fit items-center justify-center gap-2 bg-[#c9a84c] px-4 text-xs font-bold uppercase tracking-[0.14em] text-black transition-colors hover:bg-white">
+                    <button disabled={adminSaving} className="flex min-h-10 w-fit items-center justify-center gap-2 bg-[#c9a84c] px-4 text-xs font-bold uppercase tracking-[0.14em] text-black transition-colors hover:bg-white disabled:cursor-wait disabled:opacity-60">
                       {editingProductId ? <HiCheck size={17} /> : <HiPlus size={17} />}
-                      {editingProductId ? 'Save changes' : 'Add product'}
+                      {adminSaving ? 'Saving...' : editingProductId ? 'Save changes' : 'Add product'}
                     </button>
                     {editingProductId && (
                       <button
@@ -1662,11 +2089,10 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                     <div>
                       <h4 className="font-display text-3xl text-white">Products</h4>
                       <p className="mt-1 text-sm text-neutral-500">{allProducts.length} visible product{allProducts.length === 1 ? '' : 's'}</p>
-                      <p className="mt-1 text-xs text-neutral-600">{databaseStatus}</p>
+                      <p role="status" aria-live="polite" className="mt-1 text-xs text-neutral-600">{databaseStatus}</p>
                     </div>
                     <button
                       onClick={() => {
-                        sessionStorage.removeItem(ADMIN_AUTH_KEY)
                         setAdminAccessCode('')
                         setAdminUnlocked(false)
                       }}
@@ -1694,7 +2120,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                           onDragOver={event => handleProductDragOver(event, product.id)}
                           onDrop={event => handleProductDrop(event, product.id)}
                           onDragEnd={endProductDrag}
-                          className={`grid cursor-grab grid-cols-[72px_1fr] gap-3 border bg-[#111] p-3 transition-all duration-200 ease-out active:cursor-grabbing ${dragHoverClass(product.id)} ${
+                          className={`grid cursor-grab grid-cols-[72px_1fr] gap-3 border bg-[#111] p-3 transition-[transform,border-color,background-color,opacity,box-shadow] duration-200 ease-out active:cursor-grabbing ${dragHoverClass(product.id)} ${
                             draggedProductId === product.id || pointerSortProductId === product.id
                               ? 'scale-[0.985] border-[#c9a84c]/70 opacity-55 shadow-lg shadow-[#c9a84c]/10'
                               : dragOverProductId === product.id
@@ -1702,7 +2128,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                                 : 'border-white/10 hover:border-[#c9a84c]/35'
                           }`}
                         >
-                          <img src={imageForProduct(product)} alt={product.name} className="h-20 w-[72px] object-cover" />
+                          <img src={imageForProduct(product)} alt={product.name} width="72" height="80" loading="lazy" className="h-20 w-[72px] object-cover" />
                           <div className="min-w-0">
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">

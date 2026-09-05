@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /*?admin=products
+
+Sitemap: https://www.glamoursphairluxury.com/sitemap.xml

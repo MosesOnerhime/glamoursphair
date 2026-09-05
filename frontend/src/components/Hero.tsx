@@ -20,6 +20,9 @@ export default function Hero() {
         muted
         loop
         playsInline
+        preload="metadata"
+        poster="/images/Wig Kellyin HDlace 2.jpeg"
+        aria-hidden="true"
         className="absolute inset-0 h-full w-full object-cover opacity-45"
         style={{ objectPosition: '50% 18%' }}
       >
@@ -74,11 +77,11 @@ export default function Hero() {
 
         <div className="grid grid-cols-[0.84fr_1fr] items-end gap-3 md:gap-4">
           <div className="overflow-hidden border border-white/10 bg-[#111] shadow-2xl shadow-black/50">
-            <img src="/images/Wig Kellyin HDlace 2.jpeg" alt="Wig Kelly in HD Lace" className="aspect-[3/4] h-full w-full object-cover" />
+            <img src="/images/Wig Kellyin HDlace 2.jpeg" alt="Wig Kelly in HD Lace" width="607" height="606" fetchPriority="high" className="aspect-[3/4] h-full w-full object-cover" />
           </div>
           <div className="space-y-3 md:space-y-4">
             <div className="overflow-hidden border border-[#c9a84c]/35 bg-[#111] shadow-2xl shadow-black/60">
-              <img src="/images/12a.jpeg" alt="400g Donor bouncy wig" className="aspect-[4/5] h-full w-full object-cover" />
+              <img src="/images/12a.jpeg" alt="400g Donor bouncy wig" width="607" height="787" className="aspect-[4/5] h-full w-full object-cover" />
             </div>
             <div className="border border-white/10 bg-black/60 p-4 text-left backdrop-blur md:p-5">
               <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">Starting from</p>

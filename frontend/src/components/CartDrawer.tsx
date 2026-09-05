@@ -2,6 +2,7 @@ import { HiX, HiTrash, HiShoppingBag } from 'react-icons/hi'
 import { FaWhatsapp } from 'react-icons/fa'
 import { track } from '@vercel/analytics'
 import type { CartItem } from '../types'
+import { useDialogA11y } from '../hooks/useDialogA11y'
 
 interface CartDrawerProps {
   open: boolean
@@ -15,17 +16,24 @@ interface CartDrawerProps {
 
 const WHATSAPP = '2348128288948'
 const NGN = '\u20a6'
+const PRODUCTION_URL = 'https://www.glamoursphairluxury.com/'
 
 const formatNgn = (amount: number) => `${NGN}${amount.toLocaleString()}`
 const itemImage = (item: CartItem) => item.images?.[0] ?? item.image
 
 export default function CartDrawer({ open, onClose, items, onRemove, onCheckout, onUpdateQty, onClear }: CartDrawerProps) {
   const total = items.reduce((sum, i) => sum + i.price * i.qty, 0)
+  const drawerRef = useDialogA11y<HTMLElement>(open, onClose)
 
   const orderViaWhatsApp = () => {
     if (items.length === 0) return
     track('WhatsApp Click', { surface: 'cart-drawer', value: total })
-    const itemList = items.map(i => `- ${i.name} x${i.qty} - ${formatNgn(i.price * i.qty)}`).join('\n')
+    const itemList = items.map(i => {
+      const specs = [i.length, i.fitting].filter(Boolean).join(', ')
+      const productUrl = new URL(PRODUCTION_URL)
+      productUrl.searchParams.set('product', i.slug ?? String(i.id))
+      return `- ${i.name}${specs ? ` (${specs})` : ''} x${i.qty} - ${formatNgn(i.price * i.qty)}\n  ${productUrl}`
+    }).join('\n')
     const msg = encodeURIComponent(`Hello GLAMOURSPHAIR! I'd like to order:\n\n${itemList}\n\n*Total: ${formatNgn(total)}*\n\nPlease confirm availability.`)
     window.open(`https://wa.me/${WHATSAPP}?text=${msg}`, '_blank')
   }
@@ -38,14 +46,24 @@ export default function CartDrawer({ open, onClose, items, onRemove, onCheckout,
   return (
     <>
       <div
+        aria-hidden="true"
         className={`fixed inset-0 z-50 bg-black/65 backdrop-blur-sm transition-opacity duration-300 ${open ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
         onClick={onClose}
       />
 
-      <aside className={`fixed bottom-0 right-0 top-0 z-50 flex w-full max-w-sm flex-col border-l border-white/10 bg-[#0d0d0d] shadow-2xl shadow-black/70 transition-transform duration-500 ${open ? 'translate-x-0' : 'translate-x-full'}`}>
+      <aside
+        ref={drawerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cart-title"
+        aria-hidden={!open}
+        inert={!open}
+        tabIndex={-1}
+        className={`fixed bottom-0 right-0 top-0 z-50 flex w-full max-w-sm flex-col border-l border-white/10 bg-[#0d0d0d] shadow-2xl shadow-black/70 transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`}
+      >
         <div className="flex items-center justify-between border-b border-white/8 px-5 py-5">
           <div>
-            <h2 className="font-display text-2xl text-white">Your Cart</h2>
+            <h2 id="cart-title" className="font-display text-2xl text-white">Your Cart</h2>
             <p className="mt-0.5 text-xs text-neutral-500">Delivery is calculated at checkout.</p>
           </div>
           <button onClick={onClose} className="flex h-10 w-10 items-center justify-center text-neutral-400 transition-colors hover:text-white" aria-label="Close cart">
@@ -63,6 +81,12 @@ export default function CartDrawer({ open, onClose, items, onRemove, onCheckout,
                 <p className="text-sm font-semibold text-white">Your cart is empty.</p>
                 <p className="mt-1 text-sm text-neutral-500">Add a luxury unit to begin checkout.</p>
               </div>
+              <button
+                onClick={onClose}
+                className="min-h-11 border border-[#c9a84c]/40 px-5 text-xs font-bold uppercase tracking-[0.16em] text-[#c9a84c] transition-colors hover:bg-[#c9a84c] hover:text-black"
+              >
+                Continue shopping
+              </button>
             </div>
           ) : (
             <div className="space-y-3">
@@ -70,28 +94,31 @@ export default function CartDrawer({ open, onClose, items, onRemove, onCheckout,
                 <div key={item.id} className="flex gap-3 border border-white/8 bg-[#111] p-3">
                   <div className={`flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden bg-gradient-to-br ${item.gradient}`}>
                     {itemImage(item)
-                      ? <img src={itemImage(item)} alt={item.name} className="h-full w-full object-cover" />
+                      ? <img src={itemImage(item)} alt={item.name} width="64" height="64" loading="lazy" className="h-full w-full object-cover" />
                       : <span className="text-sm font-semibold text-[#c9a84c]/50">GH</span>
                     }
                   </div>
 
                   <div className="min-w-0 flex-1">
                     <h4 className="truncate text-sm font-semibold text-white">{item.name}</h4>
-                    <p className="mt-0.5 text-sm text-[#c9a84c]">{formatNgn(item.price)}</p>
+                    {(item.length || item.fitting) && (
+                      <p className="mt-1 truncate text-xs text-neutral-500">{[item.length, item.fitting].filter(Boolean).join(' / ')}</p>
+                    )}
+                    <p className="mt-1 text-sm text-[#c9a84c]">{formatNgn(item.price)} each</p>
                     <p className="mt-0.5 text-xs text-neutral-500">Item total: {formatNgn(item.price * item.qty)}</p>
 
                     <div className="mt-2 flex items-center gap-2">
                       <button
                         onClick={() => item.qty === 1 ? onRemove(item.id) : onUpdateQty(item.id, item.qty - 1)}
-                        className="flex h-7 w-7 items-center justify-center border border-white/10 text-white transition-colors hover:border-[#c9a84c]/50 hover:text-[#c9a84c]"
+                        className="flex h-10 w-10 items-center justify-center border border-white/10 text-white transition-colors hover:border-[#c9a84c]/50 hover:text-[#c9a84c]"
                         aria-label={`Decrease ${item.name} quantity`}
                       >
                         -
                       </button>
-                      <span className="w-5 text-center text-sm text-white">{item.qty}</span>
+                      <span className="w-6 text-center text-sm text-white" aria-label={`Quantity ${item.qty}`}>{item.qty}</span>
                       <button
                         onClick={() => onUpdateQty(item.id, item.qty + 1)}
-                        className="flex h-7 w-7 items-center justify-center border border-white/10 text-white transition-colors hover:border-[#c9a84c]/50 hover:text-[#c9a84c]"
+                        className="flex h-10 w-10 items-center justify-center border border-white/10 text-white transition-colors hover:border-[#c9a84c]/50 hover:text-[#c9a84c]"
                         aria-label={`Increase ${item.name} quantity`}
                       >
                         +
@@ -101,7 +128,7 @@ export default function CartDrawer({ open, onClose, items, onRemove, onCheckout,
 
                   <button
                     onClick={() => onRemove(item.id)}
-                    className="self-start text-neutral-600 transition-colors hover:text-red-400"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center self-start text-neutral-500 transition-colors hover:text-red-400"
                     aria-label={`Remove ${item.name}`}
                   >
                     <HiTrash size={17} />
