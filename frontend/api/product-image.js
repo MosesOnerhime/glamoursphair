@@ -4,7 +4,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
 const PRODUCT_IMAGE_BUCKET = process.env.SUPABASE_PRODUCT_IMAGE_BUCKET || 'product-images'
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024
 const IMAGE_TYPES = new Map([
   ['image/jpeg', 'jpg'],
   ['image/png', 'png'],
@@ -52,7 +52,7 @@ export default async function handler(req, res) {
   for await (const chunk of req) {
     receivedBytes += chunk.length
     if (receivedBytes > MAX_IMAGE_BYTES) {
-      res.status(413).json({ error: 'Product images must be 8 MB or smaller.' })
+      res.status(413).json({ error: 'Product images must be 4 MB or smaller.' })
       return
     }
     chunks.push(chunk)

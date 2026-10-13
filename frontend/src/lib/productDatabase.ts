@@ -141,7 +141,7 @@ export async function saveDatabaseProduct(product: Product, sortOrder: number, a
   return await response.json() as Product
 }
 
-export async function deleteDatabaseProduct(id: number, adminPassword: string) {
+export async function deleteDatabaseProduct(product: Product, adminPassword: string) {
   if (!PRODUCTS_API_URL) throw new Error('The protected products API is not configured.')
   const response = await fetch(PRODUCTS_API_URL, {
     method: 'DELETE',
@@ -149,7 +149,7 @@ export async function deleteDatabaseProduct(id: number, adminPassword: string) {
       'Content-Type': 'application/json',
       'x-admin-password': adminPassword,
     },
-    body: JSON.stringify({ id }),
+    body: JSON.stringify({ id: product.id, product }),
   })
   if (!response.ok) throw new Error(await response.text() || 'Could not delete product.')
 }

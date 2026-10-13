@@ -78,3 +78,55 @@ test('catalog mutations reject invalid product data without contacting Supabase'
   assert.equal(res.statusCode, 400)
   assert.match(res.body.error, /price/)
 })
+
+test('reordering uses one ordered bulk write and accepts an empty 201 response', async context => {
+  const calls = []
+  context.mock.method(globalThis, 'fetch', async (url, init) => {
+    calls.push({ url, init })
+    return new Response('', { status: 201 })
+  })
+  const res = response()
+  await productsApi({ method: 'PATCH', query: {}, headers: { 'x-admin-password': 'test-only-password' }, body: { products: [products[1], products[0]] } }, res)
+  assert.equal(res.statusCode, 204)
+  assert.equal(calls.length, 1)
+  const rows = JSON.parse(calls[0].init.body)
+  assert.deepEqual(rows.map(row => row.id), [products[1].id, products[0].id])
+  assert.deepEqual(rows.map(row => row.sort_order), [0, 1])
+})
+
+test('seed product deletion upserts a tombstone even before a database row exists', async context => {
+  const calls = []
+  context.mock.method(globalThis, 'fetch', async (url, init) => {
+    calls.push({ url, init })
+    return new Response('', { status: 201 })
+  })
+  const res = response()
+  await productsApi({ method: 'DELETE', query: {}, headers: { 'x-admin-password': 'test-only-password' }, body: { id: products[0].id, product: products[0] } }, res)
+  assert.equal(res.statusCode, 204)
+  assert.equal(calls.length, 1)
+  const row = JSON.parse(calls[0].init.body)
+  assert.equal(row.id, products[0].id)
+  assert.equal(row.is_deleted, true)
+  assert.equal(row.name, products[0].name)
+})
+
+test('duplicate reorder IDs and mismatched deletion IDs are rejected before a write', async context => {
+  const fetch = context.mock.method(globalThis, 'fetch', async () => { throw new Error('Unexpected database call') })
+  const reorder = response()
+  await productsApi({ method: 'PATCH', query: {}, headers: { 'x-admin-password': 'test-only-password' }, body: { products: [products[0], products[0]] } }, reorder)
+  assert.equal(reorder.statusCode, 400)
+  const deletion = response()
+  await productsApi({ method: 'DELETE', query: {}, headers: { 'x-admin-password': 'test-only-password' }, body: { id: products[1].id, product: products[0] } }, deletion)
+  assert.equal(deletion.statusCode, 400)
+  assert.equal(fetch.mock.callCount(), 0)
+})
+
+test('all mutation routes reject incorrect passwords without reaching Supabase', async context => {
+  const fetch = context.mock.method(globalThis, 'fetch', async () => { throw new Error('Unexpected database call') })
+  for (const method of ['POST', 'PATCH', 'DELETE']) {
+    const res = response()
+    await productsApi({ method, query: {}, headers: { 'x-admin-password': 'wrong' }, body: {} }, res)
+    assert.equal(res.statusCode, 401)
+  }
+  assert.equal(fetch.mock.callCount(), 0)
+})

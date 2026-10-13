@@ -53,7 +53,7 @@ the previous refinement-only layout constraint.
 
 - Catalog initializer matches backup exactly after normalizing line endings:
   all 26 original records, prices, descriptions, specifications, and images.
-- Five automated regression tests pass: catalog IDs/slugs/prices/collections,
+- Nine automated regression tests pass: catalog IDs/slugs/prices/collections,
   image paths, incorrect password rejection, correct password acceptance,
   and invalid product write rejection. These tests use no live credentials.
 - Browser checks: carousel next/previous, grid view, Awoof Sales count (14),
@@ -71,7 +71,7 @@ the previous refinement-only layout constraint.
 - Browser responsive automation intermittently returned stale transition
   geometry or detached. Verified cart removal using its fresh native-view
   visual target, and resumed viewport inspection in a new connected QA tab.
-- Final build, TypeScript build check, ESLint, five regression tests, and
+- Final build, TypeScript build check, ESLint, nine regression tests, and
   git diff whitespace check passed. The existing Browserslist data-age warning
   remains non-fatal; no dependency update was needed for this redesign.
 - Final visual proof: `qa/redesign-desktop.png` (1440x1080 collection view) and
@@ -79,12 +79,87 @@ the previous refinement-only layout constraint.
 - Rechecked preview-to-cart: only the cart dialog remained after Add to Cart.
   Keyboard Clear Cart worked. Under-NGN-300,000 price filter returned 13 units.
 
+## Publication
+
+- Redesign commit: e4126e4, successfully pushed to origin/main.
+- Preview preservation snapshot: 359e670, successfully pushed to origin/preview.
+- Pre-redesign backup: 3fe0c47, successfully pushed to origin/backup.
+- Remote hashes were checked with git ls-remote. Main contains preview as an
+  ancestor; backup contains the former backup commit 56a9ab4 as an ancestor.
+- Backup and pre-redesign main (820c7e0) share tree hash
+  9650e1874f80034507d2e9db86aca1c9fe897090.
+- Current branch is main. No force push or destructive history rewrite was used.
+
+## Admin Follow-up
+
+User requested an admin revamp before completion. Implemented on main: a compact
+inventory workspace, search/collection controls, a mobile products/editor mode,
+clear save states, safer mutation handling, and pointer/keyboard sorting.
+No public admin navigation link is being added. The existing backup stays intact.
+
+Inspection found admin risks beyond styling: local changes were published before
+the database acknowledged them, replacing an image could reuse another edit's
+selected file, renaming broke shared slugs, and reorder/delete responses with
+empty HTTP 201 bodies were parsed as JSON. These were corrected alongside
+the UI. Seed deletions now carry a full tombstone so unseeded database rows stay
+deleted on other devices. Reorder uses one bulk upsert, not many partial writes.
+
+Image uploads are capped at 4 MB to stay below Vercel's 4.5 MB request limit:
+https://vercel.com/docs/functions/limitations
+
+### Admin QA
+
+- Desktop editor and list scroll independently. Upload is 140px high and visible
+  at the top; Add/Save is a compact sticky control rather than a full-width block.
+- Mobile Products/New or Edit modes keep the product list and form separate.
+- Inventory search, empty recovery, Awoof Sales filtering (14), keyboard moves,
+  and real pointer dragging passed. Hovered rows shift opposite the drag.
+- Local image upload, create, rename, price edits, collection assignment, and
+  deletion passed using a temporary QA product. It was removed afterwards;
+  the original 26 source products are unchanged. Renaming retained its URL slug.
+- Duplicate slugs and invalid original prices are blocked. Unsaved-draft Cancel
+  retains the draft; Discard opens the requested new/edit state. Delete Cancel
+  and Escape preserve the product, with focus returning to inventory controls.
+- Incorrect passwords were rejected and the message subsequently cleared.
+  Show/hide password and correct-password verification passed.
+- Simulated API failures kept the edit draft and existing catalog unchanged,
+  rolled ordering back, and left failed deletions visible. Save/delete retries
+  succeeded in the mock fixture. No production credentials or writes were used.
+- Admin layout bounds passed at 360x800, 390x844, 430x932, 768x1024, 1024x768,
+  1280x800, 1440x900, and 1920x1080. Loaded visible photos rendered correctly.
+- Narrow-viewport pointer dragging and keyboard fallback passed. Touch uses
+  Pointer Events with touch-action:none on the handle; physical-phone touch
+  behavior still merits a device check, not a claim of hardware testing.
+- Final proof: `qa/admin-desktop.png` and `qa/admin-mobile.png`.
+- API tests cover password protection on every mutation, one bulk order write,
+  seed-product tombstones, empty 201 responses, and invalid/duplicate IDs.
+
+### Repeatable Failure Fixture
+
+`frontend/tests/mock-inventory-server.mjs` is loopback-only, in-memory QA code.
+Start it from frontend with `node tests/mock-inventory-server.mjs`. For a separate
+Vite process on 127.0.0.1:5176, set VITE_PRODUCTS_API_URL to
+http://127.0.0.1:5175/api/products and leave image API/Supabase variables blank.
+The fixture password is `inventory-qa-local-only`, never a production secret.
+POST `{"failNext":"POST"}`, `PATCH`, or `DELETE` to /control to fail one write;
+POST `{"reset":true}` resets server memory only, not that browser origin's local
+cache. Use an isolated browser origin/profile for disposable QA state.
+Stop both fixture and QA Vite processes after testing. They are not deployment
+services and do not connect to Supabase or Paystack.
+
+### Deployment Check
+
+The public domain was rechecked after the storefront push and served
+`/assets/index-Dy78DVdu.css` containing the new luxury-catalog styles. Admin
+deployment is checked separately after its final commit/push.
+
 ## Boundaries
 
 - Git backup is a code/asset snapshot, not a Supabase data or Vercel-env backup.
 - Reference branding, photographs, placeholder reviews, and unverified claims
   are intentionally not copied. GLAMOURSPHAIR keeps its own business content.
-- Existing payment/admin APIs are preserved. End-to-end live payments,
+- Existing payment APIs are preserved; inventory APIs were hardened as above.
+  End-to-end live payments,
   production admin writes, and database recovery have not been exercised.
 - No field Core Web Vitals claim is made; production monitoring is still needed.
 - Return eligibility and shipping ETAs remain unpromised, as before.

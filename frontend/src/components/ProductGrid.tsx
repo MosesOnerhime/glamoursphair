@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, DragEvent, FormEvent, MouseEvent, PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import { track } from '@vercel/analytics'
-import { HiShoppingCart, HiCheck, HiX, HiLink, HiChevronLeft, HiChevronRight, HiLockClosed, HiPlus, HiTrash, HiUpload, HiPencil, HiSwitchVertical, HiEye, HiEyeOff } from 'react-icons/hi'
+import { HiShoppingCart, HiCheck, HiX, HiLink, HiChevronLeft, HiChevronRight, HiLockClosed, HiPlus, HiUpload, HiEye, HiEyeOff } from 'react-icons/hi'
 import { FaWhatsapp, FaInstagram } from 'react-icons/fa'
 import type { Product } from '../types'
 import {
@@ -16,6 +16,7 @@ import {
 } from '../lib/productDatabase'
 import { useDialogA11y } from '../hooks/useDialogA11y'
 import ProductCatalog from './ProductCatalog'
+import InventoryList from './InventoryList'
 
 const WHATSAPP = '2348128288948'
 const PRODUCT_PARAM = 'product'
@@ -39,6 +40,7 @@ type SortOption = 'featured' | 'price-asc' | 'price-desc'
 
 type ProductForm = {
   name: string
+  slug: string
   price: string
   originalPrice: string
   description: string
@@ -53,6 +55,7 @@ type ProductForm = {
 }
 
 type ProductOverrides = Record<string, Product>
+type InventoryConfirmation = { action: 'delete' | 'edit'; product: Product } | { action: 'new' }
 
 const adminInputClass = 'w-full border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/55'
 
@@ -67,6 +70,7 @@ function AdminField({ label, wide = false, children }: { label: string; wide?: b
 
 const emptyProductForm: ProductForm = {
   name: '',
+  slug: '',
   price: '',
   originalPrice: '',
   description: '',
@@ -75,7 +79,7 @@ const emptyProductForm: ProductForm = {
   volume: '',
   fitting: '',
   link: '',
-  tag: 'New',
+  tag: '',
   group: '',
   image: '',
 }
@@ -487,8 +491,9 @@ function absoluteImageUrl(path?: string) {
 }
 
 function parsePrice(value: string) {
-  const clean = value.replace(/[^\d]/g, '')
-  return Number(clean)
+  const clean = value.replace(/[,\s]/g, '')
+  const number = Number(clean)
+  return /^\d+$/.test(clean) && Number.isSafeInteger(number) && number > 0 ? number : NaN
 }
 
 function readStorageValue<T>(key: string, fallback: T): T {
@@ -572,6 +577,7 @@ function mergeProductsById(productList: Product[]) {
 function productToForm(product: Product): ProductForm {
   return {
     name: product.name,
+    slug: product.slug ?? '',
     price: String(product.price),
     originalPrice: product.originalPrice ? String(product.originalPrice) : '',
     description: product.description,
@@ -580,7 +586,7 @@ function productToForm(product: Product): ProductForm {
     volume: product.volume ?? '',
     fitting: product.fitting ?? '',
     link: product.instagramLink ?? '',
-    tag: product.tag ?? 'New',
+    tag: product.tag ?? '',
     group: product.group ?? '',
     image: imageForProduct(product) ?? '',
   }
@@ -610,6 +616,12 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   const [showAdminPassword, setShowAdminPassword] = useState(false)
   const [adminError, setAdminError] = useState('')
   const [adminSaving, setAdminSaving] = useState(false)
+  const [adminVerifying, setAdminVerifying] = useState(false)
+  const [adminPane, setAdminPane] = useState<'products' | 'editor'>('products')
+  const [inventoryConfirmation, setInventoryConfirmation] = useState<InventoryConfirmation | null>(null)
+  const confirmationCancelRef = useRef<HTMLButtonElement>(null)
+  const [dragPoint, setDragPoint] = useState<{ x: number; y: number } | null>(null)
+  const adminMutationRef = useRef(false)
   const adminErrorTimer = useRef<number | null>(null)
   const [productForm, setProductForm] = useState<ProductForm>(emptyProductForm)
   const [productOverrides, setProductOverrides] = useState<ProductOverrides>(() => readProductOverrides())
@@ -619,8 +631,10 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   const [databaseProducts, setDatabaseProducts] = useState<Product[]>([])
   const [databaseHiddenIds, setDatabaseHiddenIds] = useState<number[]>([])
   const [databaseOrder, setDatabaseOrder] = useState<number[]>([])
-  const [databaseStatus, setDatabaseStatus] = useState(isProductDatabaseConfigured() ? 'Connecting to database...' : 'Local mode: add Supabase env values to enable database sync.')
+  const [databaseStatus, setDatabaseStatus] = useState(isProductDatabaseConfigured() ? 'Connecting to shared inventory...' : 'Local inventory - this device')
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null)
+  const imageSelectionToken = useRef(0)
+  const draftProductId = useRef<number | null>(null)
   const [draggedProductId, setDraggedProductId] = useState<number | null>(null)
   const [dragOverProductId, setDragOverProductId] = useState<number | null>(null)
   const [pointerSortProductId, setPointerSortProductId] = useState<number | null>(null)
@@ -634,10 +648,12 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
       .filter(product => !hiddenIds.includes(product.id))
     const persistedAdminProducts = databaseProducts.filter(product => !seedIds.has(product.id) && !hiddenIds.includes(product.id))
     const localAdminProducts = adminProducts.filter(product => !databaseProductsById.has(product.id) && !hiddenIds.includes(product.id))
-    const order = productOrder.length > 0 ? productOrder : databaseOrder
+    const order = isProductApiConfigured() && databaseOrder.length > 0 && !adminSaving
+      ? databaseOrder
+      : productOrder.length > 0 ? productOrder : databaseOrder
 
     return orderProducts(mergeProductsById([...visibleSeedProducts, ...persistedAdminProducts, ...localAdminProducts]), order)
-  }, [adminProducts, databaseHiddenIds, databaseOrder, databaseProducts, hiddenProductIds, productOrder, productOverrides])
+  }, [adminProducts, adminSaving, databaseHiddenIds, databaseOrder, databaseProducts, hiddenProductIds, productOrder, productOverrides])
 
   const lengthOptions = useMemo(() => Array.from(new Set(allProducts.map(product => product.length).filter(Boolean) as string[]))
     .sort((a, b) => Number.parseInt(a) - Number.parseInt(b)), [allProducts])
@@ -732,7 +748,15 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   }
 
   const closeAdmin = () => {
+    if (inventoryConfirmation) {
+      if (!adminMutationRef.current) setInventoryConfirmation(null)
+      return
+    }
     setAdminOpen(false)
+    setAdminAccessCode('')
+    setAdminUnlocked(false)
+    setAdminPassword('')
+    setShowAdminPassword(false)
 
     const url = new URL(window.location.href)
     let changed = false
@@ -981,24 +1005,25 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     return `https://wa.me/${WHATSAPP}?text=${msg}`
   }
 
+const writeAdminCache = (key: string, value: unknown) => {
+    try { localStorage.setItem(key, JSON.stringify(value)); return true } catch { return false }
+  }
+
   const updateAdminProducts = (nextProducts: Product[]) => {
     setAdminProducts(nextProducts)
-    localStorage.setItem(ADMIN_PRODUCTS_KEY, JSON.stringify(nextProducts))
+    return writeAdminCache(ADMIN_PRODUCTS_KEY, nextProducts)
   }
-
   const updateProductOverrides = (nextOverrides: ProductOverrides) => {
     setProductOverrides(nextOverrides)
-    localStorage.setItem(ADMIN_PRODUCT_OVERRIDES_KEY, JSON.stringify(nextOverrides))
+    return writeAdminCache(ADMIN_PRODUCT_OVERRIDES_KEY, nextOverrides)
   }
-
   const updateHiddenProductIds = (nextIds: number[]) => {
     setHiddenProductIds(nextIds)
-    localStorage.setItem(ADMIN_HIDDEN_PRODUCTS_KEY, JSON.stringify(nextIds))
+    return writeAdminCache(ADMIN_HIDDEN_PRODUCTS_KEY, nextIds)
   }
-
   const updateProductOrder = useCallback((nextOrder: number[]) => {
     setProductOrder(nextOrder)
-    localStorage.setItem(ADMIN_PRODUCT_ORDER_KEY, JSON.stringify(nextOrder))
+    try { localStorage.setItem(ADMIN_PRODUCT_ORDER_KEY, JSON.stringify(nextOrder)); return true } catch { return false }
   }, [])
 
   const showTemporaryAdminError = useCallback((message: string) => {
@@ -1017,37 +1042,25 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
   const unlockAdmin = async (event: FormEvent) => {
     event.preventDefault()
-    const cleanPassword = adminPassword.trim()
-
-    if (!cleanPassword) {
-      setAdminError('Enter the admin password.')
-      return
-    }
-
+    if (adminVerifying) return
+    if (!adminPassword) { setAdminError('Enter the admin password.'); return }
     if (!isProductApiConfigured() && !LOCAL_ADMIN_PASSWORD) {
-      setAdminError('Local admin access is not configured. Add VITE_LOCAL_ADMIN_PASSWORD for local development.')
+      setAdminError('Admin access is not configured in this environment.')
       return
     }
-
+    setAdminVerifying(true)
     try {
-      const passwordIsValid = isProductApiConfigured()
-        ? await verifyAdminPassword(cleanPassword)
-        : cleanPassword === LOCAL_ADMIN_PASSWORD
-
-      if (!passwordIsValid) {
-        showTemporaryAdminError('Incorrect password.')
-        return
-      }
+      const valid = isProductApiConfigured() ? await verifyAdminPassword(adminPassword) : adminPassword === LOCAL_ADMIN_PASSWORD
+      if (!valid) { showTemporaryAdminError('Incorrect password.'); return }
+      setAdminAccessCode(adminPassword)
+      setAdminUnlocked(true)
+      setAdminError('')
+      setAdminPassword('')
+      setShowAdminPassword(false)
+      trackBuyerEvent('Admin Login', { surface: 'product-grid' })
     } catch {
-      setAdminError('Could not verify admin password. Check the deployed environment variables and try again.')
-      return
-    }
-
-    setAdminAccessCode(cleanPassword)
-    setAdminUnlocked(true)
-    setAdminError('')
-    setAdminPassword('')
-    trackBuyerEvent('Admin Login', { surface: 'product-grid' })
+      setAdminError('Could not verify access. Please try again.')
+    } finally { setAdminVerifying(false) }
   }
 
   const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
@@ -1055,117 +1068,124 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     if (!file) return
 
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      setSelectedImageFile(null)
       setAdminError('Upload a JPG, PNG, or WebP image.')
       event.target.value = ''
       return
     }
 
-    if (file.size > 8 * 1024 * 1024) {
-      setSelectedImageFile(null)
-      setAdminError('Product images must be 8 MB or smaller.')
+    if (file.size > 4 * 1024 * 1024) {
+      setAdminError('Product images must be 4 MB or smaller.')
       event.target.value = ''
       return
     }
 
     setSelectedImageFile(file)
+    const selectionToken = ++imageSelectionToken.current
     setAdminError('')
     const reader = new FileReader()
     reader.onload = () => {
+      if (selectionToken !== imageSelectionToken.current) return
       setProductForm(prev => ({ ...prev, image: String(reader.result) }))
+    }
+    reader.onerror = () => {
+      if (selectionToken !== imageSelectionToken.current) return
+      setSelectedImageFile(null)
+      setAdminError('Could not read this photograph. Please select it again.')
     }
     reader.readAsDataURL(file)
   }
 
   const saveProduct = async (event: FormEvent) => {
     event.preventDefault()
-    if (adminSaving) return
-
+    if (adminMutationRef.current) return
     const price = parsePrice(productForm.price)
     const originalPrice = productForm.originalPrice ? parsePrice(productForm.originalPrice) : 0
-
-    if (!productForm.name.trim() || !price || !productForm.description.trim()) {
-      setAdminError('Add a product name, price and description.')
+    if (!productForm.name.trim() || !Number.isSafeInteger(price) || !productForm.description.trim()) {
+      setAdminError('A name, positive whole-number NGN price and description are required.')
       return
     }
-
-    if (originalPrice && originalPrice <= price) {
-      setAdminError('The original price must be higher than the current sale price.')
+    if (productForm.originalPrice && (!Number.isSafeInteger(originalPrice) || originalPrice <= price)) {
+      setAdminError('Original price must be a whole NGN amount above the current price.')
       return
     }
-
+    if (!productForm.image) { setAdminError('Choose a product photograph before saving.'); return }
+    const existing = editingProductId ? allProducts.find(product => product.id === editingProductId) : null
+    const id = existing?.id ?? (draftProductId.current ??= Date.now())
+    const slug = productForm.slug.trim() || existing?.slug || `${slugify(productForm.name)}-${id}`
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || allProducts.some(product => product.id !== id && product.slug === slug)) {
+      setAdminError('Use a unique product URL slug with lowercase letters, numbers and hyphens.')
+      return
+    }
+    adminMutationRef.current = true
     setAdminSaving(true)
-
+    setAdminError('')
+    setDatabaseStatus('Saving product...')
     try {
-      const existingProduct = editingProductId ? allProducts.find(product => product.id === editingProductId) : null
       const imageUrl = selectedImageFile && isProductApiConfigured()
         ? await uploadProductImage(selectedImageFile, productForm.name.trim(), adminAccessCode)
         : productForm.image
-      const imageChanged = existingProduct ? imageUrl !== imageForProduct(existingProduct) : true
       const product: Product = {
-        ...(existingProduct ?? { id: Date.now(), gradient: 'from-neutral-950 to-stone-900' }),
-        name: productForm.name.trim(),
-        slug: slugify(productForm.name),
-        price,
-        originalPrice: originalPrice || undefined,
-        tag: productForm.tag || undefined,
-        description: productForm.description.trim(),
-        source: productForm.source.trim() || undefined,
-        length: productForm.length.trim() || undefined,
-        volume: productForm.volume.trim() || undefined,
-        fitting: productForm.fitting.trim() || undefined,
-        group: productForm.group.trim() || undefined,
-        instagramLink: productForm.link.trim() || 'https://instagram.com/glamoursphair',
-        image: imageUrl || '/images/bone-straight.jpeg',
+        ...(existing ?? { id, gradient: 'from-neutral-950 to-stone-900' }),
+        name: productForm.name.trim(), slug, price, originalPrice: originalPrice || undefined,
+        tag: productForm.tag || undefined, description: productForm.description.trim(),
+        source: productForm.source.trim() || undefined, length: productForm.length.trim() || undefined,
+        volume: productForm.volume.trim() || undefined, fitting: productForm.fitting.trim() || undefined,
+        group: productForm.group.trim() || undefined, instagramLink: productForm.link.trim() || undefined,
+        image: imageUrl,
       }
-
-      if (imageChanged) product.images = undefined
-
-      if (editingProductId) {
-        const isSeedProduct = products.some(seedProduct => seedProduct.id === editingProductId)
-        if (isSeedProduct) {
-          updateProductOverrides({ ...productOverrides, [String(editingProductId)]: product })
-        } else {
-          updateAdminProducts(adminProducts.map(adminProduct => adminProduct.id === editingProductId ? product : adminProduct))
-        }
-        if (isProductApiConfigured()) {
-          await saveDatabaseProduct(product, allProducts.findIndex(item => item.id === product.id), adminAccessCode)
-          setDatabaseProducts(prev => mergeProductsById([...prev.filter(item => item.id !== product.id), product]))
-          setDatabaseHiddenIds(prev => prev.filter(id => id !== product.id))
-          setDatabaseStatus('Database saved.')
-        }
-        trackBuyerEvent('Admin Product Edited', { product: product.name, price: product.price })
-      } else {
-        updateAdminProducts([product, ...adminProducts])
-        updateProductOrder([product.id, ...allProducts.map(item => item.id)])
-        if (isProductApiConfigured()) {
-          await saveDatabaseProduct(product, 0, adminAccessCode)
-          setDatabaseProducts(prev => mergeProductsById([product, ...prev]))
-          setDatabaseOrder([product.id, ...allProducts.map(item => item.id)])
-          setDatabaseStatus('Database saved.')
-        }
-        trackBuyerEvent('Admin Product Added', { product: product.name, price: product.price })
+      if (!existing || imageUrl !== imageForProduct(existing)) product.images = undefined
+      const nextOrder = existing ? allProducts.map(item => item.id) : [id, ...allProducts.filter(item => item.id !== id).map(item => item.id)]
+      if (isProductApiConfigured()) {
+        if (existing) await saveDatabaseProduct(product, allProducts.findIndex(item => item.id === id), adminAccessCode)
+        else await reorderDatabaseProducts([product, ...allProducts.filter(item => item.id !== id)], adminAccessCode)
+        setDatabaseProducts(prev => mergeProductsById([product, ...prev.filter(item => item.id !== id)]))
+        setDatabaseHiddenIds(prev => prev.filter(hiddenId => hiddenId !== id))
+        setDatabaseOrder(nextOrder)
       }
-
+      let cached = true
+      if (existing && products.some(seed => seed.id === id)) cached = updateProductOverrides({ ...productOverrides, [String(id)]: product })
+      else cached = updateAdminProducts([product, ...adminProducts.filter(item => item.id !== id)])
+      cached = updateProductOrder(nextOrder) && cached
+      setDatabaseStatus(isProductApiConfigured() ? 'Saved to shared inventory.' : cached ? 'Saved on this device.' : 'Saved in this session only. Device storage is unavailable.')
+      trackBuyerEvent(existing ? 'Admin Product Edited' : 'Admin Product Added', { product: product.name, price: product.price })
       setProductForm(emptyProductForm)
+      draftProductId.current = null
+      imageSelectionToken.current += 1
       setEditingProductId(null)
       setSelectedImageFile(null)
-      setAdminError('')
+      setAdminPane('products')
     } catch {
-      setAdminError('Could not save to the database. Check Supabase settings and try again.')
-      setDatabaseStatus('Database save failed.')
-    } finally {
-      setAdminSaving(false)
-    }
+      setAdminError('Could not confirm the save. Your draft is kept; refresh inventory before retrying if your connection dropped.')
+      setDatabaseStatus('Save failed. Please retry.')
+    } finally { adminMutationRef.current = false; setAdminSaving(false) }
   }
 
-  const startEditingProduct = (product: Product) => {
+  const draftIsDirty = () => {
+    const baseline = editingProductId ? productToForm(allProducts.find(product => product.id === editingProductId) ?? { id: 0, name: '', price: 0, description: '', gradient: '' }) : emptyProductForm
+    return (Object.keys(emptyProductForm) as (keyof ProductForm)[]).some(key => productForm[key] !== baseline[key])
+  }
+
+  const requestNewProduct = () => {
+    if (draftIsDirty()) { setInventoryConfirmation({ action: 'new' }); return }
+    cancelEditingProduct()
+    setAdminPane('editor')
+  }
+
+  const startEditingProduct = (product: Product, confirmed = false) => {
+    if (editingProductId === product.id) { setAdminPane('editor'); return }
+    if (!confirmed && draftIsDirty()) { setInventoryConfirmation({ action: 'edit', product }); return }
+    if (adminSaving) return
+    setAdminPane('editor')
+    imageSelectionToken.current += 1
+    setSelectedImageFile(null)
     setEditingProductId(product.id)
     setProductForm(productToForm(product))
     setAdminError('')
   }
 
   const cancelEditingProduct = () => {
+    imageSelectionToken.current += 1
+    draftProductId.current = null
     setEditingProductId(null)
     setProductForm(emptyProductForm)
     setSelectedImageFile(null)
@@ -1173,57 +1193,72 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   }
 
   const deleteProduct = async (id: number) => {
-    const productToDelete = allProducts.find(product => product.id === id)
-    if (!window.confirm(`Delete ${productToDelete?.name ?? 'this product'} from the storefront?`)) return
-
-    const isSeedProduct = products.some(product => product.id === id)
-
-    if (isSeedProduct) {
-      updateHiddenProductIds(Array.from(new Set([...hiddenProductIds, id])))
-    } else {
-      updateAdminProducts(adminProducts.filter(product => product.id !== id))
-    }
-
-    updateProductOrder(productOrder.filter(productId => productId !== id))
-    if (isProductApiConfigured()) {
-      try {
-        await deleteDatabaseProduct(id, adminAccessCode)
-        setDatabaseProducts(prev => prev.filter(product => product.id !== id))
-        setDatabaseHiddenIds(prev => Array.from(new Set([...prev, id])))
-        setDatabaseOrder(prev => prev.filter(productId => productId !== id))
-        setDatabaseStatus('Database saved.')
-      } catch {
-        setAdminError('Could not delete from the database. It was removed locally for now.')
-        setDatabaseStatus('Database delete failed.')
-      }
-    }
-    if (editingProductId === id) cancelEditingProduct()
-    if (selected?.id === id) closeProduct()
+    if (adminMutationRef.current) return
+    const product = allProducts.find(item => item.id === id)
+    if (!product) return
+    adminMutationRef.current = true
+    setAdminSaving(true)
+    setAdminError('')
+    setDatabaseStatus('Deleting product...')
+    try {
+      if (isProductApiConfigured()) await deleteDatabaseProduct(product, adminAccessCode)
+      const cached = updateHiddenProductIds(Array.from(new Set([...hiddenProductIds, id])))
+      updateAdminProducts(adminProducts.filter(item => item.id !== id))
+      updateProductOrder(allProducts.filter(item => item.id !== id).map(item => item.id))
+      setDatabaseProducts(prev => prev.filter(item => item.id !== id))
+      setDatabaseHiddenIds(prev => [...new Set([...prev, id])])
+      setDatabaseOrder(prev => prev.filter(productId => productId !== id))
+      setDatabaseStatus(isProductApiConfigured() ? 'Product removed from shared inventory.' : cached ? 'Product removed on this device.' : 'Removed in this session only.')
+      if (editingProductId === id) cancelEditingProduct()
+      if (selected?.id === id) closeProduct()
+      setInventoryConfirmation(null)
+    } catch {
+      setAdminError('Delete failed. The product has not been removed; please retry.')
+      setDatabaseStatus('Delete failed.')
+    } finally { adminMutationRef.current = false; setAdminSaving(false) }
   }
 
-  const reorderProduct = useCallback((fromId: number, toId: number) => {
-    if (fromId === toId) return
-
-    const currentOrder = allProducts.map(product => product.id)
-    const fromIndex = currentOrder.indexOf(fromId)
-    const toIndex = currentOrder.indexOf(toId)
-    if (fromIndex < 0 || toIndex < 0) return
-
-    const nextOrder = [...currentOrder]
-    const [moved] = nextOrder.splice(fromIndex, 1)
-    nextOrder.splice(toIndex, 0, moved)
-    updateProductOrder(nextOrder)
-
-    const reorderedProducts = orderProducts(allProducts, nextOrder)
-    if (isProductApiConfigured()) {
-      void reorderDatabaseProducts(reorderedProducts, adminAccessCode).then(() => {
-        setDatabaseOrder(nextOrder)
-        setDatabaseStatus('Database saved.')
-      }).catch(() => {
-        setDatabaseStatus('Database unavailable. Sort saved locally only.')
-      })
-    }
+  const reorderProduct = useCallback(async (fromId: number, toId: number) => {
+    if (fromId === toId || adminMutationRef.current) return
+    const current = allProducts.map(product => product.id)
+    const from = current.indexOf(fromId), to = current.indexOf(toId)
+    if (from < 0 || to < 0) return
+    const next = [...current]
+    next.splice(to, 0, ...next.splice(from, 1))
+    adminMutationRef.current = true
+    setAdminSaving(true)
+    setAdminError('')
+    setDatabaseStatus('Saving product order...')
+    const cached = updateProductOrder(next)
+    try {
+      if (isProductApiConfigured()) await reorderDatabaseProducts(orderProducts(allProducts, next), adminAccessCode)
+      setDatabaseOrder(next)
+      setDatabaseStatus(isProductApiConfigured() ? 'Product order saved to shared inventory.' : cached ? 'Product order saved on this device.' : 'Order saved in this session only.')
+    } catch {
+      updateProductOrder(current)
+      setAdminError('Order could not be saved. The previous order has been restored.')
+      setDatabaseStatus('Order save failed.')
+    } finally { adminMutationRef.current = false; setAdminSaving(false) }
   }, [adminAccessCode, allProducts, updateProductOrder])
+
+  useEffect(() => {
+    if (!inventoryConfirmation) return
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    confirmationCancelRef.current?.focus()
+    return () => {
+      if (previous?.isConnected) previous.focus()
+      else document.querySelector<HTMLInputElement>('#inventory-search')?.focus()
+    }
+  }, [inventoryConfirmation])
+
+  const confirmInventoryAction = () => {
+    if (!inventoryConfirmation) return
+    if (inventoryConfirmation.action === 'delete') { void deleteProduct(inventoryConfirmation.product.id); return }
+    cancelEditingProduct()
+    if (inventoryConfirmation.action === 'edit') startEditingProduct(inventoryConfirmation.product, true)
+    else setAdminPane('editor')
+    setInventoryConfirmation(null)
+  }
 
   const handleProductDragStart = (event: DragEvent<HTMLDivElement>, id: number) => {
     setDraggedProductId(id)
@@ -1241,7 +1276,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   const handleProductDrop = (event: DragEvent<HTMLDivElement>, id: number) => {
     event.preventDefault()
     const droppedId = Number(event.dataTransfer.getData('text/plain')) || draggedProductId
-    if (droppedId) reorderProduct(droppedId, id)
+    if (droppedId) void reorderProduct(droppedId, id)
     setDraggedProductId(null)
     setDragOverProductId(null)
   }
@@ -1250,6 +1285,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     setDraggedProductId(null)
     setDragOverProductId(null)
     setPointerSortProductId(null)
+    setDragPoint(null)
   }
 
   const dragHoverClass = (id: number) => {
@@ -1263,11 +1299,12 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   }
 
   const startProductPointerSort = (event: ReactPointerEvent<HTMLButtonElement>, id: number) => {
-    if (event.button !== 0) return
+    if (event.button !== 0 || adminMutationRef.current) return
 
     event.preventDefault()
     event.stopPropagation()
     event.currentTarget.setPointerCapture(event.pointerId)
+    setDragPoint({ x: event.clientX, y: event.clientY })
     setPointerSortProductId(id)
     setDraggedProductId(id)
     setDragOverProductId(null)
@@ -1278,6 +1315,13 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
     const handlePointerMove = (event: PointerEvent) => {
       event.preventDefault()
+      setDragPoint({ x: event.clientX, y: event.clientY })
+      const scroller = document.querySelector<HTMLElement>('.inventory-scroll')
+      if (scroller) {
+        const bounds = scroller.getBoundingClientRect()
+        if (event.clientY < bounds.top + 48) scroller.scrollBy(0, -18)
+        else if (event.clientY > bounds.bottom - 48) scroller.scrollBy(0, 18)
+      }
       const hoveredElement = document.elementFromPoint(event.clientX, event.clientY)
       const hoveredCard = hoveredElement?.closest<HTMLElement>('[data-admin-product-id]')
       const hoveredId = Number(hoveredCard?.dataset.adminProductId)
@@ -1289,7 +1333,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
     const handlePointerEnd = () => {
       if (dragOverProductId && dragOverProductId !== pointerSortProductId) {
-        reorderProduct(pointerSortProductId, dragOverProductId)
+        void reorderProduct(pointerSortProductId, dragOverProductId)
       }
 
       endProductDrag()
@@ -1297,12 +1341,12 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
     window.addEventListener('pointermove', handlePointerMove, { passive: false })
     window.addEventListener('pointerup', handlePointerEnd)
-    window.addEventListener('pointercancel', handlePointerEnd)
+    window.addEventListener('pointercancel', endProductDrag)
 
     return () => {
       window.removeEventListener('pointermove', handlePointerMove)
       window.removeEventListener('pointerup', handlePointerEnd)
-      window.removeEventListener('pointercancel', handlePointerEnd)
+      window.removeEventListener('pointercancel', endProductDrag)
     }
   }, [dragOverProductId, pointerSortProductId, reorderProduct])
 
@@ -1538,98 +1582,50 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
         </div>
       )}
 
+
       {adminOpen && (
-        <div className="fixed inset-0 z-[55] flex items-center justify-center p-3 md:p-6">
-          <div aria-hidden="true" className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={closeAdmin} />
-          <div
-            ref={adminDialogRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="admin-dialog-title"
-            tabIndex={-1}
-            className="relative z-10 flex h-[92vh] w-full max-w-6xl flex-col overflow-hidden border border-white/10 bg-[#0d0d0d] shadow-2xl shadow-black/70 outline-none"
-          >
-            <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 bg-[#0d0d0d]/95 px-5 py-4 backdrop-blur">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#c9a84c]">Admin inventory</p>
-                <h3 id="admin-dialog-title" className="mt-1 font-display text-2xl text-white">Upload products</h3>
+        <div className="admin-overlay">
+          <div aria-hidden="true" className="admin-backdrop" onClick={closeAdmin} />
+          <div ref={adminDialogRef} role="dialog" aria-modal="true" aria-labelledby="admin-dialog-title" tabIndex={-1} className={`admin-workspace ${adminUnlocked ? '' : 'is-locked'}`}>
+            <header className="admin-header" inert={Boolean(inventoryConfirmation)}>
+              <div className="admin-heading"><img src="/images/logo.png" alt="" width="196" height="168" /><div><span>GLAMOURSPHAIR</span><h2 id="admin-dialog-title">Inventory</h2></div></div>
+              <div className="admin-header-actions">
+                {adminUnlocked && <>
+                  <button type="button" className="admin-primary" disabled={adminSaving} onClick={requestNewProduct} aria-label="New product" title="New product"><HiPlus size={18} /> New product</button>
+                  <button type="button" className="inventory-icon" disabled={adminSaving} onClick={() => { setAdminAccessCode(''); setAdminUnlocked(false); setAdminPassword(''); setShowAdminPassword(false) }} aria-label="Lock inventory" title="Lock inventory"><HiLockClosed size={20} /></button>
+                </>}
+                <button type="button" className="inventory-icon" onClick={closeAdmin} aria-label="Close admin products" title="Close inventory"><HiX size={22} /></button>
               </div>
-              <button
-                onClick={closeAdmin}
-                className="flex h-10 w-10 items-center justify-center text-neutral-400 transition-colors hover:text-white"
-                aria-label="Close admin products"
-              >
-                <HiX size={22} />
-              </button>
-            </div>
-
-            {!adminUnlocked ? (
-              <form onSubmit={unlockAdmin} className="mx-auto grid max-w-md gap-5 p-5 py-12 text-center md:py-16">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-[#c9a84c]/30 bg-[#c9a84c]/10 text-[#c9a84c]">
-                  <HiLockClosed size={24} />
-                </div>
-                <div>
-                  <h4 className="font-display text-3xl text-white">Admin access</h4>
-                  <p className="mt-2 text-sm leading-relaxed text-neutral-500">
-                    Enter the product admin password to upload new images and product details.
-                  </p>
-                </div>
-                <label htmlFor="admin-password" className="grid gap-2 text-left text-xs font-semibold uppercase tracking-[0.14em] text-neutral-400">
-                  Password
-                  <span className="relative block">
-                   <input
-                      id="admin-password"
-                      name="admin-password"
-                      type={showAdminPassword ? 'text' : 'password'}
-                      value={adminPassword}
-                      onChange={event => setAdminPassword(event.target.value)}
-                      placeholder="Admin password"
-                      autoComplete="current-password"
-                      aria-invalid={Boolean(adminError)}
-                      aria-describedby={adminError ? 'admin-access-error' : undefined}
-                      required
-                      className="w-full border border-white/10 bg-[#111] px-4 py-3 pr-12 text-center text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/55"
-                    />
-                  <button
-                    type="button"
-                    onClick={() => setShowAdminPassword(value => !value)}
-                    className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center text-neutral-500 transition-colors hover:text-[#c9a84c]"
-                    aria-label={showAdminPassword ? 'Hide admin password' : 'Show admin password'}
-                    title={showAdminPassword ? 'Hide password' : 'Show password'}
-                  >
-                      {showAdminPassword ? <HiEyeOff size={18} /> : <HiEye size={18} />}
-                    </button>
-                  </span>
-                </label>
-                {adminError && <p id="admin-access-error" role="alert" className="text-sm text-red-400">{adminError}</p>}
-                <button className="min-h-12 bg-[#c9a84c] px-5 text-sm font-bold uppercase tracking-[0.16em] text-black transition-colors hover:bg-white">
-                  Unlock
-                </button>
-              </form>
-            ) : (
-              <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[0.92fr_1.08fr]">
-                <form onSubmit={saveProduct} className="grid content-start gap-3 overflow-y-auto p-5 lg:p-6">
-                  <div>
-                    <h4 className="font-display text-3xl text-white">{editingProductId ? 'Edit product' : 'New product'}</h4>
-                    <p className="mt-2 text-sm leading-relaxed text-neutral-500">
-                      Upload an image, add product details, choose a collection, then save it to the storefront.
-                    </p>
-                  </div>
-
-                  <label className="grid min-h-36 cursor-pointer place-items-center border border-dashed border-white/15 bg-[#111] p-4 text-center transition-colors hover:border-[#c9a84c]/50">
+            </header>
+            {!adminUnlocked ? <form onSubmit={unlockAdmin} className="admin-login">
+              <HiLockClosed className="admin-login-symbol" size={27} aria-hidden="true" />
+              <h3>Private inventory access</h3>
+              <label htmlFor="admin-password">Password</label>
+              <div className="admin-password-control"><input id="admin-password" name="admin-password" type={showAdminPassword ? 'text' : 'password'} value={adminPassword} onChange={event => setAdminPassword(event.target.value)} autoComplete="current-password" required aria-invalid={Boolean(adminError)} aria-describedby={adminError ? 'admin-access-error' : undefined} /><button type="button" onClick={() => setShowAdminPassword(value => !value)} aria-label={showAdminPassword ? 'Hide admin password' : 'Show admin password'} title={showAdminPassword ? 'Hide password' : 'Show password'}>{showAdminPassword ? <HiEyeOff size={20} /> : <HiEye size={20} />}</button></div>
+              {adminError && <p id="admin-access-error" role="alert" className="admin-operation-error">{adminError}</p>}
+              <button className="admin-primary" disabled={adminVerifying}>{adminVerifying ? 'Verifying...' : 'Unlock inventory'}</button>
+            </form> : <>
+              <div className="admin-statusbar" inert={Boolean(inventoryConfirmation)}><p role="status" aria-live="polite"><span className={adminSaving ? 'status-saving' : 'status-dot'} />{databaseStatus}</p><span>{allProducts.length} products</span></div>
+              {adminError && !inventoryConfirmation && <p role="alert" className="admin-operation-error">{adminError}</p>}
+              <div className="admin-mobile-tabs" aria-label="Inventory views" inert={Boolean(inventoryConfirmation)}><button type="button" aria-pressed={adminPane === 'products'} onClick={() => setAdminPane('products')}>Products</button><button type="button" aria-pressed={adminPane === 'editor'} onClick={() => setAdminPane('editor')}>{editingProductId ? 'Edit product' : 'New product'}</button></div>
+              <div className="admin-columns" data-pane={adminPane} inert={Boolean(inventoryConfirmation)}>
+                <form onSubmit={saveProduct} className="admin-editor">
+                  <fieldset disabled={adminSaving} className="admin-editor-fields">
+                  <div className="admin-editor-title"><h2>{editingProductId ? 'Edit product' : 'New product'}</h2>{editingProductId && <button type="button" className="inventory-icon" onClick={cancelEditingProduct} aria-label="Cancel product editing" title="Cancel edit"><HiX size={19} /></button>}</div>
+                  <label className="admin-upload">
                     {productForm.image ? (
-                      <img src={productForm.image} alt="Product upload preview" width="750" height="1000" className="max-h-44 w-full object-contain" />
+                      <img src={productForm.image} alt="Product upload preview" width="750" height="1000" className="admin-upload-preview" />
                     ) : (
                       <span className="grid gap-3 text-neutral-500">
                         <HiUpload size={32} className="mx-auto text-[#c9a84c]" />
                         <span className="text-sm">Upload product image</span>
                       </span>
                     )}
-                    <input type="file" accept="image/*" onChange={handleImageUpload} className="sr-only" />
+                    <input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Product photograph" onChange={handleImageUpload} className="sr-only" />
                   </label>
 
                   <div className="grid gap-3 md:grid-cols-2">
-                    <AdminField label="Product name">
+                    <AdminField label="Product name" wide>
                       <input
                         value={productForm.name}
                         onChange={event => setProductForm(prev => ({ ...prev, name: event.target.value }))}
@@ -1644,6 +1640,9 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                         onChange={event => setProductForm(prev => ({ ...prev, price: event.target.value }))}
                         placeholder="240000"
                         inputMode="numeric"
+                        type="number"
+                        min="1"
+                        step="1"
                         required
                         className={adminInputClass}
                       />
@@ -1654,9 +1653,14 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                         onChange={event => setProductForm(prev => ({ ...prev, originalPrice: event.target.value }))}
                         placeholder="280000"
                         inputMode="numeric"
+                        type="number"
+                        min="1"
+                        step="1"
                         className={adminInputClass}
                       />
                     </AdminField>
+                    <AdminField label="Product URL slug" wide><input value={productForm.slug} onChange={event => setProductForm(prev => ({ ...prev, slug: event.target.value }))} placeholder="Automatic for new products" pattern="[a-z0-9]+(-[a-z0-9]+)*" className={adminInputClass} /></AdminField>
+                    <details className="admin-specifications md:col-span-2"><summary>Specifications</summary><div className="grid gap-3 md:grid-cols-2">
                     <AdminField label="Source (optional)">
                       <input
                         value={productForm.source}
@@ -1689,7 +1693,9 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                         className={adminInputClass}
                       />
                     </AdminField>
-                    <AdminField label="Product or Instagram link (optional)" wide>
+
+                    </div></details>
+                    <AdminField label="Reference / Instagram link (optional)" wide>
                       <input
                         type="url"
                         value={productForm.link}
@@ -1701,6 +1707,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                     <AdminField label="Collection" wide>
                       <input
                         value={productForm.group}
+                        list="admin-collection-options"
                         onChange={event => setProductForm(prev => ({ ...prev, group: event.target.value }))}
                         placeholder="Awoof Sales"
                         className={adminInputClass}
@@ -1712,6 +1719,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                         onChange={event => setProductForm(prev => ({ ...prev, tag: event.target.value }))}
                         className={adminInputClass}
                       >
+                        <option value="">No tag</option>
                         <option>New</option>
                         <option>Premium</option>
                         <option>Best Seller</option>
@@ -1733,10 +1741,10 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                     />
                   </AdminField>
 
-                  {adminError && <p role="alert" className="text-sm text-red-400">{adminError}</p>}
 
-                  <div className="flex flex-wrap items-center gap-3">
-                    <button disabled={adminSaving} className="flex min-h-10 w-fit items-center justify-center gap-2 bg-[#c9a84c] px-4 text-xs font-bold uppercase tracking-[0.14em] text-black transition-colors hover:bg-white disabled:cursor-wait disabled:opacity-60">
+
+                  <div className="admin-editor-actions">
+                    <button disabled={adminSaving} className="admin-primary">
                       {editingProductId ? <HiCheck size={17} /> : <HiPlus size={17} />}
                       {adminSaving ? 'Saving...' : editingProductId ? 'Save changes' : 'Add product'}
                     </button>
@@ -1750,99 +1758,14 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                       </button>
                     )}
                   </div>
+                  <datalist id="admin-collection-options">{collectionGroups.map(group => <option key={group.name} value={group.name} />)}</datalist>
+                  </fieldset>
                 </form>
-
-                <div className="min-h-0 overflow-y-auto border-t border-white/10 p-5 lg:border-l lg:border-t-0 lg:p-6">
-                  <div className="mb-4 flex items-center justify-between gap-4">
-                    <div>
-                      <h4 className="font-display text-3xl text-white">Products</h4>
-                      <p className="mt-1 text-sm text-neutral-500">{allProducts.length} visible product{allProducts.length === 1 ? '' : 's'}</p>
-                      <p role="status" aria-live="polite" className="mt-1 text-xs text-neutral-600">{databaseStatus}</p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setAdminAccessCode('')
-                        setAdminUnlocked(false)
-                      }}
-                      className="text-xs uppercase tracking-[0.16em] text-neutral-500 transition-colors hover:text-white"
-                    >
-                      Lock
-                    </button>
-                  </div>
-
-                  <div className="grid gap-3">
-                    {allProducts.length === 0 ? (
-                      <div className="border border-white/10 bg-[#111] p-5 text-sm leading-relaxed text-neutral-500">
-                        No visible products. Add a product from the form and it will show up here.
-                      </div>
-                    ) : (
-                      allProducts.map((product, index) => (
-                        <div
-                          key={product.id}
-                          data-admin-product-id={product.id}
-                          draggable
-                          onDragStart={event => handleProductDragStart(event, product.id)}
-                          onDragEnter={() => {
-                            if (draggedProductId && draggedProductId !== product.id) setDragOverProductId(product.id)
-                          }}
-                          onDragOver={event => handleProductDragOver(event, product.id)}
-                          onDrop={event => handleProductDrop(event, product.id)}
-                          onDragEnd={endProductDrag}
-                          className={`grid cursor-grab grid-cols-[72px_1fr] gap-3 border bg-[#111] p-3 transition-[transform,border-color,background-color,opacity,box-shadow] duration-200 ease-out active:cursor-grabbing ${dragHoverClass(product.id)} ${
-                            draggedProductId === product.id || pointerSortProductId === product.id
-                              ? 'scale-[0.985] border-[#c9a84c]/70 opacity-55 shadow-lg shadow-[#c9a84c]/10'
-                              : dragOverProductId === product.id
-                                ? 'border-[#c9a84c]/55 bg-[#15130f] shadow-md shadow-black/40'
-                                : 'border-white/10 hover:border-[#c9a84c]/35'
-                          }`}
-                        >
-                          <img src={imageForProduct(product)} alt={product.name} width="72" height="80" loading="lazy" className="h-20 w-[72px] object-cover" />
-                          <div className="min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-white">{product.name}</p>
-                                <p className="mt-1 text-sm text-[#c9a84c]">{formatNgn(product.price)}</p>
-                                <p className="mt-1 truncate text-xs text-neutral-500">{groupNameForProduct(product)}</p>
-                              </div>
-                              <span className="shrink-0 text-[10px] uppercase tracking-[0.16em] text-neutral-600">
-                                {index + 1}
-                              </span>
-                            </div>
-                            <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-neutral-500">{product.description}</p>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                onPointerDown={event => startProductPointerSort(event, product.id)}
-                                className="flex h-9 touch-none select-none items-center justify-center gap-2 border border-white/10 px-3 text-xs font-semibold text-neutral-400 transition-colors hover:border-[#c9a84c]/40 hover:text-[#c9a84c]"
-                                aria-label={`Drag ${product.name} to sort`}
-                                title="Drag to sort"
-                              >
-                                <HiSwitchVertical size={15} />
-                                Drag
-                              </button>
-                              <button
-                                onClick={() => startEditingProduct(product)}
-                                className="flex h-9 items-center justify-center gap-2 border border-white/10 px-3 text-xs font-semibold text-neutral-300 transition-colors hover:border-[#c9a84c]/40 hover:text-[#c9a84c]"
-                              >
-                                <HiPencil size={15} />
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => deleteProduct(product.id)}
-                                className="flex h-9 items-center justify-center gap-2 border border-white/10 px-3 text-xs font-semibold text-neutral-400 transition-colors hover:border-red-400/40 hover:text-red-400"
-                              >
-                                <HiTrash size={15} />
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
+                <InventoryList products={allProducts} busy={adminSaving} editingId={editingProductId} draggedId={draggedProductId} hoveredId={dragOverProductId} onEdit={startEditingProduct} onDelete={id => { const product = allProducts.find(item => item.id === id); if (product) { setAdminError(''); setInventoryConfirmation({ action: 'delete', product }) } }} onMove={(from, to) => { void reorderProduct(from, to) }} onPointerSort={startProductPointerSort} onDragStart={handleProductDragStart} onDragOver={handleProductDragOver} onDrop={handleProductDrop} onDragEnd={endProductDrag} hoverClass={dragHoverClass} />
               </div>
-            )}
+            </>}
+            {inventoryConfirmation && <div className="inventory-confirm-overlay"><div className="inventory-confirm-panel" role="alertdialog" aria-modal="true" aria-labelledby="inventory-confirm-title"><h3 id="inventory-confirm-title">{inventoryConfirmation.action === 'delete' ? 'Delete product?' : 'Discard unsaved changes?'}</h3><p>{inventoryConfirmation.action === 'delete' ? `${inventoryConfirmation.product.name} (${formatNgn(inventoryConfirmation.product.price)}) will be removed from the storefront.` : 'The current product draft has not been saved.'}</p>{adminError && <p role="alert" className="admin-operation-error">{adminError}</p>}<div><button ref={confirmationCancelRef} type="button" className="admin-secondary" disabled={adminSaving} onClick={() => setInventoryConfirmation(null)}>Cancel</button><button type="button" className="admin-primary danger" disabled={adminSaving} onClick={confirmInventoryAction}>{adminSaving ? 'Deleting...' : inventoryConfirmation.action === 'delete' ? 'Delete product' : 'Discard changes'}</button></div></div></div>}
+            {dragPoint && pointerSortProductId && <div className="inventory-drag-ghost" aria-hidden="true" style={{ left: Math.min(dragPoint.x + 18, window.innerWidth - 245), top: dragPoint.y - 22 }}><HiUpload size={17} /><span>{allProducts.find(product => product.id === pointerSortProductId)?.name}</span></div>}
           </div>
         </div>
       )}

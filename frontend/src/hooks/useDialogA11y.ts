@@ -39,7 +39,7 @@ export function useDialogA11y<T extends HTMLElement>(open: boolean, onClose: () 
 
       if (event.key !== 'Tab' || !dialog) return
       const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
-        .filter(element => !element.hasAttribute('hidden') && element.getClientRects().length > 0)
+        .filter(element => !element.hasAttribute('hidden') && !element.closest('[inert]') && element.getClientRects().length > 0)
 
       if (focusable.length === 0) {
         event.preventDefault()

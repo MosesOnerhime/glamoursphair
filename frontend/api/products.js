@@ -106,7 +106,8 @@ async function supabase(path, init = {}) {
   }
 
   if (response.status === 204) return null
-  return response.json()
+  const body = await response.text()
+  return body ? JSON.parse(body) : null
 }
 
 export default async function handler(req, res) {
@@ -157,7 +158,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'PATCH') {
       const { products = [] } = req.body || {}
-      if (!Array.isArray(products) || products.length > 500) {
+      if (!Array.isArray(products) || products.length > 500 || new Set(products.map(product => product?.id)).size !== products.length) {
         res.status(400).json({ error: 'Product order is invalid.' })
         return
       }
@@ -166,22 +167,33 @@ export default async function handler(req, res) {
         res.status(400).json({ error: validationError })
         return
       }
-      await Promise.all(products.map((product, index) => supabase('/rest/v1/products?on_conflict=id', {
+      await supabase('/rest/v1/products?on_conflict=id', {
         method: 'POST',
         headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify(rowFromProduct(product, index)),
-      })))
+        body: JSON.stringify(products.map((product, index) => rowFromProduct(product, index))),
+      })
       res.status(204).end()
       return
     }
 
     if (req.method === 'DELETE') {
-      const { id } = req.body || {}
+      const { id, product } = req.body || {}
       if (!Number.isSafeInteger(id) || id <= 0) {
         res.status(400).json({ error: 'Product id is invalid.' })
         return
       }
-      await supabase(`/rest/v1/products?id=eq.${id}`, {
+      if (product) {
+        const validationError = validateProduct(product)
+        if (validationError || product.id !== id) {
+          res.status(400).json({ error: validationError || 'Product id does not match.' })
+          return
+        }
+        await supabase('/rest/v1/products?on_conflict=id', {
+          method: 'POST',
+          headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify({ ...rowFromProduct(product, 0), is_deleted: true }),
+        })
+      } else await supabase(`/rest/v1/products?id=eq.${id}`, {
         method: 'PATCH',
         headers: { Prefer: 'return=minimal' },
         body: JSON.stringify({ is_deleted: true }),
