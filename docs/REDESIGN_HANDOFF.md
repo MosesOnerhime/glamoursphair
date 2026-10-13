@@ -89,6 +89,9 @@ the previous refinement-only layout constraint.
 - Backup and pre-redesign main (820c7e0) share tree hash
   9650e1874f80034507d2e9db86aca1c9fe897090.
 - Current branch is main. No force push or destructive history rewrite was used.
+- Admin refinement commit: c8f3a8b, successfully pushed to origin/main.
+- Final remote verification confirmed main at c8f3a8b, preview at 359e670,
+  and backup at 3fe0c47 before this documentation-only close-out.
 
 ## Admin Follow-up
 
@@ -150,8 +153,18 @@ services and do not connect to Supabase or Paystack.
 ### Deployment Check
 
 The public domain was rechecked after the storefront push and served
-`/assets/index-Dy78DVdu.css` containing the new luxury-catalog styles. Admin
-deployment is checked separately after its final commit/push.
+`/assets/index-Dy78DVdu.css` containing the new luxury-catalog styles. After the
+admin push, the domain served `/assets/index-DSmNU4Py.css` with both storefront
+and inventory-row styles. Browser verification showed the new production
+inventory login locked, and the redesigned homepage using actual brand assets.
+No production password, mutation, or payment was submitted. The live catalog
+also reflected existing database edits (including Thank you sales); repository
+seed records were not used to overwrite them. Live proof: `qa/redesign-live-home.png`.
+
+Temporary QA servers on 5174, 5175, and 5176 were stopped. The existing preview
+server remains on http://localhost:5173. The public entry is
+https://www.glamoursphairluxury.com/ and the private inventory entry is
+https://www.glamoursphairluxury.com/?admin=products.
 
 ## Boundaries
 
