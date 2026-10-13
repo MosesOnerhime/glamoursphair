@@ -4,6 +4,237 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --store-black: #000;
+  --store-gold: #c9a84c;
+  --store-champagne: #cbb07a;
+  --store-cream: #f6efe6;
+  --store-wine: #6b1e2e;
+  --store-espresso: #1c1613;
+}
+
+.storefront { background: var(--store-black); letter-spacing: 0; }
+.storefront [hidden] { display: none !important; }
+.luxury-header { position: sticky; top: 0; z-index: 40; height: 64px; padding: 0 24px; display: flex; align-items: center; gap: 24px; background: var(--store-black); border-bottom: 1px solid #c9a84c40; }
+.header-brand { display: flex; align-items: center; gap: 12px; margin-right: auto; color: var(--store-gold); }
+.header-brand img { width: 58px; height: 54px; object-fit: contain; }
+.header-brand span { font-family: 'Cormorant Garamond', serif; font-size: 25px; }
+.luxury-header nav ul { display: flex; gap: 28px; }
+.luxury-header nav a { color: var(--store-gold); font-size: 15px; font-weight: 500; }
+.luxury-header nav a:hover { text-decoration: underline; text-underline-offset: 5px; }
+.header-actions { display: flex; color: var(--store-gold); gap: 2px; }
+.header-actions button { position: relative; width: 44px; height: 44px; display: grid; place-items: center; }
+.header-actions .menu-toggle { display: none; }
+.cart-count { position: absolute; top: 1px; right: 0; min-width: 17px; height: 17px; border-radius: 50%; background: var(--store-gold); color: #000; font-size: 11px; font-weight: 700; }
+.luxury-button { display: inline-flex; justify-content: center; align-items: center; gap: 9px; min-height: 46px; padding: 12px 24px; border: 1px solid var(--store-gold); border-radius: 999px; background: var(--store-gold); color: #000; font-size: 14px; font-weight: 700; text-align: center; transition: background-color .2s, color .2s; }
+.luxury-button:hover { background: #dbc071; border-color: #dbc071; }
+.luxury-button.outline { color: var(--store-gold); background: transparent; }
+.luxury-button.outline:hover { background: var(--store-gold); color: #000; }
+.round-tool { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--store-champagne); border-radius: 50%; color: var(--store-champagne); background: transparent; flex-shrink: 0; }
+.round-tool:hover { background: #cbb07a1a; }
+.luxury-hero { position: relative; min-height: calc(100svh - 88px); display: flex; align-items: flex-end; justify-content: center; overflow: hidden; text-align: center; padding: 24px 20px 46px; }
+.hero-photograph { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 44%; }
+.hero-shade { position: absolute; inset: 0; background: linear-gradient(#0009, #0005 40%, #000d); }
+.hero-brand { position: absolute; top: 40px; left: 0; right: 0; z-index: 1; color: var(--store-cream); }
+.hero-brand img { width: 105px; height: 90px; object-fit: contain; margin: 0 auto 10px; }
+.hero-brand h1 { font-family: 'Cormorant Garamond', serif; font-size: 40px; line-height: 1.1; text-shadow: 0 2px 10px #0008; }
+.hero-content { position: relative; z-index: 1; max-width: 640px; }
+.hero-tagline { color: var(--store-gold); font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 29px; line-height: 1.2; }
+.hero-subtext { max-width: 480px; margin: 12px auto 26px; color: var(--store-cream); font-size: 14px; line-height: 1.6; }
+.hero-buttons { display: flex; justify-content: center; gap: 12px; }
+.luxury-trust-strip { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; padding: 21px 16px; gap: 14px; color: var(--store-cream); background: var(--store-wine); font-size: 14px; }
+.luxury-catalog { padding: 80px 20px 90px; background: var(--store-espresso); scroll-margin-top: 64px; }
+.catalog-content { max-width: 1480px; margin: auto; }
+.catalog-header { text-align: center; margin-bottom: 28px; }
+.catalog-title-row { position: relative; display: flex; justify-content: center; align-items: center; padding: 0 54px; }
+.catalog-title-row h2 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 600; font-size: 70px; line-height: 1.15; color: var(--store-champagne); }
+.catalog-subtitle { margin-top: 10px; font-family: 'Cormorant Garamond', serif; font-style: italic; color: #e3dacf; font-size: 21px; }
+.filter-tool { position: absolute; left: 0; }
+.view-tool { position: absolute; right: 0; }
+.catalog-discovery { max-width: 1100px; margin: auto; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 18px 30px; }
+.catalog-collections { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 24px; }
+.catalog-collections button { min-height: 44px; font-size: 13px; color: #c7bcb1; border-bottom: 1px solid transparent; }
+.catalog-collections button[aria-pressed=true] { color: var(--store-champagne); border-color: var(--store-champagne); }
+.catalog-collections span { margin-left: 5px; font-size: 11px; color: #b4a798; }
+.catalog-search { width: 260px; height: 44px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #cbb07a40; color: var(--store-champagne); }
+.catalog-search input { width: 100%; min-width: 0; background: transparent; color: var(--store-cream); font-size: 13px; height: 40px; }
+.catalog-search input::placeholder { color: #baafa4; }
+.catalog-search button { width: 36px; height: 40px; display: grid; place-items: center; flex-shrink: 0; }
+.catalog-search input::-webkit-search-cancel-button { display: none; }
+.catalog-filters { max-width: 1000px; display: flex; justify-content: center; align-items: flex-end; flex-wrap: wrap; gap: 16px; margin: 26px auto 0; padding: 22px 0; border-block: 1px solid #cbb07a30; }
+.catalog-filters label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--store-cream); }
+.catalog-filters select { min-height: 44px; padding: 8px 12px; border: 1px solid #cbb07a66; border-radius: 4px; background: #14100e; color: var(--store-cream); }
+.catalog-filters .sale-checkbox { flex-direction: row; align-items: center; height: 44px; gap: 9px; }
+.sale-checkbox input { width: 19px; height: 19px; accent-color: var(--store-gold); }
+.filter-reset { min-height: 44px; color: var(--store-champagne); font-size: 13px; text-decoration: underline; text-underline-offset: 4px; }
+.catalog-count { margin-top: 17px; text-align: center; color: #baafa4; font-size: 12px; }
+.product-showcase { --step: 260px; --card-width: 300px; position: relative; height: 610px; overflow: hidden; touch-action: pan-y; }
+.showcase-track { position: relative; height: 100%; width: 100%; }
+.catalog-card { min-width: 0; color: var(--store-cream); }
+.showcase-card { position: absolute; top: 50%; left: 50%; width: var(--card-width); transform: translate(calc(-50% + var(--offset) * var(--step)), -50%) scale(var(--scale)); opacity: calc(1 - .13 * max(var(--offset), -1 * var(--offset))); transition: transform .5s ease, opacity .5s ease; }
+.catalog-media { display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 8px; background: #100e0c; color: var(--store-champagne); }
+.catalog-media img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
+.catalog-media:hover img { transform: scale(1.025); }
+.catalog-info { padding: 17px 2px 0; text-align: center; }
+.catalog-info h3 { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 25px; line-height: 1.13; }
+.catalog-info h3 a:hover { color: var(--store-champagne); }
+.catalog-spec { margin-top: 7px; font-size: 12px; line-height: 1.5; color: #b8ac9f; }
+.catalog-card-row { margin-top: 13px; padding-top: 8px; border-top: 1px solid #cbb07a40; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.catalog-price { display: flex; flex-direction: column; text-align: left; color: var(--store-champagne); font-size: 16px; font-weight: 600; white-space: nowrap; }
+.catalog-price del { color: #b8ac9f; font-weight: 400; font-size: 12px; }
+.catalog-actions { display: flex; align-items: center; gap: 6px; }
+.catalog-add { width: 44px; height: 44px; display: grid; place-items: center; color: var(--store-champagne); }
+.catalog-add:hover { color: white; }
+.catalog-order { display: flex; align-items: center; gap: 5px; min-height: 44px; font-size: 12px; text-transform: uppercase; text-decoration: underline; text-decoration-color: var(--store-champagne); text-underline-offset: 5px; }
+.catalog-order svg { width: 15px; }
+.showcase-prev, .showcase-next { position: absolute; top: 45%; z-index: 20; background: #1c1613d9; }
+.showcase-prev { left: 6px; }
+.showcase-next { right: 6px; }
+.showcase-position { position: absolute; bottom: 0; left: 0; right: 0; text-align: center; font-size: 12px; color: #c7bcb1; }
+.catalog-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px 30px; max-width: 1060px; margin: 40px auto 0; }
+.catalog-empty { padding: 80px 20px; text-align: center; }
+.catalog-empty h3 { font-family: 'Cormorant Garamond', serif; font-size: 32px; }
+.catalog-empty p { margin: 12px 0 22px; color: #c7bcb1; }
+.brand-editorial { position: relative; min-height: 540px; padding: 75px 8%; display: flex; align-items: center; overflow: hidden; background: #000; }
+.editorial-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 35% 24%; }
+.editorial-shade { position: absolute; inset: 0; background: linear-gradient(90deg, #0001, #000d 65%); }
+.editorial-content { position: relative; z-index: 1; max-width: 480px; margin-left: auto; }
+.editorial-eyebrow { color: var(--store-champagne); font-size: 13px; margin-bottom: 14px; }
+.editorial-content h2 { font-family: 'Cormorant Garamond', serif; font-style: italic; color: var(--store-gold); font-size: 44px; line-height: 1.1; margin-bottom: 24px; }
+.editorial-content > p:not(.editorial-eyebrow) { font-size: 15px; line-height: 1.8; color: var(--store-cream); margin-bottom: 16px; }
+.editorial-content .luxury-button { margin-top: 10px; }
+.light-band { background: var(--store-cream); color: #211815; }
+.section-inner { max-width: 1100px; margin: auto; }
+.light-band h2 { font-family: 'Cormorant Garamond', serif; font-size: 36px; line-height: 1.15; color: var(--store-wine); text-align: center; }
+.buyer-confidence { padding: 54px 24px 0; }
+.benefit-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 30px auto 38px; }
+.benefit { padding: 22px 18px; border: 1px solid #6b1e2e26; border-radius: 8px; background: #fff; }
+.benefit svg { color: var(--store-wine); }
+.benefit h3 { font-family: 'Cormorant Garamond', serif; font-size: 23px; line-height: 1.15; color: var(--store-wine); margin: 14px 0 8px; }
+.benefit p { font-size: 14px; line-height: 1.6; color: #52453f; }
+.delivery-note { max-width: 700px; padding: 25px 30px; margin: auto; border-radius: 8px; text-align: center; background: var(--store-wine); color: var(--store-cream); }
+.delivery-note h3 { font-family: 'Cormorant Garamond', serif; font-size: 27px; color: var(--store-gold); }
+.delivery-note p { font-size: 14px; line-height: 1.6; margin: 8px 0; }
+.delivery-note a { display: inline-flex; align-items: center; min-height: 44px; font-size: 13px; color: var(--store-gold); text-decoration: underline; text-underline-offset: 4px; }
+.contact-band { padding: 65px 24px 0; }
+.studio-details { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; margin: 35px auto; }
+.studio-details > * { border-top: 1px solid #6b1e2e40; padding-top: 20px; min-width: 0; }
+.studio-details svg { color: var(--store-wine); }
+.studio-details h3 { font-family: 'Cormorant Garamond', serif; font-size: 23px; color: var(--store-wine); margin: 11px 0 8px; }
+.studio-details p, .studio-details div > a { display: block; color: #52453f; font-size: 13px; line-height: 1.8; overflow-wrap: anywhere; }
+.studio-details a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.personal-shopping { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding-top: 26px; border-top: 1px solid #6b1e2e26; }
+.personal-shopping h3 { font-family: 'Cormorant Garamond', serif; font-size: 26px; color: var(--store-wine); }
+.personal-shopping p { font-size: 14px; color: #52453f; margin-top: 5px; }
+.personal-shopping .luxury-button { flex-shrink: 0; }
+.channel-band { padding: 62px 24px; text-align: center; }
+.channel-band p { margin: 16px 0 22px; font-size: 14px; color: #52453f; }
+.luxury-footer { background: #000; border-top: 1px solid #c9a84c40; padding: 36px 16px; text-align: center; }
+.footer-brand { font-family: 'Cormorant Garamond', serif; color: var(--store-gold); font-size: 26px; }
+.luxury-footer > p { margin-top: 8px; font-size: 13px; color: var(--store-cream); }
+.footer-socials { display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 8px; }
+.footer-socials a { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; font-size: 13px; color: var(--store-gold); }
+.footer-socials a:hover { text-decoration: underline; }
+.luxury-footer .footer-copy { color: #aaa; font-size: 12px; }
+.navigation-backdrop { position: fixed; inset: 0; background: #0009; z-index: 85; }
+.mobile-navigation { position: absolute; inset: 0 0 0 auto; width: min(85vw, 340px); padding: 65px 28px 30px; overflow: auto; background: #000; border-left: 1px solid #c9a84c40; }
+.mobile-navigation > img { height: 80px; width: 95px; object-fit: contain; margin-bottom: 25px; }
+.mobile-navigation nav { margin-bottom: 28px; }
+.mobile-navigation nav a { display: flex; align-items: center; justify-content: space-between; min-height: 58px; border-bottom: 1px solid #c9a84c26; font-family: 'Cormorant Garamond', serif; font-size: 25px; color: var(--store-cream); }
+.menu-close { position: absolute; right: 16px; top: 15px; }
+.search-dialog { max-width: 640px; margin: 75px auto 0; background: var(--store-espresso); border: 1px solid #cbb07a50; padding: 28px; }
+.search-dialog h2 { font-family: 'Cormorant Garamond', serif; color: var(--store-champagne); font-size: 32px; }
+.search-dialog form { display: flex; gap: 10px; margin-top: 25px; border-bottom: 1px solid #cbb07a80; }
+.search-dialog input { width: 100%; min-width: 0; padding: 14px 0; background: transparent; color: var(--store-cream); font-size: 16px; }
+.search-dialog form button { width: 44px; flex-shrink: 0; display: grid; place-items: center; color: var(--store-champagne); }
+.search-suggestions { display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 20px; }
+.search-suggestions button { min-height: 44px; font-size: 13px; color: var(--store-champagne); }
+.product-detail { border-radius: 8px; }
+.product-detail .text-neutral-600, .product-detail .text-neutral-500 { color: #a9a29a; }
+
+@media (min-width: 1400px) {
+  .product-showcase { --step: 290px; }
+}
+@media (max-width: 1100px) {
+  .header-brand span { font-size: 22px; }
+  .luxury-header nav ul { gap: 18px; }
+  .product-showcase { --step: 225px; --card-width: 270px; height: 580px; }
+  .catalog-title-row h2 { font-size: 60px; }
+}
+@media (max-width: 950px) {
+  .luxury-header > nav { display: none; }
+  .header-actions .menu-toggle { display: grid; }
+  .benefit-grid { grid-template-columns: repeat(2, 1fr); }
+  .studio-details { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 699px) {
+  .luxury-header { padding: 0 16px; }
+  .header-brand span { display: none; }
+  .header-brand img { width: 55px; height: 48px; }
+  .luxury-hero { min-height: calc(100svh - 96px); padding: 180px 24px 36px; }
+  .hero-brand { top: 32px; }
+  .hero-brand img { width: 95px; height: 82px; }
+  .hero-brand h1 { font-size: 28px; }
+  .hero-tagline { font-size: 28px; }
+  .hero-subtext { font-size: 14px; }
+  .hero-buttons { flex-direction: column; max-width: 280px; margin: auto; }
+  .luxury-trust-strip { grid-template-columns: 1fr; gap: 9px; padding: 18px 16px; font-size: 13px; }
+  .luxury-catalog { padding: 50px 16px 55px; }
+  .catalog-title-row { padding: 0 48px; }
+  .catalog-title-row h2 { font-size: 43px; }
+  .catalog-subtitle { font-size: 20px; }
+  .catalog-collections { gap: 0 17px; }
+  .catalog-collections button { font-size: 12px; }
+  .catalog-search { width: 100%; max-width: 310px; }
+  .catalog-discovery { gap: 8px; }
+  .catalog-filters { justify-content: stretch; gap: 16px 12px; }
+  .catalog-filters > label:not(.sale-checkbox) { width: calc(50% - 6px); }
+  .catalog-filters select { width: 100%; font-size: 14px; }
+  .catalog-filters .sale-checkbox { margin-left: 0; }
+  .product-showcase { --step: 220px; --card-width: 215px; height: 490px; margin: 0 -16px; }
+  .showcase-card { top: 47%; }
+  .catalog-info h3 { font-size: 23px; }
+  .catalog-spec { font-size: 11px; }
+  .catalog-price { font-size: 14px; }
+  .catalog-actions { gap: 0; }
+  .catalog-order { font-size: 11px; }
+  .catalog-order svg { display: none; }
+  .showcase-prev { left: 10px; }
+  .showcase-next { right: 10px; }
+  .catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 16px; }
+  .catalog-grid .catalog-info h3 { font-size: 21px; }
+  .catalog-grid .catalog-card-row { flex-wrap: wrap; }
+  .catalog-grid .catalog-price { width: 100%; text-align: center; }
+  .catalog-grid .catalog-actions { justify-content: center; width: 100%; gap: 12px; }
+  .brand-editorial { min-height: 570px; padding: 55px 24px; align-items: flex-end; }
+  .editorial-photo { object-position: 32% 12%; }
+  .editorial-shade { background: linear-gradient(#0003, #000d 50%); }
+  .editorial-content { max-width: 480px; margin: 0; }
+  .editorial-content h2 { font-size: 38px; }
+  .editorial-content > p:not(.editorial-eyebrow) { font-size: 14px; }
+  .buyer-confidence { padding: 45px 20px 0; }
+  .benefit-grid { gap: 12px; }
+  .benefit { padding: 18px 14px; }
+  .benefit h3 { font-size: 21px; }
+  .benefit p { font-size: 13px; }
+  .light-band h2 { font-size: 32px; }
+  .delivery-note { padding: 22px 18px; }
+  .contact-band { padding: 48px 20px 0; }
+  .studio-details { gap: 25px 16px; }
+  .studio-details h3 { font-size: 21px; }
+  .studio-details p, .studio-details div > a { font-size: 12px; }
+  .personal-shopping { flex-direction: column; align-items: flex-start; }
+  .channel-band { padding: 48px 20px; }
+  .search-dialog { padding: 20px; margin-top: 50px; }
+}
+@media (max-width: 374px) {
+  .catalog-title-row h2 { font-size: 37px; }
+  .product-showcase { --card-width: 200px; --step: 208px; }
+  .catalog-order { font-size: 10px; }
+  .catalog-price { font-size: 13px; }
+  .hero-brand h1 { font-size: 26px; }
+}
+
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 7rem;

@@ -17,10 +17,11 @@ Vite prints the local preview URL, normally `http://localhost:5173`.
 
 ```bash
 npm run lint
+npm test
 npm run build
 ```
 
-There is currently no automated test script. The production build performs the TypeScript project check before bundling.
+The regression tests check the catalog, photograph paths, admin password verification, and invalid catalog writes without contacting Supabase. The production build performs the TypeScript project check before bundling.
 
 ## Environment variables
 
@@ -83,9 +84,16 @@ Contact details displayed to shoppers live in `src/components/Contact.tsx`. Conf
 ## Brand system
 
 - Gold accent: `#c9a84c`
-- Main background: `#0a0a0a`
+- Main background: black, with an editorial `#1c1613` collection band
+- Support band: `#f6efe6`, with `#6b1e2e` accents
 - Display font: Cormorant Garamond
 - Body font: DM Sans
 - WhatsApp accent: `#25D366`
 
 Preserve the existing GLAMOURSPHAIR logo, black/gold palette, product photography, collection naming, and luxury editorial direction when extending the site.
+
+## Reference redesign
+
+The October 2026 redesign follows the composition of `https://tluxehairs.vercel.app/`, adapted to GLAMOURSPHAIR's real identity and catalog. The collection defaults to a five-position carousel; its view button opens a grid. Search, collections, price/length/fitting filters, sale filtering, and price sorting remain available.
+
+The `backup` branch preserves the full pre-redesign website. Branch evidence and QA results are documented in `../docs/REDESIGN_HANDOFF.md`. The Supabase database is shared independently of Git, so reverting a branch does not undo catalog changes made through the admin panel.

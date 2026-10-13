@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, DragEvent, FormEvent, MouseEvent, PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import { track } from '@vercel/analytics'
-import { HiShoppingCart, HiCheck, HiX, HiLink, HiChevronLeft, HiChevronRight, HiLockClosed, HiPlus, HiTrash, HiUpload, HiPencil, HiCollection, HiSwitchVertical, HiEye, HiEyeOff, HiAdjustments, HiSearch } from 'react-icons/hi'
+import { HiShoppingCart, HiCheck, HiX, HiLink, HiChevronLeft, HiChevronRight, HiLockClosed, HiPlus, HiTrash, HiUpload, HiPencil, HiSwitchVertical, HiEye, HiEyeOff } from 'react-icons/hi'
 import { FaWhatsapp, FaInstagram } from 'react-icons/fa'
 import type { Product } from '../types'
 import {
@@ -15,6 +15,7 @@ import {
   verifyAdminPassword,
 } from '../lib/productDatabase'
 import { useDialogA11y } from '../hooks/useDialogA11y'
+import ProductCatalog from './ProductCatalog'
 
 const WHATSAPP = '2348128288948'
 const PRODUCT_PARAM = 'product'
@@ -592,6 +593,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   const [lengthFilter, setLengthFilter] = useState(() => discoveryParam('length', ALL_LENGTHS))
   const [fittingFilter, setFittingFilter] = useState(() => discoveryParam('fitting', ALL_FITTINGS))
   const [saleOnly, setSaleOnly] = useState(() => discoveryParam('sale') === '1')
+  const [priceFilter, setPriceFilter] = useState(() => discoveryParam('price', 'any'))
   const [sort, setSort] = useState<SortOption>(() => {
     const value = discoveryParam('sort')
     return value === 'price-asc' || value === 'price-desc' ? value : 'featured'
@@ -637,11 +639,6 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     return orderProducts(mergeProductsById([...visibleSeedProducts, ...persistedAdminProducts, ...localAdminProducts]), order)
   }, [adminProducts, databaseHiddenIds, databaseOrder, databaseProducts, hiddenProductIds, productOrder, productOverrides])
 
-  const featuredProducts = useMemo(
-    () => allProducts.filter(product => ['Best Seller', 'New', 'Exclusive'].includes(product.tag ?? '')).slice(0, 4),
-    [allProducts]
-  )
-
   const lengthOptions = useMemo(() => Array.from(new Set(allProducts.map(product => product.length).filter(Boolean) as string[]))
     .sort((a, b) => Number.parseInt(a) - Number.parseInt(b)), [allProducts])
   const fittingOptions = useMemo(() => Array.from(new Set(allProducts.map(product => product.fitting).filter(Boolean) as string[]))
@@ -665,24 +662,25 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
       return (!cleanSearch || searchable.includes(cleanSearch)) &&
         (lengthFilter === ALL_LENGTHS || product.length === lengthFilter) &&
         (fittingFilter === ALL_FITTINGS || product.fitting === fittingFilter) &&
+        (priceFilter === 'any' || (priceFilter === 'under-300' && product.price < 300000) ||
+          (priceFilter === '300-600' && product.price >= 300000 && product.price <= 600000) ||
+          (priceFilter === 'above-600' && product.price > 600000)) &&
         (!saleOnly || Boolean(product.originalPrice && product.originalPrice > product.price))
     })
 
     return sortProducts(matches, sort)
-  }, [allProducts, fittingFilter, lengthFilter, saleOnly, search, sort])
+  }, [allProducts, fittingFilter, lengthFilter, priceFilter, saleOnly, search, sort])
 
-  const groupedFiltered = useMemo(() => groupProducts(filtered), [filtered])
-  const visibleCollectionGroups = useMemo(
-    () => activeCollection === ALL_COLLECTIONS
-      ? groupedFiltered
-      : groupedFiltered.filter(collection => collection.name === activeCollection),
-    [activeCollection, groupedFiltered]
+  const collectionGroups = useMemo(() => groupProducts(allProducts), [allProducts])
+  const visibleProducts = useMemo(
+    () => activeCollection === ALL_COLLECTIONS ? filtered : filtered.filter(product => groupNameForProduct(product) === activeCollection),
+    [activeCollection, filtered]
   )
-  const visibleProductCount = visibleCollectionGroups.reduce((sum, collection) => sum + collection.products.length, 0)
   const activeFilterCount = [
     lengthFilter !== ALL_LENGTHS,
     fittingFilter !== ALL_FITTINGS,
     saleOnly,
+    priceFilter !== 'any',
   ].filter(Boolean).length
   const relatedProducts = selected
     ? allProducts.filter(product => product.id !== selected.id && groupNameForProduct(product) === groupNameForProduct(selected)).slice(0, 3)
@@ -761,6 +759,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     setLengthFilter(ALL_LENGTHS)
     setFittingFilter(ALL_FITTINGS)
     setSaleOnly(false)
+    setPriceFilter('any')
     setSort('featured')
   }
 
@@ -772,6 +771,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
       setLengthFilter(ALL_LENGTHS)
       setFittingFilter(ALL_FITTINGS)
       setSaleOnly(false)
+      setPriceFilter('any')
       setSort('featured')
     }
 
@@ -803,6 +803,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
       setLengthFilter(params.get('length') ?? ALL_LENGTHS)
       setFittingFilter(params.get('fitting') ?? ALL_FITTINGS)
       setSaleOnly(params.get('sale') === '1')
+      setPriceFilter(params.get('price') ?? 'any')
       setSort(nextSort === 'price-asc' || nextSort === 'price-desc' ? nextSort : 'featured')
     }
 
@@ -822,10 +823,11 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     setOptionalParam('length', lengthFilter, ALL_LENGTHS)
     setOptionalParam('fitting', fittingFilter, ALL_FITTINGS)
     setOptionalParam('sort', sort, 'featured')
+    setOptionalParam('price', priceFilter, 'any')
     if (saleOnly) url.searchParams.set('sale', '1')
     else url.searchParams.delete('sale')
     window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
-  }, [activeCollection, fittingFilter, lengthFilter, saleOnly, search, sort])
+  }, [activeCollection, fittingFilter, lengthFilter, priceFilter, saleOnly, search, sort])
 
   useEffect(() => {
     const defaultTitle = 'GLAMOURSPHAIR | Luxury Hair & Wigs - Abuja'
@@ -943,12 +945,11 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
   useEffect(() => {
     if (activeCollection === ALL_COLLECTIONS) return
-    if (!groupedFiltered.some(collection => collection.name === activeCollection)) {
+    if (!collectionGroups.some(collection => collection.name === activeCollection)) {
       setActiveCollection(ALL_COLLECTIONS)
     }
-  }, [activeCollection, groupedFiltered])
+  }, [activeCollection, collectionGroups])
 
-  const getSlideIndex = (id: number) => slideIndexes[id] ?? 0
 
   const nextSlide = (e: MouseEvent, id: number, total: number) => {
     e.stopPropagation()
@@ -961,6 +962,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   }
 
   const handleAdd = (product: Product) => {
+    if (selected) closeProduct()
     onAddToCart(product)
     trackBuyerEvent('Add To Cart', { product: product.name, price: product.price })
     setAdded(product.id)
@@ -1304,369 +1306,35 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     }
   }, [dragOverProductId, pointerSortProductId, reorderProduct])
 
-  const renderProductImage = (product: Product, compact = false) => (
-    <div className={`relative aspect-[4/5] overflow-hidden bg-gradient-to-br ${product.gradient} ${compact ? 'max-h-72' : ''}`}>
-      {product.images && product.images.length > 1 ? (
-        <>
-          <button type="button" onClick={() => openProduct(product)} className="absolute inset-0 h-full w-full text-left" aria-label={`View details for ${product.name}`}>
-            <img
-              src={product.images[getSlideIndex(product.id)]}
-              alt={product.name}
-              width="750"
-              height="1000"
-              loading="lazy"
-              decoding="async"
-              sizes={compact ? '(max-width: 767px) 50vw, 25vw' : '(max-width: 479px) 100vw, (max-width: 1023px) 50vw, 25vw'}
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025]"
-            />
-          </button>
-          <button
-            onClick={(e) => prevSlide(e, product.id, product.images!.length)}
-            className="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center bg-black/55 text-white transition-colors hover:bg-black/85"
-            aria-label={`Previous ${product.name} image`}
-          >
-            <HiChevronLeft size={17} />
-          </button>
-          <button
-            onClick={(e) => nextSlide(e, product.id, product.images!.length)}
-            className="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center bg-black/55 text-white transition-colors hover:bg-black/85"
-            aria-label={`Next ${product.name} image`}
-          >
-            <HiChevronRight size={17} />
-          </button>
-          <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 gap-1">
-            {product.images.map((_, i) => (
-              <button
-                key={i}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setSlideIndexes(prev => ({ ...prev, [product.id]: i }))
-                }}
-                className="flex h-8 w-8 items-center justify-center"
-                aria-label={`Show ${product.name} image ${i + 1}`}
-                aria-current={i === getSlideIndex(product.id) ? 'true' : undefined}
-              >
-                <span className={`block h-1.5 rounded-full transition-[width,background-color] duration-200 ${i === getSlideIndex(product.id) ? 'w-4 bg-[#c9a84c]' : 'w-2 bg-white/50'}`} />
-              </button>
-            ))}
-          </div>
-        </>
-      ) : imageForProduct(product) ? (
-        <button type="button" onClick={() => openProduct(product)} className="absolute inset-0 h-full w-full text-left" aria-label={`View details for ${product.name}`}>
-          <img
-            src={imageForProduct(product)}
-            alt={product.name}
-            width="750"
-            height="1000"
-            loading="lazy"
-            decoding="async"
-            sizes={compact ? '(max-width: 767px) 50vw, 25vw' : '(max-width: 479px) 100vw, (max-width: 1023px) 50vw, 25vw'}
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025]"
-          />
-        </button>
-      ) : (
-        <button type="button" onClick={() => openProduct(product)} className="absolute inset-0 flex items-center justify-center text-[#c9a84c]/30" aria-label={`View details for ${product.name}`}>
-          <HiShoppingCart size={44} />
-        </button>
-      )}
-
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#111]/88 via-transparent to-black/15" />
-      {product.tag && (
-        <span className={`absolute left-3 top-3 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${tagColors[product.tag]}`}>
-          {product.tag}
-        </span>
-      )}
-      <div className="absolute bottom-3 right-3 bg-black/80 px-3 py-1.5 backdrop-blur">
-        {product.originalPrice && (
-          <p className="text-[11px] text-neutral-300 line-through">Original {formatNgn(product.originalPrice)}</p>
-        )}
-        <p className="text-base font-bold leading-tight text-[#c9a84c] sm:text-lg"><span className="sr-only">Current price </span>{formatNgn(product.price)}</p>
-      </div>
-    </div>
-  )
-
-  const renderProductCard = (product: Product, compact = false) => (
-    <article
-      key={`${compact ? 'featured' : 'grid'}-${product.id}`}
-      className="group relative flex flex-col overflow-hidden border border-white/8 bg-[#111] transition-[border-color,background-color] duration-300 hover:border-[#c9a84c]/45 hover:bg-[#15130f]"
-    >
-      {renderProductImage(product, compact)}
-
-      <div className="flex flex-1 flex-col gap-2 p-3 sm:p-5">
-        <h3 className="min-h-[2.6rem] text-base font-semibold leading-tight sm:text-lg">
-          <button type="button" onClick={() => openProduct(product)} className="text-left text-white transition-colors duration-300 group-hover:text-[#c9a84c]">
-            {product.name}
-          </button>
-        </h3>
-        <p className="h-5 overflow-hidden whitespace-nowrap text-sm leading-5 text-neutral-500 [mask-image:linear-gradient(90deg,#000_78%,transparent)]">
-          {product.description}
-        </p>
-        {productSpecs(product).length > 0 && (
-          <div className="flex h-7 flex-wrap gap-1 overflow-hidden">
-            {productSpecs(product).slice(0, 3).map(spec => (
-              <span key={`${product.id}-${spec.label}`} className="border border-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.08em] text-neutral-400">
-                {spec.value}
-              </span>
-            ))}
-          </div>
-        )}
-
-        <div className="mt-auto flex flex-col gap-2 pt-2">
-          <button
-            type="button"
-            onClick={() => openProduct(product)}
-            className="min-h-10 w-full border border-white/10 px-3 text-xs font-semibold text-neutral-300 transition-colors hover:border-[#c9a84c]/45 hover:text-[#c9a84c]"
-          >
-            View details
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              handleAdd(product)
-            }}
-            aria-live="polite"
-            className={`flex min-h-11 w-full items-center justify-center gap-2 px-3 text-[11px] font-bold uppercase tracking-[0.1em] transition-colors sm:text-sm ${
-              added === product.id ? 'bg-emerald-500 text-white' : 'bg-[#c9a84c] text-black hover:bg-white'
-            }`}
-          >
-            {added === product.id ? (
-              <><HiCheck size={16} /> Added</>
-            ) : (
-              <><HiShoppingCart size={16} /> Add to Cart</>
-            )}
-          </button>
-
-          <a
-            href={whatsappLink(product)}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => {
-              e.stopPropagation()
-              trackBuyerEvent('WhatsApp Click', { product: product.name, surface: compact ? 'featured-card' : 'product-card' })
-            }}
-            className="flex min-h-10 w-full items-center justify-center gap-2 border border-[#25D366]/30 px-3 text-[11px] font-semibold tracking-wide text-[#25D366] transition-colors hover:bg-[#25D366]/10 sm:text-sm"
-          >
-            <FaWhatsapp size={15} />
-            WhatsApp
-          </a>
-        </div>
-      </div>
-    </article>
-  )
-
   return (
-    <section id="shop" className="bg-[#0d0d0d] px-4 py-14 md:py-24">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-12">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a84c]">Featured pieces</p>
-              <h2 className="mt-2 font-display text-4xl leading-tight text-white md:text-6xl">
-                Discover the latest Glamoursphair edit.
-              </h2>
-            </div>
-            <button
-              onClick={() => {
-                resetDiscovery()
-                document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })
-              }}
-              className="w-fit border border-[#c9a84c]/40 px-5 py-3 text-xs font-bold uppercase tracking-[0.16em] text-[#c9a84c] transition-colors hover:bg-[#c9a84c] hover:text-black"
-            >
-              View All Products
-            </button>
-          </div>
-          <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-5">
-            {featuredProducts.map(product => renderProductCard(product, true))}
-          </div>
-        </div>
-
-        <div id="collection" className="border-t border-white/8 pt-12">
-          <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#c9a84c]">Full collection</p>
-              <h2 className="mt-2 font-display text-4xl text-white md:text-6xl">
-                Find your next <span className="text-[#c9a84c]">signature look</span>
-              </h2>
-              <p className="mt-3 max-w-xl text-sm leading-relaxed text-neutral-500">
-                Premium ready-to-wear units, soft glam favorites and care essentials. Tap any product for full details.
-              </p>
-            </div>
-
-            <div className="relative w-full md:max-w-sm">
-              <label htmlFor="product-search" className="sr-only">Search products</label>
-              <HiSearch aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={18} />
-              <input
-                id="product-search"
-                name="q"
-                type="text"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search wigs, serum, blonde..."
-                className="w-full border border-white/10 bg-[#111] py-3 pl-11 pr-11 text-sm text-white outline-none transition-colors placeholder:text-neutral-600 focus:border-[#c9a84c]/55"
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch('')}
-                  className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center text-lg text-neutral-500 transition-colors hover:text-white"
-                  aria-label="Clear product search"
-                >
-                  <HiX size={18} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="mb-5 mt-6 flex flex-wrap items-center justify-between gap-3 border-y border-white/8 py-4">
-            <p role="status" aria-live="polite" className="text-sm text-neutral-400">
-              <span className="font-semibold text-white">{visibleProductCount}</span> product{visibleProductCount === 1 ? '' : 's'} shown
-            </p>
-            <button
-              type="button"
-              onClick={() => setMobileFiltersOpen(open => !open)}
-              aria-expanded={mobileFiltersOpen}
-              aria-controls="product-filters"
-              className="flex min-h-11 items-center gap-2 border border-white/10 px-4 text-sm font-semibold text-neutral-300 md:hidden"
-            >
-              <HiAdjustments size={18} />
-              Filter and sort{activeFilterCount ? ` (${activeFilterCount})` : ''}
-            </button>
-          </div>
-
-          <div
-            id="product-filters"
-            className={`${mobileFiltersOpen ? 'grid' : 'hidden'} mb-8 gap-3 border-b border-white/8 pb-6 md:grid md:grid-cols-4 md:items-end`}
-          >
-            <label className="grid gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
-              Length
-              <select value={lengthFilter} onChange={event => setLengthFilter(event.target.value)} className="min-h-11 border border-white/10 bg-[#111] px-3 text-sm normal-case tracking-normal text-white outline-none focus:border-[#c9a84c]/55">
-                <option>{ALL_LENGTHS}</option>
-                {lengthOptions.map(length => <option key={length}>{length}</option>)}
-              </select>
-            </label>
-            <label className="grid gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
-              Lace / fitting
-              <select value={fittingFilter} onChange={event => setFittingFilter(event.target.value)} className="min-h-11 border border-white/10 bg-[#111] px-3 text-sm normal-case tracking-normal text-white outline-none focus:border-[#c9a84c]/55">
-                <option>{ALL_FITTINGS}</option>
-                {fittingOptions.map(fitting => <option key={fitting}>{fitting}</option>)}
-              </select>
-            </label>
-            <label className="grid gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
-              Sort by
-              <select value={sort} onChange={event => setSort(event.target.value as SortOption)} className="min-h-11 border border-white/10 bg-[#111] px-3 text-sm normal-case tracking-normal text-white outline-none focus:border-[#c9a84c]/55">
-                <option value="featured">Featured</option>
-                <option value="price-asc">Price: low to high</option>
-                <option value="price-desc">Price: high to low</option>
-              </select>
-            </label>
-            <div className="flex min-h-11 items-center justify-between gap-3">
-              <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-neutral-300">
-                <input type="checkbox" checked={saleOnly} onChange={event => setSaleOnly(event.target.checked)} className="h-5 w-5 accent-[#c9a84c]" />
-                On sale only
-              </label>
-              {(activeFilterCount > 0 || sort !== 'featured') && (
-                <button type="button" onClick={() => {
-                  setLengthFilter(ALL_LENGTHS)
-                  setFittingFilter(ALL_FITTINGS)
-                  setSaleOnly(false)
-                  setSort('featured')
-                }} className="min-h-11 text-xs font-semibold text-[#c9a84c] underline underline-offset-4">
-                  Reset
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
-            <button
-              onClick={() => setActiveCollection(ALL_COLLECTIONS)}
-              className={`min-h-24 border p-4 text-left transition-colors ${
-                activeCollection === ALL_COLLECTIONS
-                  ? 'border-[#c9a84c] bg-[#c9a84c] text-black'
-                  : 'border-white/10 bg-[#111] text-white hover:border-[#c9a84c]/50'
-              }`}
-            >
-              <HiCollection size={20} />
-              <span className="mt-3 block text-xs font-bold uppercase tracking-[0.18em]">All collections</span>
-              <span className={`mt-1 block text-xs ${activeCollection === ALL_COLLECTIONS ? 'text-black/60' : 'text-neutral-500'}`}>
-                {filtered.length} item{filtered.length === 1 ? '' : 's'}
-              </span>
-            </button>
-            {groupedFiltered.map(collection => (
-              <button
-                key={collection.name}
-                onClick={() => setActiveCollection(collection.name)}
-                className={`min-h-24 border p-4 text-left transition-colors ${
-                  activeCollection === collection.name
-                    ? 'border-[#c9a84c] bg-[#c9a84c] text-black'
-                    : 'border-white/10 bg-[#111] text-white hover:border-[#c9a84c]/50'
-                }`}
-              >
-                <HiCollection size={20} />
-                <span className="mt-3 block text-xs font-bold uppercase tracking-[0.18em]">{collection.name}</span>
-                <span className={`mt-1 block text-xs ${activeCollection === collection.name ? 'text-black/60' : 'text-neutral-500'}`}>
-                  {collection.products.length} item{collection.products.length === 1 ? '' : 's'}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div className="grid gap-12">
-            {visibleCollectionGroups.map(collection => (
-              <div key={collection.name}>
-                <div className="mb-4 flex items-end justify-between gap-4 border-b border-white/8 pb-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#c9a84c]">Collection</p>
-                    <h3 className="mt-1 font-display text-3xl text-white">{collection.name}</h3>
-                  </div>
-                  <span className="shrink-0 text-xs uppercase tracking-[0.18em] text-neutral-600">
-                    {collection.products.length} item{collection.products.length === 1 ? '' : 's'}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
-                  {collection.products.map(product => renderProductCard(product))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {visibleProductCount === 0 && (
-            <div className="py-20 text-center">
-              <p className="mb-2 text-lg text-neutral-300">We could not find a matching product.</p>
-              <p className="text-sm text-neutral-500">Try a different name, length or fitting, or clear the current choices.</p>
-              <button
-                onClick={resetDiscovery}
-                className="mt-6 border border-[#c9a84c]/30 px-6 py-2.5 text-sm uppercase tracking-widest text-[#c9a84c] transition-colors hover:bg-[#c9a84c]/10"
-              >
-                Clear search and filters
-              </button>
-              <a href={`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Hello GLAMOURSPHAIR! I need help finding a product${search ? ` like ${search}` : ''}.`)}`} target="_blank" rel="noopener noreferrer" className="mx-auto mt-3 flex w-fit min-h-11 items-center gap-2 px-4 text-sm text-[#25D366]">
-                <FaWhatsapp size={16} /> Ask on WhatsApp
-              </a>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-14 border border-[#25D366]/20 bg-[#25D366]/5 p-5 text-center md:flex md:items-center md:justify-between md:text-left">
-          <div>
-            <p className="text-sm font-semibold text-white">Need a custom unit or quick recommendation?</p>
-            <p className="mt-1 text-sm text-neutral-500">Send us a message and we will help you choose the right piece.</p>
-          </div>
-          <a
-            href={`https://wa.me/${WHATSAPP}?text=${encodeURIComponent('Hello GLAMOURSPHAIR! I need a custom hair piece. Can you help?')}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => trackBuyerEvent('WhatsApp Click', { surface: 'custom-order-cta' })}
-            className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 bg-[#25D366] px-6 text-sm font-bold text-white transition-colors hover:bg-[#20b85a] md:mt-0"
-          >
-            <FaWhatsapp size={16} />
-            Request Custom Order
-          </a>
-        </div>
-      </div>
-
+    <section id="shop" className="luxury-catalog">
+      <ProductCatalog
+        products={visibleProducts}
+        collections={collectionGroups}
+        collection={activeCollection}
+        onCollection={setActiveCollection}
+        search={search}
+        onSearch={setSearch}
+        filtersOpen={mobileFiltersOpen}
+        onToggleFilters={() => setMobileFiltersOpen(value => !value)}
+        filterCount={activeFilterCount}
+        onReset={resetDiscovery}
+        onProduct={openProduct}
+        onAdd={handleAdd}
+        added={added}
+        productLink={productUrl}
+        whatsappLink={whatsappLink}
+        filters={<>
+          <label>Price<select value={priceFilter} onChange={event => setPriceFilter(event.target.value)}><option value="any">Any price</option><option value="under-300">Under NGN 300,000</option><option value="300-600">NGN 300,000 - 600,000</option><option value="above-600">Above NGN 600,000</option></select></label>
+          <label>Length<select value={lengthFilter} onChange={event => setLengthFilter(event.target.value)}><option>{ALL_LENGTHS}</option>{lengthOptions.map(length => <option key={length}>{length}</option>)}</select></label>
+          <label>Lace / fitting<select value={fittingFilter} onChange={event => setFittingFilter(event.target.value)}><option>{ALL_FITTINGS}</option>{fittingOptions.map(fitting => <option key={fitting}>{fitting}</option>)}</select></label>
+          <label>Sort by<select value={sort} onChange={event => setSort(event.target.value as SortOption)}><option value="featured">Featured</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option></select></label>
+          <label className="sale-checkbox"><input type="checkbox" checked={saleOnly} onChange={event => setSaleOnly(event.target.checked)} />On sale only</label>
+          <button type="button" onClick={resetDiscovery} className="filter-reset">Clear all</button>
+        </>}
+      />
       {selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-3 md:p-6">
           <div aria-hidden="true" className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={closeProduct} />
           <div
             ref={productDialogRef}
@@ -1674,7 +1342,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
             aria-modal="true"
             aria-labelledby="product-dialog-title"
             tabIndex={-1}
-            className="relative z-10 grid max-h-[92vh] w-full max-w-5xl overflow-y-auto border border-white/10 bg-[#0d0d0d] shadow-2xl shadow-black/70 outline-none md:grid-cols-[1.05fr_0.95fr]"
+            className="product-detail relative z-10 grid max-h-[92vh] w-full max-w-5xl overflow-y-auto border border-white/10 bg-[#0d0d0d] shadow-2xl shadow-black/70 outline-none md:grid-cols-[1.05fr_0.95fr]"
           >
             <button
               onClick={closeProduct}
@@ -1725,7 +1393,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
                   <HiShoppingCart size={56} />
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d0d] via-transparent to-black/20 md:bg-gradient-to-r md:from-transparent md:to-[#0d0d0d]/20" />
+
               {selected.tag && (
                 <span className={`absolute left-4 top-4 px-2.5 py-1 text-xs font-bold uppercase tracking-widest ${tagColors[selected.tag]}`}>
                   {selected.tag}
@@ -1735,7 +1403,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
             <div className="p-5 md:flex md:flex-col md:justify-center md:p-8">
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#c9a84c]">Product details</p>
-              <div className="mt-3 flex items-start justify-between gap-4">
+              <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
                 <h3 id="product-dialog-title" className="font-display text-3xl leading-tight text-white md:text-5xl">{selected.name}</h3>
                 <div className="text-right">
                   {selected.originalPrice && (

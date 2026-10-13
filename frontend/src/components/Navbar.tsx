@@ -1,225 +1,67 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { HiShoppingBag, HiMenu, HiX, HiSearch, HiArrowRight } from 'react-icons/hi'
 import { track } from '@vercel/analytics'
 import { useDialogA11y } from '../hooks/useDialogA11y'
 
-interface NavbarProps {
-  cartCount: number
-  onCartClick: () => void
-}
-
+interface NavbarProps { cartCount: number; onCartClick: () => void }
 const links = [
-  { label: 'Shop', id: 'shop' },
-  { label: 'New Arrivals', id: 'collection', search: 'New' },
-  { label: 'Collections', id: 'collections' },
+  { label: 'Home', id: 'home' },
+  { label: 'Collection', id: 'shop' },
   { label: 'About', id: 'about' },
+  { label: 'Support', id: 'shopping-support' },
+  { label: 'Contact', id: 'contact' },
 ]
-
-const popularSearches = ['HD Lace', 'Bouncy', 'Straight', 'Blonde', 'Serum']
+const popularSearches = ['HD Lace', 'Bouncy', 'Straight', 'Blonde', 'Awoof Sales']
 
 export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
-  const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')
   const menuRef = useDialogA11y<HTMLDivElement>(menuOpen, () => setMenuOpen(false))
   const searchRef = useDialogA11y<HTMLDivElement>(searchOpen, () => setSearchOpen(false))
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24)
-    window.addEventListener('scroll', onScroll)
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  const scrollTo = (id: string, search?: string) => {
-    if (search) window.dispatchEvent(new CustomEvent('glamoursphair:search', { detail: search }))
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
-    setMenuOpen(false)
-  }
-
   const submitSearch = (term = query) => {
-    const cleanTerm = term.trim()
-    if (!cleanTerm) return
-
-    window.dispatchEvent(new CustomEvent('glamoursphair:search', { detail: cleanTerm }))
-    document.getElementById('collection')?.scrollIntoView({ behavior: 'smooth' })
-    track('Search', { query: cleanTerm })
+    const clean = term.trim()
+    if (!clean) return
+    window.dispatchEvent(new CustomEvent('glamoursphair:search', { detail: clean }))
+    document.getElementById('shop')?.scrollIntoView()
+    track('Search', { query: clean })
     setSearchOpen(false)
     setMenuOpen(false)
     setQuery('')
   }
 
-  return (
-    <>
-      <nav aria-label="Main navigation" className={`fixed left-0 right-0 top-0 z-50 transition-[background-color,border-color,box-shadow,padding] duration-300 ${
-        scrolled
-          ? 'border-b border-white/10 bg-[#090807]/92 py-3 text-white shadow-[0_18px_45px_rgba(0,0,0,0.35)] backdrop-blur-md'
-          : 'bg-transparent py-4 text-white'
-      }`}>
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 md:px-8">
-          <a href="#home" className="text-left leading-none" onClick={() => scrollTo('home')} aria-label="Go to homepage">
-            <span className="font-display text-2xl tracking-[0.12em] md:text-3xl">
-              GLAMOURSPHAIR
-            </span>
-            <span className={`mt-1 block h-px w-24 ${scrolled ? 'bg-[#c9a84c]/70' : 'bg-[#c9a84c]'}`} />
-          </a>
+  return <>
+    <header className="luxury-header">
+      <a href="#home" className="header-brand" aria-label="Glamoursphair home"><img src="/images/logo.png" alt="" width="196" height="168" /><span>GLAMOURSPHAIR</span></a>
+      <nav aria-label="Main navigation"><ul>{links.map(link => <li key={link.id}><a href={`#${link.id}`}>{link.label}</a></li>)}</ul></nav>
+      <div className="header-actions">
+        <button onClick={() => setSearchOpen(true)} aria-label="Open search" title="Search"><HiSearch size={21} /></button>
+        <button onClick={onCartClick} aria-label={`Open cart, ${cartCount} item${cartCount === 1 ? '' : 's'}`} title="Your cart"><HiShoppingBag size={22} />{cartCount > 0 && <span className="cart-count">{cartCount}</span>}</button>
+        <button className="menu-toggle" onClick={() => setMenuOpen(true)} aria-label="Open menu" aria-expanded={menuOpen} title="Menu"><HiMenu size={25} /></button>
+      </div>
+    </header>
 
-          <ul className="hidden items-center gap-8 md:flex">
-            {links.map(link => (
-              <li key={link.label}>
-                <a
-                  href={`#${link.id}`}
-                  onClick={() => scrollTo(link.id, link.search)}
-                  className={`relative text-xs font-semibold uppercase tracking-[0.18em] transition-colors ${
-                    scrolled ? 'text-neutral-300 hover:text-[#c9a84c]' : 'text-neutral-200 hover:text-[#c9a84c]'
-                  }`}
-                >
-                  {link.label}
-                </a>
-              </li>
-            ))}
-          </ul>
+    {menuOpen && <div className="navigation-backdrop">
+      <div className="absolute inset-0" aria-hidden="true" onClick={() => setMenuOpen(false)} />
+      <div ref={menuRef} role="dialog" aria-modal="true" aria-label="Mobile navigation" tabIndex={-1} className="mobile-navigation">
+        <button className="menu-close round-tool" onClick={() => setMenuOpen(false)} aria-label="Close menu"><HiX size={23} /></button>
+        <img src="/images/logo.png" alt="GLAMOURSPHAIR" width="196" height="168" />
+        <nav aria-label="Mobile navigation">{links.map(link => <a key={link.id} href={`#${link.id}`} onClick={() => setMenuOpen(false)}>{link.label}<HiArrowRight size={18} /></a>)}</nav>
+        <a href="https://wa.me/2348128288948" target="_blank" rel="noopener noreferrer" className="luxury-button outline">WhatsApp support</a>
+      </div>
+    </div>}
 
-          <div className="flex items-center gap-1 md:gap-2">
-            <button
-              onClick={() => setSearchOpen(true)}
-              className={`flex h-10 w-10 items-center justify-center transition-colors ${scrolled ? 'text-neutral-200 hover:text-[#c9a84c]' : 'text-neutral-300 hover:text-[#c9a84c]'}`}
-              aria-label="Open search"
-            >
-              <HiSearch size={20} />
-            </button>
-            <button
-              onClick={onCartClick}
-              className={`relative flex h-10 w-10 items-center justify-center transition-colors ${scrolled ? 'text-neutral-200 hover:text-[#c9a84c]' : 'hover:text-[#c9a84c]'}`}
-              aria-label={`Open cart, ${cartCount} item${cartCount === 1 ? '' : 's'}`}
-            >
-              <HiShoppingBag size={22} />
-              {cartCount > 0 && (
-                <span className="absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full bg-[#c9a84c] text-xs font-bold text-black">
-                  {cartCount}
-                </span>
-              )}
-            </button>
-            <button
-              className="flex h-10 w-10 items-center justify-center text-white md:hidden"
-              onClick={() => setMenuOpen(true)}
-              aria-label="Open menu"
-            >
-              <HiMenu size={24} />
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      {menuOpen && (
-        <div
-          ref={menuRef}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Mobile navigation"
-          tabIndex={-1}
-          className="fixed inset-0 z-[60] bg-[#090807] text-white outline-none md:hidden"
-        >
-          <div className="flex items-center justify-between border-b border-white/10 px-5 py-5">
-            <span className="font-display text-2xl tracking-[0.12em]">GLAMOURSPHAIR</span>
-            <button onClick={() => setMenuOpen(false)} className="flex h-10 w-10 items-center justify-center" aria-label="Close menu">
-              <HiX size={24} />
-            </button>
-          </div>
-
-          <div className="px-5 py-8">
-            <div className="space-y-5">
-              {links.map(link => (
-                <a
-                  key={link.label}
-                  href={`#${link.id}`}
-                  onClick={() => scrollTo(link.id, link.search)}
-                  className="flex w-full items-center justify-between border-b border-white/10 pb-5 text-left font-display text-4xl transition-colors hover:text-[#c9a84c]"
-                >
-                  {link.label}
-                  <HiArrowRight size={22} className="text-[#c9a84c]" />
-                </a>
-              ))}
-            </div>
-
-            <button
-              onClick={() => {
-                setMenuOpen(false)
-                setSearchOpen(true)
-              }}
-              className="mt-8 flex w-full items-center justify-center gap-2 bg-[#c9a84c] px-5 py-4 text-sm font-bold uppercase tracking-[0.16em] text-black"
-            >
-              <HiSearch size={18} />
-              Search Glamoursphair
-            </button>
-
-            <p className="mt-8 max-w-xs text-sm leading-relaxed text-neutral-400">
-              Premium ready-to-wear units, custom installs and WhatsApp support from Abuja.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {searchOpen && (
-        <div className="fixed inset-0 z-[70] bg-black/75 p-4 backdrop-blur-md">
-          <div
-            ref={searchRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="search-dialog-title"
-            tabIndex={-1}
-            className="mx-auto mt-20 max-w-2xl border border-white/10 bg-[#0d0d0d] p-5 shadow-2xl shadow-black/70 outline-none md:p-8"
-          >
-            <div className="mb-5 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#c9a84c]">Search</p>
-                <h2 id="search-dialog-title" className="mt-1 font-display text-3xl text-white">Search Glamoursphair</h2>
-              </div>
-              <button onClick={() => setSearchOpen(false)} className="flex h-10 w-10 items-center justify-center text-neutral-400 hover:text-white" aria-label="Close search">
-                <HiX size={24} />
-              </button>
-            </div>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                submitSearch()
-              }}
-              role="search"
-              className="flex gap-2"
-            >
-              <label htmlFor="site-search" className="sr-only">Search products</label>
-              <input
-                id="site-search"
-                name="q"
-                autoFocus
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="Search wigs, bouncy, HD lace..."
-                className="min-w-0 flex-1 border border-white/10 bg-[#111] px-4 py-4 text-sm text-white outline-none placeholder:text-neutral-600 focus:border-[#c9a84c]/60"
-              />
-              <button className="bg-[#c9a84c] px-5 text-sm font-bold uppercase tracking-[0.14em] text-black">
-                Go
-              </button>
-            </form>
-
-            <div className="mt-6">
-              <p className="text-xs uppercase tracking-[0.22em] text-neutral-500">Popular searches</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {popularSearches.map(term => (
-                  <button
-                    key={term}
-                    onClick={() => submitSearch(term)}
-                    className="border border-white/10 px-4 py-2 text-sm text-neutral-300 transition-colors hover:border-[#c9a84c]/50 hover:text-[#c9a84c]"
-                  >
-                    {term}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  )
+    {searchOpen && <div className="fixed inset-0 z-[90] bg-black/80 p-4">
+      <div ref={searchRef} role="dialog" aria-modal="true" aria-labelledby="search-dialog-title" tabIndex={-1} className="search-dialog">
+        <div className="flex items-center justify-between gap-4"><h2 id="search-dialog-title">Find your next look</h2><button className="round-tool" onClick={() => setSearchOpen(false)} aria-label="Close search"><HiX size={22} /></button></div>
+        <form onSubmit={event => { event.preventDefault(); submitSearch() }} role="search">
+          <label htmlFor="site-search" className="sr-only">Search products</label>
+          <input id="site-search" name="q" type="search" autoFocus value={query} onChange={event => setQuery(event.target.value)} placeholder="Search wigs, bouncy, HD lace..." />
+          <button type="submit" aria-label="Submit search" title="Search"><HiArrowRight size={22} /></button>
+        </form>
+        <div className="search-suggestions">{popularSearches.map(term => <button key={term} onClick={() => submitSearch(term)}>{term}</button>)}</div>
+      </div>
+    </div>}
+  </>
 }

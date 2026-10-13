@@ -1,44 +1,19 @@
-import { HiCheckCircle, HiCreditCard, HiGlobeAlt, HiRefresh, HiChatAlt2 } from 'react-icons/hi'
+import { HiCreditCard, HiGlobeAlt, HiChatAlt2, HiShoppingBag } from 'react-icons/hi'
 
 const details = [
-  { icon: HiCreditCard, title: 'Secure payments via Paystack', copy: 'Checkout stays in NGN with clear totals before payment.' },
-  { icon: HiGlobeAlt, title: 'Local and international delivery', copy: 'Delivery fees are shown after your location is selected.' },
-  { icon: HiRefresh, title: 'Live currency estimates', copy: 'USD and GBP displays refresh from a trusted rate source.' },
-  { icon: HiChatAlt2, title: 'WhatsApp order support', copy: 'Confirm orders, ask questions and request custom pieces quickly.' },
+  { icon: HiShoppingBag, title: 'Prices upfront', copy: 'See each unit, its specifications and its NGN price before ordering.' },
+  { icon: HiCreditCard, title: 'Secure checkout', copy: 'Pay through Paystack. Your final NGN total is shown before payment.' },
+  { icon: HiChatAlt2, title: 'Personal support', copy: 'Ask about a product, request a custom unit or book a consultation on WhatsApp.' },
+  { icon: HiGlobeAlt, title: 'From Abuja, to you', copy: 'Nigeria and international delivery, with a location-based fee at checkout.' },
 ]
 
 export default function BuyerTrust() {
   return (
-    <section className="bg-[#090807] px-4 py-18 md:py-24">
-      <div className="mx-auto max-w-7xl">
-        <div className="grid gap-8 md:grid-cols-[0.95fr_1.05fr] md:items-center">
-          <div>
-            <div className="mb-4 flex w-fit items-center gap-2 border border-[#c9a84c]/25 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.24em] text-[#c9a84c]">
-              <HiCheckCircle size={15} />
-              Buyer confidence
-            </div>
-            <h2 className="font-display text-4xl leading-tight text-white md:text-6xl">
-              Premium hair, simple ordering, trusted delivery.
-            </h2>
-            <p className="mt-4 max-w-lg text-sm leading-relaxed text-neutral-400 md:text-base">
-              Built for Instagram buyers who want to see the product, confirm details fast, and pay with confidence.
-            </p>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            {details.map(item => {
-              const Icon = item.icon
-
-              return (
-                <div key={item.title} className="border border-white/10 bg-[#111] p-5">
-                  <Icon className="text-[#c9a84c]" size={24} />
-                  <h3 className="mt-4 text-base font-semibold text-white">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-neutral-500">{item.copy}</p>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+    <section id="shopping-support" className="buyer-confidence light-band">
+      <div className="section-inner">
+        <h2>Why Glamoursphair</h2>
+        <div className="benefit-grid">{details.map(item => { const Icon = item.icon; return <div key={item.title} className="benefit"><Icon size={24} aria-hidden="true" /><h3>{item.title}</h3><p>{item.copy}</p></div> })}</div>
+        <div className="delivery-note"><h3>Your next look, delivered.</h3><p>Select your delivery location at checkout to see the fee. USD and GBP displays are estimates; payments are made in NGN.</p><a href="https://wa.me/2348128288948?text=Hello%20GLAMOURSPHAIR!%20I%20have%20a%20delivery%20question." target="_blank" rel="noopener noreferrer">Ask about delivery</a></div>
       </div>
     </section>
   )

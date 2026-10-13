@@ -1,9 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
-import PromoBanner from './components/PromoBanner'
 import TrustStrip from './components/TrustStrip'
-import EditorialCollections from './components/EditorialCollections'
 import ChannelHub from './components/ChannelHub'
 import ProductGrid from './components/ProductGrid'
 import BuyerTrust from './components/BuyerTrust'
@@ -12,9 +10,16 @@ import Contact from './components/Contact'
 import Footer from './components/Footer'
 import CartDrawer from './components/CartDrawer'
 import type { CartItem, Product } from './types'
+import { HiX } from 'react-icons/hi'
+import { useDialogA11y } from './hooks/useDialogA11y'
 
 const CheckoutModal = lazy(() => import('./components/CheckoutModal'))
 const CART_STORAGE_KEY = 'glamoursphair_cart'
+
+function CheckoutLoading({ onClose }: { onClose: () => void }) {
+  const ref = useDialogA11y<HTMLDivElement>(true, onClose)
+  return <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 p-5"><div ref={ref} role="dialog" aria-modal="true" aria-label="Preparing checkout" tabIndex={-1} className="w-full max-w-sm rounded-lg border border-[#cbb07a]/40 bg-[#1c1613] p-6"><div className="flex items-center justify-between gap-4"><p role="status" className="text-sm text-[#f6efe6]">Preparing your checkout...</p><button className="round-tool" onClick={onClose} aria-label="Cancel checkout"><HiX size={20} /></button></div></div></div>
+}
 
 function readSavedCart(): CartItem[] {
   try {
@@ -24,10 +29,10 @@ function readSavedCart(): CartItem[] {
 
     return parsed.filter((item): item is CartItem => (
       typeof item === 'object' && item !== null &&
-      typeof (item as CartItem).id === 'number' &&
+      Number.isSafeInteger((item as CartItem).id) && (item as CartItem).id > 0 &&
       typeof (item as CartItem).name === 'string' &&
-      typeof (item as CartItem).price === 'number' &&
-      typeof (item as CartItem).qty === 'number' &&
+      Number.isFinite((item as CartItem).price) && (item as CartItem).price > 0 &&
+      Number.isSafeInteger((item as CartItem).qty) &&
       (item as CartItem).qty > 0
     ))
   } catch {
@@ -72,7 +77,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white font-body overflow-x-hidden">
+    <div className="storefront min-h-screen text-white font-body">
       <a
         href="#main-content"
         className="fixed left-4 top-4 z-[100] -translate-y-24 bg-[#c9a84c] px-4 py-3 text-sm font-bold text-black transition-transform focus:translate-y-0"
@@ -80,16 +85,14 @@ export default function App() {
         Skip to shopping content
       </a>
       <Navbar cartCount={cartCount} onCartClick={() => setCartOpen(true)} />
-      <PromoBanner />
       <main id="main-content" tabIndex={-1}>
         <Hero />
         <TrustStrip />
-        <EditorialCollections />
         <ProductGrid onAddToCart={addToCart} />
-        <ChannelHub />
-        <BuyerTrust />
         <BrandStory />
+        <BuyerTrust />
         <Contact />
+        <ChannelHub />
       </main>
       <Footer />
       <CartDrawer
@@ -101,13 +104,13 @@ export default function App() {
         onUpdateQty={updateQty}
         onClear={clearCart}
       />
-      <Suspense fallback={null}>
-        <CheckoutModal
+      <Suspense fallback={<CheckoutLoading onClose={() => setCheckoutOpen(false)} />}>
+        {checkoutOpen && <CheckoutModal
           open={checkoutOpen}
           onClose={() => setCheckoutOpen(false)}
           items={cartItems}
           onSuccess={handleCheckoutSuccess}
-        />
+        />}
       </Suspense>
     </div>
   )
