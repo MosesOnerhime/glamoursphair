@@ -6,7 +6,8 @@ const hidden = new Set()
 let failNext = ''
 const password = 'inventory-qa-local-only'
 const server = createServer(async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', 'http://127.0.0.1:5176')
+  const origin = req.headers.origin
+  if (['http://127.0.0.1:5176', 'http://127.0.0.1:5177'].includes(origin)) res.setHeader('Access-Control-Allow-Origin', origin)
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,x-admin-password')
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS')
   res.setHeader('Cache-Control', 'no-store')
@@ -24,7 +25,7 @@ const server = createServer(async (req, res) => {
   }
   if (url.pathname !== '/api/products') { res.writeHead(404).end(); return }
   if (req.method === 'GET') {
-    json(200, { products: [...products.values()], hiddenIds: [...hidden], order: [...products.keys()] }); return
+    json(200, { products: [...products.values()], hiddenIds: [...hidden], order: [...products.keys()], placementSupported: true }); return
   }
   if (req.headers['x-admin-password'] !== password) { json(401, { error: 'Unauthorized' }); return }
   if (url.searchParams.get('admin') === 'verify') { res.writeHead(204).end(); return }

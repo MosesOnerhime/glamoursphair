@@ -1,4 +1,5 @@
 import { timingSafeEqual } from 'node:crypto'
+import { DEFAULT_HOME_PRODUCT_IDS, HOME_PRODUCT_LIMIT, isCatalogProduct, isHomepageProduct } from '../src/lib/productPlacement.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -20,6 +21,7 @@ function validateProduct(product) {
   const optionalFields = ['slug', 'tag', 'source', 'length', 'volume', 'fitting', 'group', 'whatsapp', 'gradient', 'image', 'instagramLink']
   if (optionalFields.some(field => !validText(product[field], 500))) return 'One or more product fields are invalid.'
   if (product.images != null && (!Array.isArray(product.images) || product.images.length > 12 || product.images.some(image => !validText(image, 1000, true)))) return 'Product images are invalid.'
+  if (['showOnHomepage', 'showInCatalog'].some(field => product[field] !== undefined && typeof product[field] !== 'boolean')) return 'Product visibility must be true or false.'
   return null
 }
 
@@ -63,6 +65,8 @@ function productFromRow(row) {
     image: row.image || undefined,
     images: row.images || undefined,
     instagramLink: row.instagram_link || undefined,
+    showOnHomepage: row.show_on_homepage ?? undefined,
+    showInCatalog: row.show_in_catalog,
   }
 }
 
@@ -87,7 +91,35 @@ function rowFromProduct(product, sortOrder) {
     instagram_link: product.instagramLink || null,
     sort_order: sortOrder,
     is_deleted: false,
+    ...(product.showOnHomepage !== undefined ? { show_on_homepage: product.showOnHomepage } : {}),
+    ...(product.showInCatalog !== undefined ? { show_in_catalog: product.showInCatalog } : {}),
   }
+}
+
+async function hasPlacementColumns(rows) {
+  if (rows.length) return Object.hasOwn(rows[0], 'show_on_homepage') && Object.hasOwn(rows[0], 'show_in_catalog')
+  try {
+    await supabase('/rest/v1/products?select=show_on_homepage,show_in_catalog&limit=0')
+    return true
+  } catch { return false }
+}
+
+async function validatePlacement(products, res) {
+  if (!products.some(product => product.showOnHomepage !== undefined || product.showInCatalog !== undefined)) return true
+  const rows = await supabase('/rest/v1/products?select=*')
+  if (!await hasPlacementColumns(rows)) {
+    res.status(409).json({ error: 'Run supabase-product-placement.sql in Supabase before changing product placement.' })
+    return false
+  }
+  // Missing seed rows still exist in the storefront; include their legacy placement.
+  const merged = new Map(DEFAULT_HOME_PRODUCT_IDS.map(id => [id, { id }]))
+  for (const row of rows) merged.set(row.id, { ...productFromRow(row), isDeleted: row.is_deleted })
+  for (const product of products) merged.set(product.id, { ...merged.get(product.id), ...product, isDeleted: false })
+  if ([...merged.values()].filter(product => !product.isDeleted && isHomepageProduct(product)).length > HOME_PRODUCT_LIMIT) {
+    res.status(409).json({ error: `The homepage is limited to ${HOME_PRODUCT_LIMIT} products. Remove a featured product first.` })
+    return false
+  }
+  return true
 }
 
 async function supabase(path, init = {}) {
@@ -124,11 +156,12 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const rows = await supabase('/rest/v1/products?select=*&order=sort_order.asc.nullslast,id.asc')
       const activeRows = rows.filter(row => !row.is_deleted)
-      res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300')
+      res.setHeader('Cache-Control', 'no-store')
       res.status(200).json({
         products: activeRows.map(productFromRow),
         hiddenIds: rows.filter(row => row.is_deleted).map(row => row.id),
         order: activeRows.map(row => row.id),
+        placementSupported: await hasPlacementColumns(rows),
       })
       return
     }
@@ -147,12 +180,13 @@ export default async function handler(req, res) {
         res.status(400).json({ error: validationError })
         return
       }
+      if (!await validatePlacement([product], res)) return
       const rows = await supabase('/rest/v1/products?on_conflict=id', {
         method: 'POST',
         headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
         body: JSON.stringify(rowFromProduct(product, sortOrder)),
       })
-      res.status(200).json(rows[0] ? productFromRow(rows[0]) : product)
+      res.status(200).json(rows?.[0] ? productFromRow(rows[0]) : product)
       return
     }
 
@@ -167,10 +201,14 @@ export default async function handler(req, res) {
         res.status(400).json({ error: validationError })
         return
       }
+      const placedProducts = products.some(product => product.showOnHomepage !== undefined || product.showInCatalog !== undefined)
+        ? products.map(product => ({ ...product, showOnHomepage: isHomepageProduct(product), showInCatalog: isCatalogProduct(product) }))
+        : products
+      if (!await validatePlacement(placedProducts, res)) return
       await supabase('/rest/v1/products?on_conflict=id', {
         method: 'POST',
         headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify(products.map((product, index) => rowFromProduct(product, index))),
+        body: JSON.stringify(placedProducts.map((product, index) => rowFromProduct(product, index))),
       })
       res.status(204).end()
       return

@@ -17,6 +17,7 @@ import {
 import { useDialogA11y } from '../hooks/useDialogA11y'
 import ProductCatalog from './ProductCatalog'
 import InventoryList from './InventoryList'
+import { HOME_PRODUCT_LIMIT, catalogProducts, homepageProducts, isCatalogProduct, isHomepageProduct } from '../lib/productPlacement.js'
 
 const WHATSAPP = '2348128288948'
 const PRODUCT_PARAM = 'product'
@@ -52,6 +53,8 @@ type ProductForm = {
   tag: string
   group: string
   image: string
+  showOnHomepage: boolean
+  showInCatalog: boolean
 }
 
 type ProductOverrides = Record<string, Product>
@@ -82,6 +85,8 @@ const emptyProductForm: ProductForm = {
   tag: '',
   group: '',
   image: '',
+  showOnHomepage: false,
+  showInCatalog: true,
 }
 
 const products: Product[] = [
@@ -443,6 +448,7 @@ const tagColors: Record<string, string> = {
 
 interface ProductGridProps {
   onAddToCart: (product: Product) => void
+  productsPage?: boolean
 }
 
 function formatNgn(amount: number) {
@@ -589,10 +595,12 @@ function productToForm(product: Product): ProductForm {
     tag: product.tag ?? '',
     group: product.group ?? '',
     image: imageForProduct(product) ?? '',
+    showOnHomepage: isHomepageProduct(product),
+    showInCatalog: isCatalogProduct(product),
   }
 }
 
-export default function ProductGrid({ onAddToCart }: ProductGridProps) {
+export default function ProductGrid({ onAddToCart, productsPage = false }: ProductGridProps) {
   const [added, setAdded] = useState<number | null>(null)
   const [search, setSearch] = useState(() => discoveryParam('q'))
   const [activeCollection, setActiveCollection] = useState(() => discoveryParam('collection', ALL_COLLECTIONS))
@@ -631,6 +639,8 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   const [databaseProducts, setDatabaseProducts] = useState<Product[]>([])
   const [databaseHiddenIds, setDatabaseHiddenIds] = useState<number[]>([])
   const [databaseOrder, setDatabaseOrder] = useState<number[]>([])
+  const [databaseLoaded, setDatabaseLoaded] = useState(false)
+  const [placementSupported, setPlacementSupported] = useState(!isProductApiConfigured())
   const [databaseStatus, setDatabaseStatus] = useState(isProductDatabaseConfigured() ? 'Connecting to shared inventory...' : 'Local inventory - this device')
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null)
   const imageSelectionToken = useRef(0)
@@ -642,7 +652,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   const allProducts = useMemo(() => {
     const seedIds = new Set(products.map(product => product.id))
     const databaseProductsById = new Map(databaseProducts.map(product => [product.id, product]))
-    const hiddenIds = Array.from(new Set([...hiddenProductIds, ...databaseHiddenIds]))
+    const hiddenIds = databaseLoaded ? databaseHiddenIds : hiddenProductIds
     const visibleSeedProducts = products
       .map(product => databaseProductsById.get(product.id) ?? productOverrides[String(product.id)] ?? product)
       .filter(product => !hiddenIds.includes(product.id))
@@ -653,16 +663,20 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
       : productOrder.length > 0 ? productOrder : databaseOrder
 
     return orderProducts(mergeProductsById([...visibleSeedProducts, ...persistedAdminProducts, ...localAdminProducts]), order)
-  }, [adminProducts, adminSaving, databaseHiddenIds, databaseOrder, databaseProducts, hiddenProductIds, productOrder, productOverrides])
+  }, [adminProducts, adminSaving, databaseHiddenIds, databaseLoaded, databaseOrder, databaseProducts, hiddenProductIds, productOrder, productOverrides])
 
-  const lengthOptions = useMemo(() => Array.from(new Set(allProducts.map(product => product.length).filter(Boolean) as string[]))
-    .sort((a, b) => Number.parseInt(a) - Number.parseInt(b)), [allProducts])
-  const fittingOptions = useMemo(() => Array.from(new Set(allProducts.map(product => product.fitting).filter(Boolean) as string[]))
-    .sort((a, b) => a.localeCompare(b)), [allProducts])
+  const homeProducts = useMemo(() => homepageProducts(allProducts), [allProducts])
+  const shopProducts = useMemo(() => catalogProducts(allProducts), [allProducts])
+  const displayProducts = productsPage ? shopProducts : homeProducts
+
+  const lengthOptions = useMemo(() => Array.from(new Set(displayProducts.map(product => product.length).filter(Boolean) as string[]))
+    .sort((a, b) => Number.parseInt(a) - Number.parseInt(b)), [displayProducts])
+  const fittingOptions = useMemo(() => Array.from(new Set(displayProducts.map(product => product.fitting).filter(Boolean) as string[]))
+    .sort((a, b) => a.localeCompare(b)), [displayProducts])
 
   const filtered = useMemo(() => {
     const cleanSearch = search.trim().toLowerCase()
-    const matches = allProducts.filter(product => {
+    const matches = displayProducts.filter(product => {
       const searchable = [
         product.name,
         product.description,
@@ -685,9 +699,10 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     })
 
     return sortProducts(matches, sort)
-  }, [allProducts, fittingFilter, lengthFilter, priceFilter, saleOnly, search, sort])
+  }, [displayProducts, fittingFilter, lengthFilter, priceFilter, saleOnly, search, sort])
 
-  const collectionGroups = useMemo(() => groupProducts(allProducts), [allProducts])
+  const collectionGroups = useMemo(() => groupProducts(displayProducts), [displayProducts])
+  const inventoryGroups = useMemo(() => groupProducts(allProducts), [allProducts])
   const visibleProducts = useMemo(
     () => activeCollection === ALL_COLLECTIONS ? filtered : filtered.filter(product => groupNameForProduct(product) === activeCollection),
     [activeCollection, filtered]
@@ -699,14 +714,14 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     priceFilter !== 'any',
   ].filter(Boolean).length
   const relatedProducts = selected
-    ? allProducts.filter(product => product.id !== selected.id && groupNameForProduct(product) === groupNameForProduct(selected)).slice(0, 3)
+    ? shopProducts.filter(product => product.id !== selected.id && groupNameForProduct(product) === groupNameForProduct(selected)).slice(0, 3)
     : []
 
   const findProductFromUrl = useCallback(() => {
     const productParam = new URLSearchParams(window.location.search).get(PRODUCT_PARAM)
     if (!productParam) return null
 
-    return allProducts.find(product => product.slug === productParam || String(product.id) === productParam) ?? null
+    return allProducts.find(product => (isCatalogProduct(product) || isHomepageProduct(product)) && (product.slug === productParam || String(product.id) === productParam)) ?? null
   }, [allProducts])
 
   const productUrl = (product: Product) => {
@@ -854,7 +869,8 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
   }, [activeCollection, fittingFilter, lengthFilter, priceFilter, saleOnly, search, sort])
 
   useEffect(() => {
-    const defaultTitle = 'GLAMOURSPHAIR | Luxury Hair & Wigs - Abuja'
+    const defaultTitle = productsPage ? 'All Products | GLAMOURSPHAIR Luxury - Abuja' : 'GLAMOURSPHAIR | Luxury Hair & Wigs - Abuja'
+    const pageUrl = productsPage ? `${PRODUCTION_URL}products` : PRODUCTION_URL
     const defaultDescription = 'Shop premium luxury wigs and hair extensions from GLAMOURSPHAIR in Abuja, Nigeria, with secure Paystack checkout and local or international delivery.'
     const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]')
     const structuredDataId = 'product-structured-data'
@@ -872,11 +888,11 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
 
     if (!selected) {
       document.title = defaultTitle
-      canonical?.setAttribute('href', PRODUCTION_URL)
+      canonical?.setAttribute('href', pageUrl)
       upsertMeta('meta[name="description"]', 'name', 'description', defaultDescription)
       upsertMeta('meta[property="og:title"]', 'property', 'og:title', defaultTitle)
       upsertMeta('meta[property="og:description"]', 'property', 'og:description', defaultDescription)
-      upsertMeta('meta[property="og:url"]', 'property', 'og:url', PRODUCTION_URL)
+      upsertMeta('meta[property="og:url"]', 'property', 'og:url', pageUrl)
       upsertMeta('meta[property="og:type"]', 'property', 'og:type', 'website')
       upsertMeta('meta[property="og:image"]', 'property', 'og:image', `${PRODUCTION_URL}images/Wig%20Kellyin%20HDlace%202.jpeg`)
       upsertMeta('meta[name="twitter:title"]', 'name', 'twitter:title', defaultTitle)
@@ -923,7 +939,7 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
     document.head.appendChild(script)
 
     return () => script.remove()
-  }, [selected])
+  }, [productsPage, selected])
 
   useEffect(() => {
     const syncAdminFromUrl = () => {
@@ -954,6 +970,8 @@ export default function ProductGrid({ onAddToCart }: ProductGridProps) {
         setDatabaseProducts(snapshot.products)
         setDatabaseHiddenIds(snapshot.hiddenIds)
         setDatabaseOrder(snapshot.order)
+        setDatabaseLoaded(true)
+        setPlacementSupported(snapshot.placementSupported === true)
         setDatabaseStatus('Database connected.')
       } catch {
         if (mounted) setDatabaseStatus('Database unavailable. Using local fallback for now.')
@@ -1110,6 +1128,10 @@ const writeAdminCache = (key: string, value: unknown) => {
     }
     if (!productForm.image) { setAdminError('Choose a product photograph before saving.'); return }
     const existing = editingProductId ? allProducts.find(product => product.id === editingProductId) : null
+    if (placementSupported && productForm.showOnHomepage && allProducts.filter(product => product.id !== existing?.id && isHomepageProduct(product)).length >= HOME_PRODUCT_LIMIT) {
+      setAdminError(`The homepage is limited to ${HOME_PRODUCT_LIMIT} products. Remove a featured product first.`)
+      return
+    }
     const id = existing?.id ?? (draftProductId.current ??= Date.now())
     const slug = productForm.slug.trim() || existing?.slug || `${slugify(productForm.name)}-${id}`
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || allProducts.some(product => product.id !== id && product.slug === slug)) {
@@ -1132,6 +1154,7 @@ const writeAdminCache = (key: string, value: unknown) => {
         volume: productForm.volume.trim() || undefined, fitting: productForm.fitting.trim() || undefined,
         group: productForm.group.trim() || undefined, instagramLink: productForm.link.trim() || undefined,
         image: imageUrl,
+        ...(placementSupported ? { showOnHomepage: productForm.showOnHomepage, showInCatalog: productForm.showInCatalog } : {}),
       }
       if (!existing || imageUrl !== imageForProduct(existing)) product.images = undefined
       const nextOrder = existing ? allProducts.map(item => item.id) : [id, ...allProducts.filter(item => item.id !== id).map(item => item.id)]
@@ -1154,9 +1177,40 @@ const writeAdminCache = (key: string, value: unknown) => {
       setEditingProductId(null)
       setSelectedImageFile(null)
       setAdminPane('products')
-    } catch {
-      setAdminError('Could not confirm the save. Your draft is kept; refresh inventory before retrying if your connection dropped.')
+    } catch (error) {
+      setAdminError(`${error instanceof Error ? error.message : 'Could not confirm the save.'} Your draft is kept.`)
       setDatabaseStatus('Save failed. Please retry.')
+    } finally { adminMutationRef.current = false; setAdminSaving(false) }
+  }
+
+  const changePlacement = async (product: Product, field: 'showOnHomepage' | 'showInCatalog', value: boolean) => {
+    if (adminMutationRef.current || !placementSupported) return
+    if (field === 'showOnHomepage' && value && allProducts.filter(isHomepageProduct).length >= HOME_PRODUCT_LIMIT) {
+      setAdminError(`The homepage is limited to ${HOME_PRODUCT_LIMIT} products. Remove a featured product first.`)
+      return
+    }
+    adminMutationRef.current = true
+    setAdminSaving(true)
+    setAdminError('')
+    setDatabaseStatus('Saving placement...')
+    const next = { ...product, showOnHomepage: isHomepageProduct(product), showInCatalog: isCatalogProduct(product), [field]: value }
+    try {
+      if (isProductApiConfigured()) {
+        // Persist the complete order so a newly materialized seed cannot jump forward on reload.
+        const nextProducts = allProducts.map(item => item.id === product.id ? next : {
+          ...item, showOnHomepage: isHomepageProduct(item), showInCatalog: isCatalogProduct(item),
+        })
+        await reorderDatabaseProducts(nextProducts, adminAccessCode)
+        setDatabaseProducts(nextProducts)
+        setDatabaseOrder(nextProducts.map(item => item.id))
+      }
+      const cached = products.some(seed => seed.id === product.id)
+        ? updateProductOverrides({ ...productOverrides, [String(product.id)]: next })
+        : updateAdminProducts(adminProducts.map(item => item.id === product.id ? next : item))
+      setDatabaseStatus(isProductApiConfigured() ? 'Placement saved to shared inventory.' : cached ? 'Placement saved on this device.' : 'Placement saved in this session only.')
+    } catch (error) {
+      setAdminError(`${error instanceof Error ? error.message : 'Could not save placement.'} The previous placement is unchanged.`)
+      setDatabaseStatus('Placement save failed.')
     } finally { adminMutationRef.current = false; setAdminSaving(false) }
   }
 
@@ -1190,6 +1244,7 @@ const writeAdminCache = (key: string, value: unknown) => {
     setProductForm(emptyProductForm)
     setSelectedImageFile(null)
     setAdminError('')
+    setAdminPane('products')
   }
 
   const deleteProduct = async (id: number) => {
@@ -1351,8 +1406,9 @@ const writeAdminCache = (key: string, value: unknown) => {
   }, [dragOverProductId, pointerSortProductId, reorderProduct])
 
   return (
-    <section id="shop" className="luxury-catalog">
+    <section id="shop" className={`luxury-catalog${productsPage ? ' products-page' : ''}`}>
       <ProductCatalog
+        productsPage={productsPage}
         products={visibleProducts}
         collections={collectionGroups}
         collection={activeCollection}
@@ -1368,11 +1424,12 @@ const writeAdminCache = (key: string, value: unknown) => {
         added={added}
         productLink={productUrl}
         whatsappLink={whatsappLink}
+        sortControl={<label className="catalog-sort">Sort by<select value={sort} onChange={event => setSort(event.target.value as SortOption)}><option value="featured">Featured</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option></select></label>}
         filters={<>
           <label>Price<select value={priceFilter} onChange={event => setPriceFilter(event.target.value)}><option value="any">Any price</option><option value="under-300">Under NGN 300,000</option><option value="300-600">NGN 300,000 - 600,000</option><option value="above-600">Above NGN 600,000</option></select></label>
           <label>Length<select value={lengthFilter} onChange={event => setLengthFilter(event.target.value)}><option>{ALL_LENGTHS}</option>{lengthOptions.map(length => <option key={length}>{length}</option>)}</select></label>
           <label>Lace / fitting<select value={fittingFilter} onChange={event => setFittingFilter(event.target.value)}><option>{ALL_FITTINGS}</option>{fittingOptions.map(fitting => <option key={fitting}>{fitting}</option>)}</select></label>
-          <label>Sort by<select value={sort} onChange={event => setSort(event.target.value as SortOption)}><option value="featured">Featured</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option></select></label>
+          {!productsPage && <label>Sort by<select value={sort} onChange={event => setSort(event.target.value as SortOption)}><option value="featured">Featured</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option></select></label>}
           <label className="sale-checkbox"><input type="checkbox" checked={saleOnly} onChange={event => setSaleOnly(event.target.checked)} />On sale only</label>
           <button type="button" onClick={resetDiscovery} className="filter-reset">Clear all</button>
         </>}
@@ -1605,7 +1662,8 @@ const writeAdminCache = (key: string, value: unknown) => {
               {adminError && <p id="admin-access-error" role="alert" className="admin-operation-error">{adminError}</p>}
               <button className="admin-primary" disabled={adminVerifying}>{adminVerifying ? 'Verifying...' : 'Unlock inventory'}</button>
             </form> : <>
-              <div className="admin-statusbar" inert={Boolean(inventoryConfirmation)}><p role="status" aria-live="polite"><span className={adminSaving ? 'status-saving' : 'status-dot'} />{databaseStatus}</p><span>{allProducts.length} products</span></div>
+              <div className="admin-statusbar" inert={Boolean(inventoryConfirmation)}><p role="status" aria-live="polite"><span className={adminSaving ? 'status-saving' : 'status-dot'} />{databaseStatus}</p><span>{homeProducts.length}/{HOME_PRODUCT_LIMIT} homepage · {shopProducts.length} shop · {allProducts.length} inventory</span></div>
+              {!placementSupported && <p className="admin-migration-notice">Placement controls need the database update: run supabase-product-placement.sql in Supabase, then reload. Product editing remains available.</p>}
               {adminError && !inventoryConfirmation && <p role="alert" className="admin-operation-error">{adminError}</p>}
               <div className="admin-mobile-tabs" aria-label="Inventory views" inert={Boolean(inventoryConfirmation)}><button type="button" aria-pressed={adminPane === 'products'} onClick={() => setAdminPane('products')}>Products</button><button type="button" aria-pressed={adminPane === 'editor'} onClick={() => setAdminPane('editor')}>{editingProductId ? 'Edit product' : 'New product'}</button></div>
               <div className="admin-columns" data-pane={adminPane} inert={Boolean(inventoryConfirmation)}>
@@ -1623,6 +1681,12 @@ const writeAdminCache = (key: string, value: unknown) => {
                     )}
                     <input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Product photograph" onChange={handleImageUpload} className="sr-only" />
                   </label>
+
+                  <fieldset className="admin-placement" disabled={!placementSupported}>
+                    <legend>Display on</legend>
+                    <label><input type="checkbox" checked={productForm.showOnHomepage} onChange={event => setProductForm(prev => ({ ...prev, showOnHomepage: event.target.checked }))} />Homepage <span>Maximum {HOME_PRODUCT_LIMIT}</span></label>
+                    <label><input type="checkbox" checked={productForm.showInCatalog} onChange={event => setProductForm(prev => ({ ...prev, showInCatalog: event.target.checked }))} />Full products page</label>
+                  </fieldset>
 
                   <div className="grid gap-3 md:grid-cols-2">
                     <AdminField label="Product name" wide>
@@ -1758,10 +1822,10 @@ const writeAdminCache = (key: string, value: unknown) => {
                       </button>
                     )}
                   </div>
-                  <datalist id="admin-collection-options">{collectionGroups.map(group => <option key={group.name} value={group.name} />)}</datalist>
+                  <datalist id="admin-collection-options">{inventoryGroups.map(group => <option key={group.name} value={group.name} />)}</datalist>
                   </fieldset>
                 </form>
-                <InventoryList products={allProducts} busy={adminSaving} editingId={editingProductId} draggedId={draggedProductId} hoveredId={dragOverProductId} onEdit={startEditingProduct} onDelete={id => { const product = allProducts.find(item => item.id === id); if (product) { setAdminError(''); setInventoryConfirmation({ action: 'delete', product }) } }} onMove={(from, to) => { void reorderProduct(from, to) }} onPointerSort={startProductPointerSort} onDragStart={handleProductDragStart} onDragOver={handleProductDragOver} onDrop={handleProductDrop} onDragEnd={endProductDrag} hoverClass={dragHoverClass} />
+                <InventoryList products={allProducts} busy={adminSaving} placementSupported={placementSupported} onPlacement={(product, field, value) => { void changePlacement(product, field, value) }} editingId={editingProductId} draggedId={draggedProductId} hoveredId={dragOverProductId} onEdit={startEditingProduct} onDelete={id => { const product = allProducts.find(item => item.id === id); if (product) { setAdminError(''); setInventoryConfirmation({ action: 'delete', product }) } }} onMove={(from, to) => { void reorderProduct(from, to) }} onPointerSort={startProductPointerSort} onDragStart={handleProductDragStart} onDragOver={handleProductDragOver} onDrop={handleProductDrop} onDragEnd={endProductDrag} hoverClass={dragHoverClass} />
               </div>
             </>}
             {inventoryConfirmation && <div className="inventory-confirm-overlay"><div className="inventory-confirm-panel" role="alertdialog" aria-modal="true" aria-labelledby="inventory-confirm-title"><h3 id="inventory-confirm-title">{inventoryConfirmation.action === 'delete' ? 'Delete product?' : 'Discard unsaved changes?'}</h3><p>{inventoryConfirmation.action === 'delete' ? `${inventoryConfirmation.product.name} (${formatNgn(inventoryConfirmation.product.price)}) will be removed from the storefront.` : 'The current product draft has not been saved.'}</p>{adminError && <p role="alert" className="admin-operation-error">{adminError}</p>}<div><button ref={confirmationCancelRef} type="button" className="admin-secondary" disabled={adminSaving} onClick={() => setInventoryConfirmation(null)}>Cancel</button><button type="button" className="admin-primary danger" disabled={adminSaving} onClick={confirmInventoryAction}>{adminSaving ? 'Deleting...' : inventoryConfirmation.action === 'delete' ? 'Delete product' : 'Discard changes'}</button></div></div></div>}

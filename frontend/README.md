@@ -69,6 +69,16 @@ https://your-domain.example/?admin=products
 
 The panel supports image upload, product creation and editing, collection assignment, soft deletion, and mouse/touch drag sorting. The admin password is checked by the server and is not persisted in browser storage.
 
+### Homepage and full shop
+
+`/products` opens the complete shop as a responsive grid, with collections, search, filters, sorting, product previews, cart and WhatsApp support. Homepage buttons and navigation link to it. Cart contents persist between pages.
+
+The homepage displays at most six selected products. Admin inventory rows and the product editor have independent **Homepage** and **Products page** checkboxes. Unchecking Homepage does not unpublish a product from the full shop. New products default to the full shop only; unchecking both keeps the item in inventory without displaying it to shoppers. Drag order applies to both pages.
+
+For an existing Supabase installation, run `supabase-product-placement.sql` **once**. It adds the visibility columns and restores existing soft-deleted records requested for this release without replacing their saved details. Do not rerun its restoration UPDATE after later intentional deletions. Placement controls remain disabled until the new columns are detected; existing editing and sorting still work. Fresh installations use `supabase-products.sql`.
+
+Implementation, database boundaries and QA are recorded in `../docs/PRODUCTS_PAGE_HANDOFF.md`.
+
 ## Checkout notes
 
 - NGN is the authoritative checkout currency; USD and GBP are estimates only.
@@ -94,6 +104,6 @@ Preserve the existing GLAMOURSPHAIR logo, black/gold palette, product photograph
 
 ## Reference redesign
 
-The October 2026 redesign follows the composition of `https://tluxehairs.vercel.app/`, adapted to GLAMOURSPHAIR's real identity and catalog. The collection defaults to a five-position carousel; its view button opens a grid. Search, collections, price/length/fitting filters, sale filtering, and price sorting remain available.
+The October 2026 redesign follows the composition of `https://tluxehairs.vercel.app/`, adapted to GLAMOURSPHAIR's real identity and catalog. The limited homepage selection retains the five-position carousel; `/products` defaults to the full grid. Search, collections, price/length/fitting filters, sale filtering, and price sorting remain available.
 
 The `backup` branch preserves the full pre-redesign website. Branch evidence and QA results are documented in `../docs/REDESIGN_HANDOFF.md`. The Supabase database is shared independently of Git, so reverting a branch does not undo catalog changes made through the admin panel.

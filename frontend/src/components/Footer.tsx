@@ -3,7 +3,7 @@ import { FaWhatsapp, FaInstagram, FaTiktok } from 'react-icons/fa'
 export default function Footer() {
   return (
     <footer className="luxury-footer">
-      <a href="#home" className="footer-brand">GLAMOURSPHAIR</a>
+      <a href="/#home" className="footer-brand">GLAMOURSPHAIR</a>
       <p>Luxury hair. Abuja, Nigeria.</p>
       <div className="footer-socials">
         <a href="https://www.instagram.com/glamoursphair" target="_blank" rel="noopener noreferrer"><FaInstagram size={18} /> Instagram</a>

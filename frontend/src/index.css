@@ -96,6 +96,56 @@
 .catalog-empty { padding: 80px 20px; text-align: center; }
 .catalog-empty h3 { font-family: 'Cormorant Garamond', serif; font-size: 32px; }
 .catalog-empty p { margin: 12px 0 22px; color: #c7bcb1; }
+.catalog-view-all { margin-top: 38px; text-align: center; }
+.products-page { padding-top: 28px; min-height: 70svh; }
+.catalog-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #c7bcb1; margin-bottom: 30px; }
+.catalog-breadcrumb a { min-height: 44px; display: inline-flex; align-items: center; color: var(--store-champagne); }
+.full-catalog { max-width: 1280px; }
+.full-catalog .catalog-title-row h1 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 54px; font-weight: 600; line-height: 1.15; color: var(--store-champagne); }
+.full-catalog .catalog-title-row { min-height: 64px; }
+.full-catalog .catalog-grid { max-width: none; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 38px 24px; }
+.full-catalog .catalog-card { display: flex; flex-direction: column; }
+.full-catalog .catalog-info { display: flex; flex-direction: column; flex: 1; text-align: left; }
+.full-catalog .catalog-product-title { min-height: 2.3em; font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 24px; line-height: 1.13; overflow-wrap: anywhere; }
+.full-catalog .catalog-product-title a:hover { color: var(--store-champagne); }
+.full-catalog .catalog-spec { min-height: 3em; }
+.full-catalog .catalog-card-row { margin-top: auto; min-height: 56px; }
+.full-catalog .catalog-search { width: 310px; }
+.full-catalog .catalog-count { margin-top: 22px; }
+.full-catalog .catalog-results { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid #cbb07a30; margin-top: 24px; padding-bottom: 14px; }
+.full-catalog .catalog-results .catalog-count { margin-top: 0; text-align: left; }
+.catalog-sort { display: flex; align-items: center; gap: 8px; color: #c7bcb1; font-size: 12px; }
+.catalog-sort select { min-height: 44px; max-width: 190px; background: #14100e; color: var(--store-cream); border: 1px solid #cbb07a66; border-radius: 4px; padding: 8px; }
+.admin-migration-notice { padding: 10px 24px; border-bottom: 1px solid #c9a84c40; background: #c9a84c12; color: #e3dacf; font-size: 12px; overflow-wrap: anywhere; }
+.admin-placement { margin: 18px 0; border-block: 1px solid #ffffff20; padding: 12px 0; }
+.admin-placement legend { font-size: 12px; color: #cbb07a; }
+.admin-placement label, .inventory-placement label { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: #e3dacf; font-size: 12px; margin-right: 16px; }
+.admin-placement span { color: #a9a29a; font-size: 11px; }
+.admin-placement input, .inventory-placement input { width: 18px; height: 18px; accent-color: var(--store-gold); flex-shrink: 0; }
+.inventory-placement { display: flex; flex-wrap: wrap; gap: 0 10px; }
+.inventory-placement label { margin-right: 0; font-size: 11px; }
+.admin-placement:disabled, .inventory-placement label:has(input:disabled) { opacity: .55; }
+@media (max-width: 1100px) {
+  .full-catalog .catalog-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 699px) {
+  .luxury-catalog.products-page { padding-top: 16px; }
+  .catalog-breadcrumb { margin-bottom: 15px; }
+  .full-catalog .catalog-breadcrumb { margin-bottom: 8px; }
+  .full-catalog .catalog-header { margin-bottom: 16px; }
+  .full-catalog .catalog-title-row { min-height: 52px; }
+  .full-catalog .catalog-subtitle { font-size: 18px; margin-top: 6px; }
+  .full-catalog .catalog-title-row h1 { font-size: 42px; }
+  .full-catalog .catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 16px; margin-top: 24px; }
+  .full-catalog .catalog-product-title { font-size: 21px; }
+  .full-catalog .catalog-search { width: 100%; }
+  .full-catalog .catalog-card-row { padding-top: 8px; }
+  .full-catalog .catalog-price { text-align: left; }
+  .full-catalog .catalog-actions { justify-content: space-between; gap: 0; }
+  .full-catalog .catalog-results { align-items: center; flex-wrap: wrap; margin-top: 16px; }
+  .catalog-sort { margin-left: auto; }
+  .admin-statusbar > span { max-width: 48%; text-align: right; }
+}
 .brand-editorial { position: relative; min-height: 540px; padding: 75px 8%; display: flex; align-items: center; overflow: hidden; background: #000; }
 .editorial-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 35% 24%; }
 .editorial-shade { position: absolute; inset: 0; background: linear-gradient(90deg, #0001, #000d 65%); }
@@ -211,8 +261,8 @@
 .inventory-icon:disabled { opacity: .3; cursor: default; }
 .inventory-delete:hover { color: #ff9090; }
 .admin-statusbar { display: flex; justify-content: space-between; align-items: center; gap: 15px; min-height: 38px; padding: 8px 20px; border-bottom: 1px solid #ffffff14; font-size: 12px; color: #b9b1a8; flex-shrink: 0; }
-.admin-statusbar > p { display: flex; align-items: center; gap: 8px; }
-.admin-statusbar > span { white-space: nowrap; }
+.admin-statusbar > p { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.admin-statusbar > span { white-space: normal; text-align: right; }
 .status-dot, .status-saving { width: 6px; height: 6px; border-radius: 50%; background: var(--store-gold); flex-shrink: 0; }
 .status-saving { animation: admin-pulse 1s ease-in-out infinite alternate; }
 @keyframes admin-pulse { to { opacity: .3; } }

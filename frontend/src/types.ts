@@ -16,6 +16,8 @@ export interface Product {
   image?: string
   images?: string[] 
   instagramLink?: string
+  showOnHomepage?: boolean
+  showInCatalog?: boolean
 }
 
 export interface CartItem extends Product {

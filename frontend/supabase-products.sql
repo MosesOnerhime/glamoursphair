@@ -16,11 +16,17 @@ create table if not exists public.products (
   image text,
   images text[],
   instagram_link text,
+  show_on_homepage boolean,
+  show_in_catalog boolean not null default true,
   sort_order integer default 0,
   is_deleted boolean default false,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+-- Non-destructive upgrade for existing installations; restoration is separate.
+alter table public.products add column if not exists show_on_homepage boolean;
+alter table public.products add column if not exists show_in_catalog boolean not null default true;
 
 create index if not exists products_visible_sort_idx
   on public.products (is_deleted, sort_order, id);

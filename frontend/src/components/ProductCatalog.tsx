@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
-import { HiAdjustments, HiArrowLeft, HiArrowRight, HiCheck, HiCollection, HiSearch, HiShoppingBag, HiViewGrid, HiX } from 'react-icons/hi'
+import { HiAdjustments, HiArrowLeft, HiArrowRight, HiCheck, HiChevronRight, HiCollection, HiSearch, HiShoppingBag, HiViewGrid, HiX } from 'react-icons/hi'
 import { FaWhatsapp } from 'react-icons/fa'
 import type { Product } from '../types'
 
 interface ProductCatalogProps {
+  productsPage: boolean
   products: Product[]
   collections: { name: string; products: Product[] }[]
   collection: string
@@ -15,6 +16,7 @@ interface ProductCatalogProps {
   onToggleFilters: () => void
   filterCount: number
   filters: ReactNode
+  sortControl: ReactNode
   onReset: () => void
   onProduct: (product: Product) => void
   onAdd: (product: Product) => void
@@ -26,11 +28,12 @@ interface ProductCatalogProps {
 const money = (value: number) => `\u20a6${value.toLocaleString('en-NG')}`
 
 export default function ProductCatalog(props: ProductCatalogProps) {
-  const [view, setView] = useState<'carousel' | 'grid'>('carousel')
+  const [view, setView] = useState<'carousel' | 'grid'>(props.productsPage ? 'grid' : 'carousel')
   const [position, setPosition] = useState(0)
   const swipe = useRef<{ x: number; y: number } | null>(null)
   const suppressClick = useRef(false)
   const count = props.products.length
+  const ProductHeading = props.productsPage ? 'h2' : 'h3'
   const index = count ? position % count : 0
   const move = (direction: number) => setPosition(value => count ? (value + direction + count) % count : 0)
   const offsetFor = (item: number) => {
@@ -49,7 +52,7 @@ export default function ProductCatalog(props: ProductCatalogProps) {
         {product.images?.[0] || product.image ? <img src={product.images?.[0] ?? product.image} alt={product.name} width="750" height="1000" loading="lazy" decoding="async" /> : <HiShoppingBag size={48} aria-hidden="true" />}
       </a>
       <div className="catalog-info">
-        <h3><a href={props.productLink(product)} onClick={event => { event.preventDefault(); props.onProduct(product) }}>{product.name}</a></h3>
+        <ProductHeading className="catalog-product-title"><a href={props.productLink(product)} onClick={event => { event.preventDefault(); props.onProduct(product) }}>{product.name}</a></ProductHeading>
         <p className="catalog-spec">{[product.length, product.volume, product.fitting].filter(Boolean).join(' / ') || product.group || 'Signature Collection'}</p>
         <div className="catalog-card-row">
           <div className="catalog-price"><span><span className="sr-only">Current price </span>{money(product.price)}</span>{product.originalPrice && product.originalPrice > product.price && <del><span className="sr-only">Original price </span>{money(product.originalPrice)}</del>}</div>
@@ -63,14 +66,15 @@ export default function ProductCatalog(props: ProductCatalogProps) {
   )
 
   return (
-    <div className="catalog-content" id="collection">
+    <div className={`catalog-content${props.productsPage ? ' full-catalog' : ''}`} id="collection">
+      {props.productsPage && <nav className="catalog-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><HiChevronRight aria-hidden="true" /><span aria-current="page">All products</span></nav>}
       <header className="catalog-header">
         <div className="catalog-title-row">
           <button type="button" className="round-tool filter-tool" onClick={props.onToggleFilters} aria-expanded={props.filtersOpen} aria-controls="product-filters" aria-label={`Filters${props.filterCount ? `, ${props.filterCount} applied` : ''}`} title="Filter and sort"><HiAdjustments size={20} /></button>
-          <h2>Discover the Collection</h2>
-          <button type="button" className="round-tool view-tool" onClick={() => setView(value => value === 'carousel' ? 'grid' : 'carousel')} aria-label={view === 'carousel' ? 'Show product grid' : 'Show product carousel'} title={view === 'carousel' ? 'Grid view' : 'Carousel view'}>{view === 'carousel' ? <HiViewGrid size={20} /> : <HiCollection size={20} />}</button>
+          {props.productsPage ? <h1>All products</h1> : <h2>Discover the Collection</h2>}
+          {!props.productsPage && <button type="button" className="round-tool view-tool" onClick={() => setView(value => value === 'carousel' ? 'grid' : 'carousel')} aria-label={view === 'carousel' ? 'Show product grid' : 'Show product carousel'} title={view === 'carousel' ? 'Grid view' : 'Carousel view'}>{view === 'carousel' ? <HiViewGrid size={20} /> : <HiCollection size={20} />}</button>}
         </div>
-        <p className="catalog-subtitle">Choose your signature look</p>
+        <p className="catalog-subtitle">{props.productsPage ? 'Find your signature GLAMOURSPHAIR look' : 'Choose your signature look'}</p>
       </header>
       <div className="catalog-discovery">
         <div className="catalog-collections" aria-label="Product collections">
@@ -85,7 +89,7 @@ export default function ProductCatalog(props: ProductCatalogProps) {
         </div>
       </div>
       {props.filtersOpen && <div id="product-filters" className="catalog-filters">{props.filters}</div>}
-      <p className="catalog-count" role="status" aria-live="polite">{count} product{count === 1 ? '' : 's'}{props.collection !== 'All Collections' ? ` in ${props.collection}` : ''}{props.filterCount > 0 || props.search ? ' matching your selection' : ''}</p>
+      <div className="catalog-results"><p className="catalog-count" role="status" aria-live="polite">{count} product{count === 1 ? '' : 's'}{props.collection !== 'All Collections' ? ` in ${props.collection}` : ''}{props.filterCount > 0 || props.search ? ' matching your selection' : ''}</p>{props.productsPage && props.sortControl}</div>
       {count > 0 ? view === 'carousel' ? (
         <div className="product-showcase" role="region" aria-roledescription="carousel" aria-label="Hair collection"
           onPointerDown={event => { swipe.current = { x: event.clientX, y: event.clientY }; suppressClick.current = false }}
@@ -110,6 +114,7 @@ export default function ProductCatalog(props: ProductCatalogProps) {
         <div className="catalog-empty"><h3>No matching pieces</h3><p>Try another name, length or fitting.</p><button type="button" className="luxury-button outline" onClick={props.onReset}>Clear search and filters</button></div>
       )}
       <p className="sr-only" role="status">{props.added !== null ? 'Product added to cart' : ''}</p>
+      {!props.productsPage && <div className="catalog-view-all"><a href="/products" className="luxury-button">View all products <HiArrowRight size={18} aria-hidden="true" /></a></div>}
     </div>
   )
 }

@@ -3,17 +3,18 @@ import { HiShoppingBag, HiMenu, HiX, HiSearch, HiArrowRight } from 'react-icons/
 import { track } from '@vercel/analytics'
 import { useDialogA11y } from '../hooks/useDialogA11y'
 
-interface NavbarProps { cartCount: number; onCartClick: () => void }
+interface NavbarProps { cartCount: number; onCartClick: () => void; productsPage?: boolean }
 const links = [
   { label: 'Home', id: 'home' },
-  { label: 'Collection', id: 'shop' },
+  { label: 'All products', id: 'shop' },
   { label: 'About', id: 'about' },
   { label: 'Support', id: 'shopping-support' },
   { label: 'Contact', id: 'contact' },
 ]
 const popularSearches = ['HD Lace', 'Bouncy', 'Straight', 'Blonde', 'Awoof Sales']
 
-export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
+export default function Navbar({ cartCount, onCartClick, productsPage = false }: NavbarProps) {
+  const linkHref = (id: string) => id === 'shop' ? '/products' : id === 'shopping-support' ? '#shopping-support' : `${productsPage ? '/' : ''}#${id}`
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -23,9 +24,13 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
   const submitSearch = (term = query) => {
     const clean = term.trim()
     if (!clean) return
+    track('Search', { query: clean })
+    if (!productsPage) {
+      window.location.assign(`/products?q=${encodeURIComponent(clean)}`)
+      return
+    }
     window.dispatchEvent(new CustomEvent('glamoursphair:search', { detail: clean }))
     document.getElementById('shop')?.scrollIntoView()
-    track('Search', { query: clean })
     setSearchOpen(false)
     setMenuOpen(false)
     setQuery('')
@@ -33,8 +38,8 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
 
   return <>
     <header className="luxury-header">
-      <a href="#home" className="header-brand" aria-label="Glamoursphair home"><img src="/images/logo.png" alt="" width="196" height="168" /><span>GLAMOURSPHAIR</span></a>
-      <nav aria-label="Main navigation"><ul>{links.map(link => <li key={link.id}><a href={`#${link.id}`}>{link.label}</a></li>)}</ul></nav>
+      <a href="/#home" className="header-brand" aria-label="Glamoursphair home"><img src="/images/logo.png" alt="" width="196" height="168" /><span>GLAMOURSPHAIR</span></a>
+      <nav aria-label="Main navigation"><ul>{links.map(link => <li key={link.id}><a href={linkHref(link.id)} aria-current={productsPage && link.id === 'shop' ? 'page' : undefined}>{link.label}</a></li>)}</ul></nav>
       <div className="header-actions">
         <button onClick={() => setSearchOpen(true)} aria-label="Open search" title="Search"><HiSearch size={21} /></button>
         <button onClick={onCartClick} aria-label={`Open cart, ${cartCount} item${cartCount === 1 ? '' : 's'}`} title="Your cart"><HiShoppingBag size={22} />{cartCount > 0 && <span key={cartCount} className="cart-count">{cartCount}</span>}</button>
@@ -47,7 +52,7 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
       <div ref={menuRef} role="dialog" aria-modal="true" aria-label="Mobile navigation" tabIndex={-1} className="mobile-navigation">
         <button className="menu-close round-tool" onClick={() => setMenuOpen(false)} aria-label="Close menu"><HiX size={23} /></button>
         <img src="/images/logo.png" alt="GLAMOURSPHAIR" width="196" height="168" />
-        <nav aria-label="Mobile navigation">{links.map(link => <a key={link.id} href={`#${link.id}`} onClick={() => setMenuOpen(false)}>{link.label}<HiArrowRight size={18} /></a>)}</nav>
+        <nav aria-label="Mobile navigation">{links.map(link => <a key={link.id} href={linkHref(link.id)} aria-current={productsPage && link.id === 'shop' ? 'page' : undefined} onClick={() => setMenuOpen(false)}>{link.label}<HiArrowRight size={18} /></a>)}</nav>
         <a href="https://wa.me/2348128288948" target="_blank" rel="noopener noreferrer" className="luxury-button outline">WhatsApp support</a>
       </div>
     </div>}

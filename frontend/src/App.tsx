@@ -42,6 +42,7 @@ function readSavedCart(): CartItem[] {
 }
 
 export default function App() {
+  const productsPage = window.location.pathname.replace(/\/$/, '') === '/products'
   const motionRef = useStorefrontMotion()
   const [cartOpen, setCartOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
@@ -86,15 +87,13 @@ export default function App() {
       >
         Skip to shopping content
       </a>
-      <Navbar cartCount={cartCount} onCartClick={() => setCartOpen(true)} />
+      <Navbar productsPage={productsPage} cartCount={cartCount} onCartClick={() => setCartOpen(true)} />
       <main id="main-content" tabIndex={-1}>
-        <Hero />
-        <TrustStrip />
-        <ProductGrid onAddToCart={addToCart} />
-        <BrandStory />
+        {!productsPage && <><Hero /><TrustStrip /></>}
+        <ProductGrid productsPage={productsPage} onAddToCart={addToCart} />
+        {!productsPage && <BrandStory />}
         <BuyerTrust />
-        <Contact />
-        <ChannelHub />
+        {!productsPage && <><Contact /><ChannelHub /></>}
       </main>
       <Footer />
       <CartDrawer

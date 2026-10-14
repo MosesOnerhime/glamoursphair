@@ -25,12 +25,15 @@ type DatabaseProduct = {
   instagram_link: string | null
   sort_order: number | null
   is_deleted: boolean | null
+  show_on_homepage?: boolean | null
+  show_in_catalog?: boolean
 }
 
 export type ProductDatabaseSnapshot = {
   products: Product[]
   hiddenIds: number[]
   order: number[]
+  placementSupported: boolean
 }
 
 export function isProductDatabaseConfigured() {
@@ -88,6 +91,8 @@ function fromDatabaseProduct(product: DatabaseProduct): Product {
     image: product.image ?? undefined,
     images: product.images ?? undefined,
     instagramLink: product.instagram_link ?? undefined,
+    showOnHomepage: product.show_on_homepage ?? undefined,
+    showInCatalog: product.show_in_catalog,
   }
 }
 
@@ -111,6 +116,7 @@ export async function fetchDatabaseProducts(): Promise<ProductDatabaseSnapshot |
     products: activeRows.map(fromDatabaseProduct),
     hiddenIds: rows.filter(row => row.is_deleted).map(row => row.id),
     order: activeRows.map(row => row.id),
+    placementSupported: false,
   }
 }
 
@@ -137,7 +143,10 @@ export async function saveDatabaseProduct(product: Product, sortOrder: number, a
     },
     body: JSON.stringify({ product, sortOrder }),
   })
-  if (!response.ok) throw new Error(await response.text() || 'Could not save product.')
+  if (!response.ok) {
+    const data = await response.json().catch(() => null) as { error?: string } | null
+    throw new Error(data?.error || 'Could not save product.')
+  }
   return await response.json() as Product
 }
 
@@ -164,7 +173,10 @@ export async function reorderDatabaseProducts(products: Product[], adminPassword
     },
     body: JSON.stringify({ products }),
   })
-  if (!response.ok) throw new Error(await response.text() || 'Could not reorder products.')
+  if (!response.ok) {
+    const data = await response.json().catch(() => null) as { error?: string } | null
+    throw new Error(data?.error || 'Could not reorder products.')
+  }
 }
 
 export async function uploadProductImage(file: File, productName: string, adminPassword: string) {
