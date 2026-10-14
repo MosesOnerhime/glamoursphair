@@ -1,0 +1,25 @@
+# Revised Hero Image Prompts
+
+Built-in image generation; 2026-10-14. Revised Option 1 was approved. The references inform
+realistic fiber behavior; stock preview files are not deployed or committed.
+
+## Option 1
+
+```text
+Edit image 1, our own generated black-silk hair campaign concept, into a more convincingly real studio photograph. Images 2 and 3 are REFERENCE ONLY for how real extension fibers, uneven curl spacing, weft roots, stray hairs, density, and restrained highlights behave. Do not reuse their exact composition, objects, pixels, or distinctive arrangement. Keep image 1's overall black/gold editorial direction and exact GLAMOURSPHAIR hangtag spelling, but substantially improve the natural hair rendering: softer diffused neutral highlights, irregular strand alignment, a few fine authentic flyaways at the edges, slight variations between bundles, credible stitched wefts, naturally tapered and slightly uneven ends. Remove the overly perfect repeating sine-wave patterns and oily metallic/plastic sheen. Three real-looking black loose-wave/body-wave bundles should be gently laid on black satin, not sculpted into an impossibly immaculate CGI shape. Simplify the satin so it supports rather than competes with the hair; retain tasteful gold accents and a physically attached matte-black tag with thin gold border and the exact one-line gold serif word GLAMOURSPHAIR. Photograph as if shot on a full-frame DSLR with a 50mm lens, a large diffused softbox and minimal retouching. Honest tactile product photography, natural softness and fiber detail, not hyperreal 3D rendering. Wide 16:9, with central hair and tag surviving a mobile portrait crop. No reference-brand labels, no watermark, no claims, no sparkling highlights or starbursts. This is an original campaign scene, not any stock photograph or an actual catalog SKU.
+```
+
+## Option 2
+
+```text
+Edit image 1, our own generated wine-velvet hair concept, to replace the synthetic-looking hair rendering with convincingly photographic hair. Image 2 is REFERENCE ONLY for real loose-wave bundles and their strand irregularity; image 3 is REFERENCE ONLY for real curl texture. Do not reuse their exact composition, object arrangement or pixels. Preserve the deep wine-red velvet art direction but reduce the exaggerated sheen and over-perfect waves. Give the black bundles believable slightly irregular wave spacing, fine stray fibers, varied strand thickness, real stitched weft tops and naturally imperfect tapered tips. Softer neutral diffused light, realistic dark-brown-to-black undertones, detail without chrome-like reflections or exaggerated sculpting. Add one physically attached matte-black landscape hangtag with a fine gold cord, thin restrained gold border, and the exact readable gold serif text GLAMOURSPHAIR on one line, spelled G-L-A-M-O-U-R-S-P-H-A-I-R. Place the tag and primary hair near the center where a portrait mobile crop can retain both. Make this look like a modestly retouched premium product photograph taken with a full-frame DSLR, 50mm lens and large softbox, not an AI beauty render. Keep the hair visibly textured, not blurred. Wide 16:9 landscape; no people, reference-brand logos, additional writing, watermarks, sparkles, fake claims or stock-photo copies.
+Keep the hair clean and well groomed, with only a few subtle isolated flyaway fibers, not frizzy, damaged or tangled. Reduce gold-colored reflections on the hair itself; use soft neutral photographic shine.
+```
+
+## Option 3
+
+```text
+Edit image 1, our own generated straight-hair black-satin concept, into a genuinely photographic-looking hair scene. Images 2 and 3 are REFERENCE ONLY for real fiber variation, weft roots, natural density and restrained highlights; do not reuse their specific composition or pixels. Keep three black straight hair bundles on understated charcoal-black satin, but remove the glassy metallic sheen and impossible perfectly parallel strand pattern. The individual real-looking fibers should have subtle uneven alignment, a few fine wisps near the edges, soft highlights from a large diffused softbox, and slightly imperfect naturally tapered ends. The hair should read as smooth and cared for, not plastic or CGI. Simple brushed-gold ties at the weft tops; realistic fine stitched wefts. Add one matte-black physical hangtag attached to the central bundle with a fine gold cord, a thin gold border and exact legible gold serif brand name GLAMOURSPHAIR, spelled G-L-A-M-O-U-R-S-P-H-A-I-R, centered on a single line. Center the main bundle and tag for mobile cropping, while retaining a wide 16:9 photographic composition and relatively calm upper/lower areas for website overlays. Full-frame DSLR, 50mm lens, minimal retouching, realistic texture and shadows. No sparkle, watermark, reference branding, stock photograph copying, extra labels, people, or specific product claims.
+Keep the straight hair clean and well groomed; only three or four almost imperceptible isolated wisps, not frizzy, tangled or damaged. Broad soft neutral highlights, not artificial gold or mirror-like shine on the hair.
+```
+

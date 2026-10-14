@@ -54,7 +54,7 @@ export default function ProductCatalog(props: ProductCatalogProps) {
         <div className="catalog-card-row">
           <div className="catalog-price"><span><span className="sr-only">Current price </span>{money(product.price)}</span>{product.originalPrice && product.originalPrice > product.price && <del><span className="sr-only">Original price </span>{money(product.originalPrice)}</del>}</div>
           <div className="catalog-actions">
-            <button type="button" className="catalog-add" onClick={() => props.onAdd(product)} aria-label={`Add ${product.name} to cart`} title={`Add ${product.name} to cart`}>{props.added === product.id ? <HiCheck size={21} /> : <HiShoppingBag size={21} />}</button>
+            <button type="button" className={`catalog-add${props.added === product.id ? ' is-added' : ''}`} onClick={() => props.onAdd(product)} aria-label={`Add ${product.name} to cart`} title={`Add ${product.name} to cart`}>{props.added === product.id ? <HiCheck size={21} /> : <HiShoppingBag size={21} />}</button>
             <a href={props.whatsappLink(product)} target="_blank" rel="noopener noreferrer" className="catalog-order" aria-label={`Order ${product.name} on WhatsApp`}><FaWhatsapp aria-hidden="true" /> Order</a>
           </div>
         </div>

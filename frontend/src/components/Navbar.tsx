@@ -37,7 +37,7 @@ export default function Navbar({ cartCount, onCartClick }: NavbarProps) {
       <nav aria-label="Main navigation"><ul>{links.map(link => <li key={link.id}><a href={`#${link.id}`}>{link.label}</a></li>)}</ul></nav>
       <div className="header-actions">
         <button onClick={() => setSearchOpen(true)} aria-label="Open search" title="Search"><HiSearch size={21} /></button>
-        <button onClick={onCartClick} aria-label={`Open cart, ${cartCount} item${cartCount === 1 ? '' : 's'}`} title="Your cart"><HiShoppingBag size={22} />{cartCount > 0 && <span className="cart-count">{cartCount}</span>}</button>
+        <button onClick={onCartClick} aria-label={`Open cart, ${cartCount} item${cartCount === 1 ? '' : 's'}`} title="Your cart"><HiShoppingBag size={22} />{cartCount > 0 && <span key={cartCount} className="cart-count">{cartCount}</span>}</button>
         <button className="menu-toggle" onClick={() => setMenuOpen(true)} aria-label="Open menu" aria-expanded={menuOpen} title="Menu"><HiMenu size={25} /></button>
       </div>
     </header>

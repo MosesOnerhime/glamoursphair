@@ -12,6 +12,7 @@ import CartDrawer from './components/CartDrawer'
 import type { CartItem, Product } from './types'
 import { HiX } from 'react-icons/hi'
 import { useDialogA11y } from './hooks/useDialogA11y'
+import { useStorefrontMotion } from './hooks/useStorefrontMotion'
 
 const CheckoutModal = lazy(() => import('./components/CheckoutModal'))
 const CART_STORAGE_KEY = 'glamoursphair_cart'
@@ -41,6 +42,7 @@ function readSavedCart(): CartItem[] {
 }
 
 export default function App() {
+  const motionRef = useStorefrontMotion()
   const [cartOpen, setCartOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [cartItems, setCartItems] = useState<CartItem[]>(readSavedCart)
@@ -77,7 +79,7 @@ export default function App() {
   }
 
   return (
-    <div className="storefront min-h-screen text-white font-body">
+    <div ref={motionRef} className="storefront min-h-screen text-white font-body">
       <a
         href="#main-content"
         className="fixed left-4 top-4 z-[100] -translate-y-24 bg-[#c9a84c] px-4 py-3 text-sm font-bold text-black transition-transform focus:translate-y-0"

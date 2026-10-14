@@ -3,7 +3,7 @@ import { FaWhatsapp } from 'react-icons/fa'
 export default function Hero() {
   return (
     <section id="home" className="luxury-hero">
-      <img src="/images/bone-straight.jpeg" alt="Glamoursphair hair worn at our Abuja studio" width="1126" height="2000" fetchPriority="high" className="hero-photograph" />
+      <img src="/images/hero-black-silk-1672.webp" srcSet="/images/hero-black-silk-640.webp 640w, /images/hero-black-silk-1024.webp 1024w, /images/hero-black-silk-1672.webp 1672w" sizes="(max-width: 799px) 200vw, 100vw" alt="Black hair bundles with a Glamoursphair tag on satin, campaign artwork" width="1672" height="941" fetchPriority="high" className="hero-photograph" />
       <div className="hero-shade" />
       <div className="hero-brand"><img src="/images/logo.png" alt="" width="196" height="168" /><h1>GLAMOURSPHAIR</h1></div>
       <div className="hero-content">

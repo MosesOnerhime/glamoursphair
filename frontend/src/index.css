@@ -11,6 +11,7 @@
   --store-cream: #f6efe6;
   --store-wine: #6b1e2e;
   --store-espresso: #1c1613;
+  --motion-settle: cubic-bezier(.16, 1, .3, 1);
 }
 
 .storefront { background: var(--store-black); letter-spacing: 0; }
@@ -34,7 +35,7 @@
 .round-tool:hover { background: #cbb07a1a; }
 .luxury-hero { position: relative; min-height: calc(100svh - 88px); display: flex; align-items: flex-end; justify-content: center; overflow: hidden; text-align: center; padding: 24px 20px 46px; }
 .hero-photograph { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 44%; }
-.hero-shade { position: absolute; inset: 0; background: linear-gradient(#0009, #0005 40%, #000d); }
+.hero-shade { position: absolute; inset: 0; background: linear-gradient(#0006, #0003 40%, #000c); }
 .hero-brand { position: absolute; top: 40px; left: 0; right: 0; z-index: 1; color: var(--store-cream); }
 .hero-brand img { width: 105px; height: 90px; object-fit: contain; margin: 0 auto 10px; }
 .hero-brand h1 { font-family: 'Cormorant Garamond', serif; font-size: 40px; line-height: 1.1; text-shadow: 0 2px 10px #0008; }
@@ -151,6 +152,46 @@
 .search-suggestions button { min-height: 44px; font-size: 13px; color: var(--store-champagne); }
 .product-detail { border-radius: 8px; }
 .product-detail .text-neutral-600, .product-detail .text-neutral-500 { color: #a9a29a; }
+
+@keyframes storefront-rise { from { opacity: .45; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes storefront-panel { from { opacity: .6; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes storefront-menu { from { opacity: .6; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes storefront-confirm { from { transform: scale(.8); } 70% { transform: scale(1.08); } to { transform: scale(1); } }
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-brand img, .hero-brand h1, .hero-tagline, .hero-subtext { animation: storefront-rise .65s var(--motion-settle) backwards; }
+  .hero-brand h1 { animation-delay: .045s; }
+  .hero-tagline { animation-delay: .09s; }
+  .hero-subtext { animation-delay: .135s; }
+  .motion-pending { opacity: 0; }
+  .motion-reveal { animation: storefront-rise .55s var(--motion-settle) var(--reveal-delay, 0ms) backwards; }
+  .search-dialog, .product-detail, .inventory-confirm-panel, [role=dialog][aria-labelledby=checkout-title] { animation: storefront-panel .28s var(--motion-settle); }
+  .mobile-navigation { animation: storefront-menu .32s var(--motion-settle); }
+  .catalog-filters, .catalog-grid { animation: storefront-rise .25s var(--motion-settle); }
+  .cart-count, .catalog-add.is-added svg { animation: storefront-confirm .28s var(--motion-settle); }
+  [role=dialog][aria-labelledby=cart-title] { transition-timing-function: var(--motion-settle); }
+  .showcase-card { transition-timing-function: var(--motion-settle); }
+  .catalog-media img { transition-timing-function: var(--motion-settle); }
+  .luxury-button { transition: transform .18s var(--motion-settle), background-color .2s ease, border-color .2s ease, color .2s ease; }
+  .round-tool, .catalog-add, .header-actions button { transition: color .18s ease, background-color .18s ease, border-color .18s ease; }
+  :where(.luxury-button, .round-tool, .header-actions button, .catalog-add, .catalog-order, .footer-socials a, .mobile-navigation nav a, .studio-details a, .search-dialog button) > svg { transition: transform .18s var(--motion-settle); }
+  .benefit > svg { transition: transform .25s var(--motion-settle); }
+  .luxury-button:active { transform: translateY(1px) scale(.985); }
+  :where(.luxury-button, .round-tool, .header-actions button, .catalog-add, .catalog-order, .footer-socials a, .mobile-navigation nav a, .studio-details a, .search-dialog button):focus-visible > svg { transform: translateY(-2px); }
+  @media (hover: hover) {
+    .luxury-button:hover { transform: translateY(-2px); }
+    :where(.luxury-button, .round-tool, .header-actions button, .catalog-add, .catalog-order, .footer-socials a, .studio-details a):hover > svg { transform: translateY(-2px) scale(1.06); }
+    .showcase-prev:hover > svg { transform: translateX(-3px); }
+    .showcase-next:hover > svg, .mobile-navigation nav a:hover > svg, .search-dialog button:hover > svg { transform: translateX(3px); }
+    .benefit:hover > svg { transform: translateY(-3px); }
+  }
+}
+
+.luxury-header nav a { position: relative; }
+.luxury-header nav a::after { content: ''; position: absolute; left: 0; right: 0; bottom: -6px; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform .22s var(--motion-settle); }
+.luxury-header nav a:hover { text-decoration: none; }
+.luxury-header nav a:is(:hover, :focus-visible)::after { transform: scaleX(1); }
+@media (prefers-reduced-motion: reduce) { .motion-pending { opacity: 1; } }
 
 .admin-overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; }
 .admin-backdrop { position: absolute; inset: 0; background: #000d; }
@@ -304,6 +345,7 @@
   .header-brand span { display: none; }
   .header-brand img { width: 55px; height: 48px; }
   .luxury-hero { min-height: calc(100svh - 96px); padding: 180px 24px 36px; }
+  .hero-photograph { object-position: 64% 44%; }
   .hero-brand { top: 32px; }
   .hero-brand img { width: 95px; height: 82px; }
   .hero-brand h1 { font-size: 28px; }
