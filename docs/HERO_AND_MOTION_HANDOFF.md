@@ -112,3 +112,14 @@ Encoded asset sizes: 640w 51,972 bytes; 1024w 113,286 bytes; 1672w 283,332 bytes
 - Local preview started hidden on http://localhost:5173. Responsive overrides
   were reset after QA. Publication targets main with commit subject
   `feat: add approved branded hair hero and refined storefront motion`.
+
+## Publication
+
+- Feature commit df92991 was pushed successfully to origin/main.
+- The public domain served `/assets/index--JPO9kGB.js`, containing the approved
+  hero asset and motion controller. Website: https://www.glamoursphairluxury.com/.
+- Final staged whitespace check caught one extra blank line in PROMPTS.md;
+  it was removed in this documentation close-out. No feature/code repair was
+  required. Build, lint and all 15 tests had passed before publication.
+- Previous website backup branch remains unchanged. Product imagery/prices,
+  admin protection, delivery/currency logic and payment APIs are untouched.
