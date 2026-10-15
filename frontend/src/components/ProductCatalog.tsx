@@ -49,7 +49,7 @@ export default function ProductCatalog(props: ProductCatalogProps) {
       hidden={offset !== undefined && Math.abs(offset) > 2} aria-label={product.name}
     >
       <a href={props.productLink(product)} className="catalog-media" onClick={event => { event.preventDefault(); props.onProduct(product) }}>
-        {product.images?.[0] || product.image ? <img src={product.images?.[0] ?? product.image} alt={product.name} width="750" height="1000" loading="lazy" decoding="async" /> : <HiShoppingBag size={48} aria-hidden="true" />}
+        {product.images?.[0] || product.image ? <img src={product.images?.[0] ?? product.image} alt={product.name} width="750" height="1000" loading={offset === 0 ? 'eager' : 'lazy'} fetchPriority={offset === 0 ? 'high' : 'auto'} decoding="async" /> : <HiShoppingBag size={48} aria-hidden="true" />}
       </a>
       <div className="catalog-info">
         <ProductHeading className="catalog-product-title"><a href={props.productLink(product)} onClick={event => { event.preventDefault(); props.onProduct(product) }}>{product.name}</a></ProductHeading>
@@ -66,12 +66,12 @@ export default function ProductCatalog(props: ProductCatalogProps) {
   )
 
   return (
-    <div className={`catalog-content${props.productsPage ? ' full-catalog' : ''}`} id="collection">
+    <div className={`catalog-content${props.productsPage ? ' full-catalog' : ''}`} id="collection" tabIndex={-1}>
       {props.productsPage && <nav className="catalog-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><HiChevronRight aria-hidden="true" /><span aria-current="page">All products</span></nav>}
       <header className="catalog-header">
         <div className="catalog-title-row">
           <button type="button" className="round-tool filter-tool" onClick={props.onToggleFilters} aria-expanded={props.filtersOpen} aria-controls="product-filters" aria-label={`Filters${props.filterCount ? `, ${props.filterCount} applied` : ''}`} title="Filter and sort"><HiAdjustments size={20} /></button>
-          {props.productsPage ? <h1>All products</h1> : <h2>Discover the Collection</h2>}
+          {props.productsPage ? <h1>All products</h1> : <h2>Explore the Luxury</h2>}
           {!props.productsPage && <button type="button" className="round-tool view-tool" onClick={() => setView(value => value === 'carousel' ? 'grid' : 'carousel')} aria-label={view === 'carousel' ? 'Show product grid' : 'Show product carousel'} title={view === 'carousel' ? 'Grid view' : 'Carousel view'}>{view === 'carousel' ? <HiViewGrid size={20} /> : <HiCollection size={20} />}</button>}
         </div>
         <p className="catalog-subtitle">{props.productsPage ? 'Find your signature GLAMOURSPHAIR look' : 'Choose your signature look'}</p>

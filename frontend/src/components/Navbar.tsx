@@ -38,7 +38,7 @@ export default function Navbar({ cartCount, onCartClick, productsPage = false }:
 
   return <>
     <header className="luxury-header">
-      <a href="/#home" className="header-brand" aria-label="Glamoursphair home"><img src="/images/logo.png" alt="" width="196" height="168" /><span>GLAMOURSPHAIR</span></a>
+      <a href="/#home" className="header-brand" aria-label="Glamoursphair home"><img src="/images/logo-mark.png" alt="" width="392" height="336" /><span>GLAMOURSPHAIR</span></a>
       <nav aria-label="Main navigation"><ul>{links.map(link => <li key={link.id}><a href={linkHref(link.id)} aria-current={productsPage && link.id === 'shop' ? 'page' : undefined}>{link.label}</a></li>)}</ul></nav>
       <div className="header-actions">
         <button onClick={() => setSearchOpen(true)} aria-label="Open search" title="Search"><HiSearch size={21} /></button>
@@ -51,7 +51,7 @@ export default function Navbar({ cartCount, onCartClick, productsPage = false }:
       <div className="absolute inset-0" aria-hidden="true" onClick={() => setMenuOpen(false)} />
       <div ref={menuRef} role="dialog" aria-modal="true" aria-label="Mobile navigation" tabIndex={-1} className="mobile-navigation">
         <button className="menu-close round-tool" onClick={() => setMenuOpen(false)} aria-label="Close menu"><HiX size={23} /></button>
-        <img src="/images/logo.png" alt="GLAMOURSPHAIR" width="196" height="168" />
+        <img src="/images/logo-mark.png" alt="GLAMOURSPHAIR" width="392" height="336" />
         <nav aria-label="Mobile navigation">{links.map(link => <a key={link.id} href={linkHref(link.id)} aria-current={productsPage && link.id === 'shop' ? 'page' : undefined} onClick={() => setMenuOpen(false)}>{link.label}<HiArrowRight size={18} /></a>)}</nav>
         <a href="https://wa.me/2348128288948" target="_blank" rel="noopener noreferrer" className="luxury-button outline">WhatsApp support</a>
       </div>

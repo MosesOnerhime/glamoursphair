@@ -1,7 +1,7 @@
 export default function BrandStory() {
   return (
     <section id="about" className="brand-editorial">
-      <img src="/images/12a.jpeg" alt="Glamoursphair Donor Bouncy wig" width="607" height="787" loading="lazy" className="editorial-photo" />
+      <img src="/images/editorial-wine-hair-1672.webp" srcSet="/images/editorial-wine-hair-640.webp 640w, /images/editorial-wine-hair-1024.webp 1024w, /images/editorial-wine-hair-1672.webp 1672w" sizes="100vw" alt="GLAMOURSPHAIR-tagged hair bundles on burgundy velvet, campaign artwork" width="1672" height="941" loading="lazy" decoding="async" className="editorial-photo" />
       <div className="editorial-shade" />
       <div className="editorial-content">
         <p className="editorial-eyebrow">The Glamoursphair woman</p>

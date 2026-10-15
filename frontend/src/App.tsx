@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useLayoutEffect, useState } from 'react'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import TrustStrip from './components/TrustStrip'
@@ -13,6 +13,7 @@ import type { CartItem, Product } from './types'
 import { HiX } from 'react-icons/hi'
 import { useDialogA11y } from './hooks/useDialogA11y'
 import { useStorefrontMotion } from './hooks/useStorefrontMotion'
+import { initialHomepageSection } from './lib/homepageEntry.js'
 
 const CheckoutModal = lazy(() => import('./components/CheckoutModal'))
 const CART_STORAGE_KEY = 'glamoursphair_cart'
@@ -44,9 +45,20 @@ function readSavedCart(): CartItem[] {
 export default function App() {
   const productsPage = window.location.pathname.replace(/\/$/, '') === '/products'
   const motionRef = useStorefrontMotion()
+  const [initialSection] = useState(() => initialHomepageSection(
+    window.location,
+    (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type,
+  ))
+  const startsAtCollection = initialSection === 'collection'
   const [cartOpen, setCartOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [cartItems, setCartItems] = useState<CartItem[]>(readSavedCart)
+
+  useLayoutEffect(() => {
+    if (!initialSection) return
+    // Position once before paint; never trap scrolling or override a deep link.
+    document.getElementById(initialSection)?.scrollIntoView({ behavior: 'instant', block: 'start' })
+  }, [initialSection])
 
   useEffect(() => {
     try {
@@ -82,14 +94,14 @@ export default function App() {
   return (
     <div ref={motionRef} className="storefront min-h-screen text-white font-body">
       <a
-        href="#main-content"
+        href="#collection"
         className="fixed left-4 top-4 z-[100] -translate-y-24 bg-[#c9a84c] px-4 py-3 text-sm font-bold text-black transition-transform focus:translate-y-0"
       >
         Skip to shopping content
       </a>
       <Navbar productsPage={productsPage} cartCount={cartCount} onCartClick={() => setCartOpen(true)} />
       <main id="main-content" tabIndex={-1}>
-        {!productsPage && <><Hero /><TrustStrip /></>}
+        {!productsPage && <><Hero prioritizeImage={!startsAtCollection} /><TrustStrip /></>}
         <ProductGrid productsPage={productsPage} onAddToCart={addToCart} />
         {!productsPage && <BrandStory />}
         <BuyerTrust />

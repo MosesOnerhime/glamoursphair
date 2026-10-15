@@ -8,7 +8,8 @@ const product = (id, fields = {}) => ({ id, name: `Unit ${id}`, price: 200000, d
 test('legacy catalog remains fully published with six stable homepage selections', () => {
   const inventory = [...DEFAULT_HOME_PRODUCT_IDS, 106, 107, 108].map(id => product(id))
   assert.equal(catalogProducts(inventory).length, inventory.length)
-  assert.equal(homepageProducts(inventory).length, HOME_PRODUCT_LIMIT)
+  assert.equal(HOME_PRODUCT_LIMIT, 10)
+  assert.equal(homepageProducts(inventory).length, DEFAULT_HOME_PRODUCT_IDS.length)
   assert.deepEqual(new Set(homepageProducts([...inventory].reverse()).map(item => item.id)), new Set(DEFAULT_HOME_PRODUCT_IDS))
   assert.equal(isHomepageProduct(product(999)), false)
 })
@@ -21,9 +22,9 @@ test('homepage and full shop visibility are independent, including unpublishing 
   assert.deepEqual(catalogProducts([homeOnly, shopOnly, unpublished]), [shopOnly])
 })
 
-test('homepage never renders more than six and retains the inventory order', () => {
+test('homepage never renders more than ten and retains the inventory order', () => {
   const inventory = Array.from({ length: 12 }, (_, index) => product(index + 1, { showOnHomepage: true }))
-  assert.deepEqual(homepageProducts(inventory).map(item => item.id), [1, 2, 3, 4, 5, 6])
+  assert.deepEqual(homepageProducts(inventory).map(item => item.id), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
   assert.equal(catalogProducts(inventory).length, 12)
 })
 
@@ -89,13 +90,36 @@ test('visibility must be boolean and is validated before any database request', 
   assert.equal(fetch.mock.callCount(), 0)
 })
 
-test('server rejects a seventh home product even when the six legacy seeds are not persisted', async context => {
+test('server rejects an eleventh home product including unpersisted legacy selections', async context => {
   const calls = []
-  context.mock.method(globalThis, 'fetch', async (url, init) => { calls.push({ url, init }); return Response.json([row(112)]) })
+  context.mock.method(globalThis, 'fetch', async (url, init) => { calls.push({ url, init }); return Response.json([112, 113, 114, 115].map(id => row(id, true))) })
   const res = response()
-  await handler(request('POST', { product: product(112, { showOnHomepage: true }) }), res)
+  await handler(request('POST', { product: product(116, { showOnHomepage: true }) }), res)
   assert.equal(res.statusCode, 409)
-  assert.match(res.body.error, /limited to 6/)
+  assert.match(res.body.error, /limited to 10/)
+  assert.equal(calls.length, 1)
+})
+
+test('server accepts a tenth home product and preserves legacy defaults', async context => {
+  const calls = []
+  context.mock.method(globalThis, 'fetch', async (url, init) => {
+    calls.push({ url, init })
+    return Response.json(init.method ? [row(115, true)] : [112, 113, 114].map(id => row(id, true)))
+  })
+  const res = response()
+  await handler(request('POST', { product: product(115, { showOnHomepage: true }) }), res)
+  assert.equal(res.statusCode, 200)
+  assert.equal(res.body.showOnHomepage, true)
+  assert.equal(calls.length, 2)
+})
+
+test('server rejects an over-limit bulk placement before writing', async context => {
+  const calls = []
+  context.mock.method(globalThis, 'fetch', async (url, init) => { calls.push({ url, init }); return Response.json([row(101)]) })
+  const res = response()
+  await handler(request('PATCH', { products: Array.from({ length: 11 }, (_, index) => product(200 + index, { showOnHomepage: true })) }), res)
+  assert.equal(res.statusCode, 409)
+  assert.match(res.body.error, /limited to 10/)
   assert.equal(calls.length, 1)
 })
 

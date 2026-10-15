@@ -885,6 +885,10 @@ export default function ProductGrid({ onAddToCart, productsPage = false }: Produ
     }
 
     document.getElementById(structuredDataId)?.remove()
+    // Product photos have their own aspect ratios; do not inherit campaign dimensions.
+    for (const property of ['og:image:secure_url', 'og:image:type', 'og:image:width', 'og:image:height']) {
+      document.querySelector(`meta[property="${property}"]`)?.remove()
+    }
 
     if (!selected) {
       document.title = defaultTitle
@@ -894,10 +898,18 @@ export default function ProductGrid({ onAddToCart, productsPage = false }: Produ
       upsertMeta('meta[property="og:description"]', 'property', 'og:description', defaultDescription)
       upsertMeta('meta[property="og:url"]', 'property', 'og:url', pageUrl)
       upsertMeta('meta[property="og:type"]', 'property', 'og:type', 'website')
-      upsertMeta('meta[property="og:image"]', 'property', 'og:image', `${PRODUCTION_URL}images/Wig%20Kellyin%20HDlace%202.jpeg`)
+      const socialImage = `${PRODUCTION_URL}images/glamoursphair-social-hair-v1.jpg`
+      const socialAlt = 'GLAMOURSPHAIR-tagged black hair bundles on silk, campaign artwork'
+      upsertMeta('meta[property="og:image"]', 'property', 'og:image', socialImage)
+      upsertMeta('meta[property="og:image:secure_url"]', 'property', 'og:image:secure_url', socialImage)
+      upsertMeta('meta[property="og:image:type"]', 'property', 'og:image:type', 'image/jpeg')
+      upsertMeta('meta[property="og:image:width"]', 'property', 'og:image:width', '1200')
+      upsertMeta('meta[property="og:image:height"]', 'property', 'og:image:height', '630')
+      upsertMeta('meta[property="og:image:alt"]', 'property', 'og:image:alt', socialAlt)
       upsertMeta('meta[name="twitter:title"]', 'name', 'twitter:title', defaultTitle)
       upsertMeta('meta[name="twitter:description"]', 'name', 'twitter:description', defaultDescription)
-      upsertMeta('meta[name="twitter:image"]', 'name', 'twitter:image', `${PRODUCTION_URL}images/Wig%20Kellyin%20HDlace%202.jpeg`)
+      upsertMeta('meta[name="twitter:image"]', 'name', 'twitter:image', socialImage)
+      upsertMeta('meta[name="twitter:image:alt"]', 'name', 'twitter:image:alt', socialAlt)
       return
     }
 
@@ -917,6 +929,8 @@ export default function ProductGrid({ onAddToCart, productsPage = false }: Produ
     if (imageUrls[0]) {
       upsertMeta('meta[property="og:image"]', 'property', 'og:image', imageUrls[0])
       upsertMeta('meta[name="twitter:image"]', 'name', 'twitter:image', imageUrls[0])
+      upsertMeta('meta[property="og:image:alt"]', 'property', 'og:image:alt', selected.name)
+      upsertMeta('meta[name="twitter:image:alt"]', 'name', 'twitter:image:alt', selected.name)
     }
 
     const script = document.createElement('script')
@@ -1645,7 +1659,7 @@ const writeAdminCache = (key: string, value: unknown) => {
           <div aria-hidden="true" className="admin-backdrop" onClick={closeAdmin} />
           <div ref={adminDialogRef} role="dialog" aria-modal="true" aria-labelledby="admin-dialog-title" tabIndex={-1} className={`admin-workspace ${adminUnlocked ? '' : 'is-locked'}`}>
             <header className="admin-header" inert={Boolean(inventoryConfirmation)}>
-              <div className="admin-heading"><img src="/images/logo.png" alt="" width="196" height="168" /><div><span>GLAMOURSPHAIR</span><h2 id="admin-dialog-title">Inventory</h2></div></div>
+              <div className="admin-heading"><img src="/images/logo-mark.png" alt="" width="392" height="336" /><div><span>GLAMOURSPHAIR</span><h2 id="admin-dialog-title">Inventory</h2></div></div>
               <div className="admin-header-actions">
                 {adminUnlocked && <>
                   <button type="button" className="admin-primary" disabled={adminSaving} onClick={requestNewProduct} aria-label="New product" title="New product"><HiPlus size={18} /> New product</button>
