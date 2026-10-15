@@ -45,3 +45,12 @@ Prompt: remove only the horizontal GLAMOURSPHAIR wordmark and tiny flourishes be
 - Keyboard activation of the skip-shopping link moves focus to the collection container. Browser viewport overrides were reset after mobile checks.
 - Proof: `docs/qa/collection-entry-desktop.png`, `collection-entry-mobile.png`, `symbol-logo-hero.png`, `wine-hair-editorial-desktop.png`, `wine-hair-editorial-mobile.png`.
 - Existing Browserslist age warning is non-blocking. No dependency or database migration changes.
+
+### Published Verification
+
+- Website implementation commit `241d624` pushed to `origin/main` on 2026-10-15. Flyer candidates are excluded from that commit and remain local.
+- Production initial HTML returns HTTP 200, references the symbol-only logo and the new sharing image, and loads `/assets/index-WsOOOJp7.js` (deployment environment differs from the local build).
+- Live desktop and 390px mobile root visits open the collection at approximately 112px, with "Explore the Luxury", no horizontal overflow, new logo loaded, hero CTA `#collection`, and the generated wine-hair About asset.
+- Live social-preview JPEG returns HTTP 200, `image/jpeg`, 160645 bytes. General OG/Twitter metadata uses this asset; this does not guarantee that old messages immediately refresh their cached card.
+- Proof: `docs/qa/collection-entry-live-desktop.png` and `collection-entry-live-mobile.png`. Browser viewport reset after verification.
+- Final flyer revisions were completed after website work: crest-only header, no slogan, "Luxury human hair wigs", WhatsApp +234 812 828 8948 and Call +234 806 346 0805. They are local approval candidates only; full copy, image-edit prompts and provenance are documented under `marketing/glamoursphair-flyers/`.

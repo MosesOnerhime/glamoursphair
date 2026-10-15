@@ -24,7 +24,13 @@
 - Social apps can keep cached previews of previously shared URLs. A fresh versioned image URL is provided, but instantaneous refresh of existing messages is not guaranteed.
 - Client-rendered product metadata is not server-rendered product social previews. That broader architecture remains outside this change.
 
-## References
+## Release
+
+- Implementation `241d624` pushed to main and verified on the production domain on 2026-10-15.
+- Initial HTML and browser metadata both use the new absolute campaign image URL. Its public response is HTTP 200, `image/jpeg`, 160645 bytes.
+- Product-photo open/close behavior was regression-tested and browser-checked locally. No claim of a refreshed WhatsApp/other platform cache or server-rendered product social cards.
+
+## Reference Links
 
 - Open Graph protocol: https://ogp.me/ . Image URL, alt text, type and dimensions.
 - Address is supplied directly by the owner, not inferred from external listings. The Google Maps action is an address search, not a claim of a verified exact entrance pin.
