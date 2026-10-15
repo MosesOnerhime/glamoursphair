@@ -21,7 +21,7 @@ The owner confirmed running the migration during implementation. A subsequent pr
 ### Routes And Shopping
 
 - `/products` and `/products/` render the complete published grid, not the homepage hero. Narrow Vercel rewrites preserve API/image routing.
-- Homepage hero and the selected-collection section both have `View all products` links. Navigation and mobile menu open the full shop; home/about/contact links return to the proper homepage sections.
+- Homepage hero uses `See the collection`, restored at the owner's request on 2026-10-15; the selected-collection section retains `View all products`. Both link to `/products`. Navigation and mobile menu open the full shop; home/about/contact links return to the proper homepage sections.
 - Full shop uses four columns on large desktop, three on intermediate widths, two on mobile. Existing typography, palette, photographs, product specifications, NGN prices, real original prices and WhatsApp links are retained.
 - Collections, search, price/length/fitting/sale filters, clear/recovery and always-visible price sorting remain available. Header search on home navigates to the full shop so it can find products outside the six featured units.
 - Cart storage persists across full document navigation. Existing product preview galleries, canonical product links, JSON-LD and lazy Paystack checkout are retained. `/products` has its own title/canonical and sitemap entry.
@@ -50,7 +50,18 @@ The owner confirmed running the migration during implementation. A subsequent pr
 
 ## Release
 
-Final build/lint/test and Git release evidence will be appended after the requested push. Existing local storefront server remains available at `http://localhost:5173/products`; QA fixture servers are temporary and will be stopped. Production inventory comes from the shared API, not the local fixture.
+- Feature commit `32ae1bc` was pushed to `origin/main` on 2026-10-14. Final validation before that push: build, lint, all 26 tests and `git diff --check` passed.
+- The owner paused after the push, then resumed on 2026-10-15. The deployed page now returns the full grid with **27 products**. Its JS asset is `/assets/index-BSnjBoEV.js` for the feature release.
+- Live API returns HTTP 200, `Cache-Control: no-store`, 22 active database records, zero deleted IDs, and `placementSupported: true`; all 22 database rows have catalog visibility enabled. The remaining original products are supplied by the preserved seed catalog.
+- Live 1440x1000 browser check: four columns, correct products title and canonical, no horizontal overflow, first eight photographs loaded. Awoof Sales currently contains 13 items; the owner's saved `Thank you sales` collection contains one. Existing database names, prices and collection overrides are preserved.
+- Live collection filtering, ascending price sorting, empty-search recovery and the three-image Kelly preview verified. No live inventory write or payment was performed for QA.
+- The restored custom record `1790280400575` was named `test`, priced NGN 1000, and initially published. After it was flagged, a later read-only API check showed it soft-deleted externally: **21 active database rows, one deleted ID**, and **26 products** in the merged public shop. No production mutation was performed by the agent; that deletion was preserved.
+- Temporary QA servers on 5175/5176/5177 were stopped before the pause. The existing local storefront server on 5173 remains available at `http://localhost:5173/products`. Production inventory comes from the shared API, not the local fixture.
+- Follow-up on 2026-10-15: restored only the hero text to `See the collection`; destination remains `/products`. The separate `View all products` link below the homepage collection is unchanged.
+- Verified the label and destination locally at desktop and 390px mobile width; mobile link is 280px by 46.6px with no text overflow. Live homepage rendering remains limited to six products. Live 390px shop check shows two columns and no document/card overflow.
+- Re-ran build, lint, all 26 tests, and diff whitespace checks successfully after the label change. The build retains the existing non-blocking Browserslist age warning.
+- Proof: `docs/qa/products-live-desktop.png`, `products-live-mobile.png`, `hero-collection-label-desktop.png`, `hero-collection-label-mobile.png`. The desktop shop capture predates the external test-item deletion; mobile captures the later 26-product state.
+- The follow-up commit on `main` contains the label restoration, release documentation and QA screenshots. No product data, styling, navigation destination or checkout logic changed in that follow-up.
 
 ### Boundaries
 
