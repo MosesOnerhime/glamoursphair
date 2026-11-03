@@ -7,6 +7,7 @@ interface NavbarProps { cartCount: number; onCartClick: () => void; productsPage
 const links = [
   { label: 'Home', id: 'home' },
   { label: 'All products', id: 'shop' },
+  { label: 'November sale', id: 'sales' },
   { label: 'About', id: 'about' },
   { label: 'Support', id: 'shopping-support' },
   { label: 'Contact', id: 'contact' },
@@ -14,7 +15,7 @@ const links = [
 const popularSearches = ['HD Lace', 'Bouncy', 'Straight', 'Blonde', 'Awoof Sales']
 
 export default function Navbar({ cartCount, onCartClick, productsPage = false }: NavbarProps) {
-  const linkHref = (id: string) => id === 'shop' ? '/products' : id === 'shopping-support' ? '#shopping-support' : `${productsPage ? '/' : ''}#${id}`
+  const linkHref = (id: string) => id === 'shop' ? '/products' : id === 'sales' ? '/sales' : id === 'shopping-support' ? '#shopping-support' : `${productsPage ? '/' : ''}#${id}`
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')

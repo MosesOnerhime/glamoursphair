@@ -17,6 +17,7 @@ declare module '@paystack/inline-js' {
     firstName?: string
     phone?: string
     metadata?: Record<string, unknown>
+    onLoad?: () => void
     onSuccess?: (response: PaystackResponse) => void
     onCancel?: () => void
     onError?: (error: PaystackError) => void
@@ -24,5 +25,6 @@ declare module '@paystack/inline-js' {
 
   export default class PaystackPop {
     newTransaction(options: PaystackOptions): unknown
+    resumeTransaction(accessCode: string, callbacks?: Pick<PaystackOptions, 'onSuccess' | 'onCancel' | 'onError' | 'onLoad'>): unknown
   }
 }

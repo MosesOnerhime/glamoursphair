@@ -9,13 +9,15 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',')
 
-export function useDialogA11y<T extends HTMLElement>(open: boolean, onClose: () => void) {
+export function useDialogA11y<T extends HTMLElement>(open: boolean, onClose: () => void, suspendFocusTrap = false) {
   const dialogRef = useRef<T>(null)
   const onCloseRef = useRef(onClose)
+  const suspendedRef = useRef(suspendFocusTrap)
 
   useEffect(() => {
     onCloseRef.current = onClose
-  }, [onClose])
+    suspendedRef.current = suspendFocusTrap
+  }, [onClose, suspendFocusTrap])
 
   useEffect(() => {
     if (!open) return
@@ -26,11 +28,14 @@ export function useDialogA11y<T extends HTMLElement>(open: boolean, onClose: () 
     document.body.style.overflow = 'hidden'
 
     const focusTimer = window.setTimeout(() => {
+      if (suspendedRef.current) return
       const firstFocusable = dialog?.querySelector<HTMLElement>('[data-autofocus], ' + FOCUSABLE_SELECTOR)
       ;(firstFocusable ?? dialog)?.focus()
     }, 0)
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Hosted payment dialogs manage their own focus outside this dialog.
+      if (suspendedRef.current) return
       if (event.key === 'Escape') {
         event.preventDefault()
         onCloseRef.current()

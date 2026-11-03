@@ -4,6 +4,7 @@ import { FaWhatsapp } from 'react-icons/fa'
 import emailjs from '@emailjs/browser'
 import type { CartItem } from '../types'
 import { useDialogA11y } from '../hooks/useDialogA11y'
+import { deliveryLocations } from '../lib/deliveryLocations.js'
 
 interface CheckoutModalProps {
   open: boolean
@@ -19,13 +20,6 @@ interface Currency {
   symbol: string
   label: string
   rate: number
-}
-
-interface DeliveryLocation {
-  id: string
-  label: string
-  fee: number
-  note: string
 }
 
 interface ExchangeRatesResponse {
@@ -54,17 +48,6 @@ const fallbackCurrencies: Currency[] = [
   { code: 'NGN', symbol: '\u20a6', label: 'Nigeria (NGN)', rate: 1 },
   { code: 'USD', symbol: '$', label: 'United States (USD)', rate: 0.00063 },
   { code: 'GBP', symbol: '\u00a3', label: 'United Kingdom (GBP)', rate: 0.00050 },
-]
-
-const deliveryLocations: DeliveryLocation[] = [
-  { id: 'uk', label: 'UK', fee: 80000, note: 'Within the United Kingdom' },
-  { id: 'usa', label: 'USA', fee: 98000, note: 'Within the United States of America' },
-  { id: 'uae', label: 'UAE', fee: 125000, note: 'Anywhere in the United Arab Emirates' },
-  { id: 'african-countries', label: 'Other African Countries', fee: 90000, note: 'Any country within Africa asides Nigeria' },
-  { id: 'within-nigeria', label: 'Within Nigeria', fee: 10000, note: 'Any state within Nigeria' },
-  { id: 'abuja', label: 'Abuja', fee: 4000, note: 'Within Abuja' },
-  { id: 'canada', label: 'Canada', fee: 88000, note: 'Within Canada' },
-  { id: 'italy', label: 'Italy', fee: 115000, note: 'Within Italy' },
 ]
 
 interface Receipt {

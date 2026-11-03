@@ -16,6 +16,7 @@ import { useStorefrontMotion } from './hooks/useStorefrontMotion'
 import { initialHomepageSection } from './lib/homepageEntry.js'
 
 const CheckoutModal = lazy(() => import('./components/CheckoutModal'))
+const SalesPage = lazy(() => import('./components/SalesPage'))
 const CART_STORAGE_KEY = 'glamoursphair_cart'
 
 function CheckoutLoading({ onClose }: { onClose: () => void }) {
@@ -42,7 +43,7 @@ function readSavedCart(): CartItem[] {
   }
 }
 
-export default function App() {
+function Storefront() {
   const productsPage = window.location.pathname.replace(/\/$/, '') === '/products'
   const motionRef = useStorefrontMotion()
   const [initialSection] = useState(() => initialHomepageSection(
@@ -127,4 +128,11 @@ export default function App() {
       </Suspense>
     </div>
   )
+}
+
+export default function App() {
+  const path = window.location.pathname.replace(/\/$/, '')
+  return path === '/sales'
+    ? <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-black font-display text-2xl text-[#c9a84c]" role="status">GLAMOURSPHAIR</div>}><SalesPage /></Suspense>
+    : <Storefront />
 }

@@ -30,8 +30,8 @@ test('homepage never renders more than ten and retains the inventory order', () 
 
 test('products routes are narrow rewrites and are included in the sitemap', () => {
   const config = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url)))
-  assert.deepEqual(config.rewrites.map(rewrite => rewrite.source), ['/products', '/products/'])
-  assert.ok(config.rewrites.every(rewrite => rewrite.destination === '/index.html'))
+  assert.deepEqual(config.rewrites.filter(rewrite => rewrite.source.startsWith('/products')).map(rewrite => rewrite.source), ['/products', '/products/'])
+  assert.ok(config.rewrites.filter(rewrite => rewrite.source.startsWith('/products')).every(rewrite => rewrite.destination === '/index.html'))
   assert.match(readFileSync(new URL('../public/sitemap.xml', import.meta.url), 'utf8'), /<loc>https:\/\/www.glamoursphairluxury.com\/products<\/loc>/)
 })
 

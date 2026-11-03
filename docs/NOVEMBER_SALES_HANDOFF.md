@@ -1,0 +1,52 @@
+# November Sales Implementation
+
+## Owner Objective
+
+Build and publish `https://www.glamoursphairluxury.com/sales`, following the supplied video closely in GLAMOURSPHAIR's palette/style. Use selected existing products as replaceable placeholders with 20% off. Campaign dates: 9-15 November 2026 inclusive in Africa/Lagos. Preserve regular inventory/prices and ensure the sale total, delivery and Paystack flow agree. Commit to GitHub and verify the live page. Work autonomously; do not mark the goal complete without evidence for the full objective.
+
+## Reference And Verified Starting State
+
+- Local reference located at `C:/Users/moses/Downloads/WhatsApp Video 2026-11-02 at 4.47.25 PM.mp4`, 79.78 seconds, 384x848. It shows a Paystack storefront: stacked photo/video product cards with light name/price strips, a large product preview, a quantity-editable bag, and Shipping -> Pay checkout with an optional gift recipient. Contact sheets for inspection remain outside the repository. Do not publish or copy the other business's video, products, orange palette, shipping rates or claims.
+- Starting branch main, clean tracked worktree. Untracked `marketing/` contains earlier private flyer candidates and is unrelated; exclude it from the sale commits.
+- Read-only live inventory returns two active published records: id 11 Signature Straight 22 inches, NGN 650000; id 112 SDD Luxury Bone Straight 18 inches 5 by 5, NGN 345000. There are 25 deletion tombstones. Do not restore deleted products to populate this campaign.
+- Placeholder selection is therefore the two currently published items. Their 20%-off prices are NGN 520000 and NGN 276000, based on current prices rather than older compare-at values. Selection and dates live in `frontend/src/lib/novemberSale.js`; no database price changes.
+- Live `/api/verify-payment` returns HTTP 503: payment verification is not configured. Asked the owner asynchronously to add server-only `PAYSTACK_SECRET_KEY` to Vercel Production (never a VITE variable, never paste it in chat). Continue implementation/QA meanwhile; do not claim this external launch prerequisite is satisfied without verifying it.
+
+## Rules And Architecture
+
+- Start inclusive: 2026-11-09T00:00:00+01:00. End exclusive: 2026-11-16T00:00:00+01:00. Preview offers before opening; do not charge a sale discount before/after the campaign. No countdown or invented stock/urgency.
+- Sale quotes use integer kobo, actual current published inventory, server dates and the existing storefront delivery rates. Browser prices/fees are not authoritative.
+- Share delivery fee data with existing checkout without changing its amounts.
+- Campaign bag persists IDs/quantities separately from the regular cart to prevent stale/cross-campaign prices leaking into other shopping routes. Shipping/customer fields survive recoverable form/API errors; do not store customer PII in repository or QA screenshots.
+- Use a server-created Paystack transaction and server verification before declaring payment successful or clearing the sale bag. Keep pending references recoverable and avoid repeat payment when status is uncertain.
+- Existing normal store and admin workflows must remain intact. Campaign does not rewrite homepage placement, deletion tombstones or real SKU photos/specs.
+
+## Research
+
+- Paystack InlineJS: https://paystack.com/docs/developer-tools/inlinejs/ . Backend initialization and `resumeTransaction` flow; callbacks and amounts in the currency's subunit.
+- Paystack Transaction API: https://paystack.com/docs/api/transaction/ . Initialize and verify with server-only secret key; independently verify reference, amount, currency and successful status.
+
+## QA And Release
+
+### Implementation And Local Evidence
+
+- Dedicated lazy-loaded `/sales` and `/sales/` routes, separate crawler HTML, canonical/Open Graph/Twitter metadata and sitemap entry. Existing storefront navigation includes the sale; normal home/products/admin remain separate.
+- Video structure adapted with portrait product photographs, cream name/price strips, larger product/gallery previews, editable bag and Shipping -> Pay checkout including optional gift recipient. Burgundy, black, cream, gold and established fonts are preserved. No product videos were invented because the selected inventory supplies photos only.
+- Actual shared catalogue prices are read without caching. Server-authoritative quotes and signed order metadata prevent browser price, fee, reference, payer or amount substitutions. Campaign bag stores IDs and quantities, not discounted price copies in the regular cart.
+- Pending sessions survive reload/cancellation/error. Recovery resumes the same provider access code/reference, checks status without inventing success and verifies valid initialized payments even after campaign closure or inventory changes. Hosted fallback stays in the same tab so callback return retains session storage. Receipt close now resets the next checkout.
+- The generic dialog hook gained an opt-in focus-trap suspension for hosted payment overlays; existing callers retain default behavior. Keyboard access into the mock gateway and return focus after confirmation were checked.
+- `npm test`: **68/68 passing**, including 27 campaign/client/gateway regressions plus the existing 41 store/admin/metadata/motion tests. Lint and production TypeScript/Vite build passed; rerun after any subsequent source change.
+- Browser QA: 320, 360, 390, 430, 768, 1024, 1280 and 1440 CSS-pixel widths checked for no horizontal overflow, no header overlap and loaded product images. Mobile is one column, tablet/desktop two. Search no-results/reset, low-to-high price sort, three-image gallery, quantities, add/remove and focus wrapping exercised.
+- Local fake-clock UI checked upcoming/active/ended. No Add button before opening/after closing, and no active Offer schema after closure. Missing payment key disables Pay; catalogue failure shows retry and can recover on the periodic refresh.
+- Simulated orders: two different products total NGN 796000 + Abuja NGN 4000 = NGN 800000; one Signature Straight NGN 520000 + UK NGN 80000 = NGN 600000. Client success was not accepted until the real sale verification handler validated the fake provider's signed transaction. Cancellation, refresh, gateway error, pending verification, success and second-order reset were exercised.
+- Evidence PNGs under `docs/qa/november-sale-*`: synthetic local QA buyer/address only. Files named `simulated-receipt`, `receipt-mobile`, `pay-mobile` and `shipping-mobile` are local mocked-provider proof, **not real Paystack charge evidence**.
+- Local QA scripts are explicit loopback-only fixtures. Production bundles were scanned and contain no simulator UI, fake key, QA host or fixture module. No production database write, real payment, secret value, third-party reference video or private flyer was published during QA.
+- Existing non-blocking Browserslist data-age warning remains; no dependency churn was introduced.
+
+### Launch Prerequisite
+
+Read-only production recheck still returns HTTP 503 from `/api/verify-payment`: "Payment verification is not configured." The owner must add the matching server-only `PAYSTACK_SECRET_KEY` in Vercel Production and redeploy. An asynchronous request has already been sent; do not repeat or request that secret in chat. The November page can be published as a scheduled preview while payments fail closed. A simulator is not evidence of valid production credentials, and an opened payment panel is not evidence of a charge. No actual charge should be made by the agent.
+
+### Release Evidence
+
+Pending final tests, commit, GitHub push and production route/API/browser verification. Keep the complete goal active until the payment configuration prerequisite is verified rather than declaring the full objective achieved from local tests alone.

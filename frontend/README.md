@@ -73,7 +73,7 @@ The panel supports image upload, product creation and editing, collection assign
 
 `/products` opens the complete shop as a responsive grid, with collections, search, filters, sorting, product previews, cart and WhatsApp support. Homepage buttons and navigation link to it. Cart contents persist between pages.
 
-The homepage displays at most six selected products. Admin inventory rows and the product editor have independent **Homepage** and **Products page** checkboxes. Unchecking Homepage does not unpublish a product from the full shop. New products default to the full shop only; unchecking both keeps the item in inventory without displaying it to shoppers. Drag order applies to both pages.
+The homepage displays at most ten selected products. Admin inventory rows and the product editor have independent **Homepage** and **Products page** checkboxes. Unchecking Homepage does not unpublish a product from the full shop. New products default to the full shop only; unchecking both keeps the item in inventory without displaying it to shoppers. Drag order applies to both pages.
 
 For an existing Supabase installation, run `supabase-product-placement.sql` **once**. It adds the visibility columns and restores existing soft-deleted records requested for this release without replacing their saved details. Do not rerun its restoration UPDATE after later intentional deletions. Placement controls remain disabled until the new columns are detected; existing editing and sorting still work. Fresh installations use `supabase-products.sql`.
 
@@ -82,10 +82,30 @@ Implementation, database boundaries and QA are recorded in `../docs/PRODUCTS_PAG
 ## Checkout notes
 
 - NGN is the authoritative checkout currency; USD and GBP are estimates only.
-- Delivery fees are configured in `src/components/CheckoutModal.tsx` and must be confirmed before changing them.
+- Delivery fees are shared in `src/lib/deliveryLocations.js` and must be confirmed before changing them.
 - Paystack is loaded only when payment starts.
 - When `VITE_PAYSTACK_VERIFY_API_URL` and `PAYSTACK_SECRET_KEY` are configured, successful popup payments are verified server-side before the receipt is shown.
 - Fulfilment details are sent through the existing EmailJS templates and can also be confirmed on WhatsApp.
+
+## November Sales
+
+`/sales` is the dedicated campaign storefront for **9-15 November 2026**, Africa/Lagos. Before opening it is a preview; checkout is enforced server-side only between 00:00 on 9 November and 00:00 on 16 November. The page shows the closed-sale state afterwards. There is no client date override in production.
+
+- Choose replacement placeholder product IDs in `src/lib/novemberSale.js`. Only currently published, non-deleted Supabase products are eligible. Do not restore old deletion tombstones to populate the sale.
+- The 20% discount uses the product's current NGN price, not an old comparison price. Database prices and the regular store cart remain unchanged.
+- `/api/sales` uses the existing server-only Supabase environment variables and **`PAYSTACK_SECRET_KEY`**. The new sale flow initializes Paystack on the server, so it does not use a browser public key. Production requires the correct live secret in Vercel Production followed by redeployment; never prefix it with `VITE_` or commit it.
+- The server rechecks dates, inventory, quantity, discount, delivery and expected payable total. Payment is confirmed only after server verification of the reference, signed order, amount, NGN currency and payer. Missing configuration fails closed, with WhatsApp recovery.
+- Sale bag IDs/quantities persist separately in local storage. An initialized payment session is saved in session storage without customer/address fields. Cancelled or uncertain payments resume the same reference. Hosted fallback payment uses the same tab so its return retains that session.
+- Customer, gift recipient, delivery note and item details are included in the Paystack transaction metadata for fulfilment. The sale does not claim an email was sent or use the normal checkout's EmailJS receipt path. Customers can print the verified receipt and confirm delivery through WhatsApp.
+
+For local visual QA without real charges, use two terminals from `frontend`:
+
+```bash
+node tests/sale-qa-server.mjs
+node node_modules/vite/bin/vite.js --config tests/vite-sale-qa.config.ts
+```
+
+Open `http://127.0.0.1:5180/sales`. This explicitly opt-in fixture uses the real sale handler with a fake date and fake provider, binds only to loopback and never calls Paystack or writes to production. Its clearly labelled simulator is excluded from production builds. Do not deploy the QA config or expose its loopback API. For the normal Vite dev server, an optional `SALES_DEV_API_PROXY` can point to a local Vercel function server. Full implementation/release evidence is in `../docs/NOVEMBER_SALES_HANDOFF.md`.
 
 ## Business facts
 
