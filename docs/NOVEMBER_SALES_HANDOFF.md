@@ -1,10 +1,27 @@
 # November Sales Implementation
 
+## Current Verified Release
+
+The credential blocker is resolved. Implementation commit **`8656c6e291c8a47a94251e4a66dc1a986c9972f2`** is pushed to main and Vercel reports a successful deployment: https://vercel.com/moses-onerhimes-projects/glamoursphair/9G9rNhPYXZy3UqNaPmAL18Hv3kVc .
+
+At **2026-11-03T08:52:50Z**, production `/api/sales` returns HTTP 200, **`paymentReady: true`**, **`paymentMode: live`**, two published products, and the upcoming phase. In this deployed version, true requires a successful authenticated response from the real Paystack read-only integration endpoint, not just an environment variable being present. No secret value was copied, logged, committed or shown to the browser.
+
+Final production checks:
+
+- `/sales` and `/sales/` return HTTP 200 with dedicated title, canonical and approved social image.
+- Nigeria-time campaign remains 9 November 00:00 through 15 November 23:59:59, ending exclusively at 16 November 00:00. Safe incomplete initialization now correctly returns **409 outside campaign dates**, replacing the old missing-key 503. No transaction was created.
+- A fabricated verification reference/token is rejected with HTTP 403 before provider lookup; no arbitrary transaction details are disclosed.
+- Live prices remain NGN 520000/276000 against regular NGN 650000/345000. The genuine Paystack SDK asset is served and contains `resumeTransaction`.
+- Fresh live browser load has no console errors. Product preview still has no Add button before 9 November and states the opening date. Current screenshot: `docs/qa/november-sale-live-ready.png`.
+- **71 tests pass, lint passes, TypeScript/Vite build passes**. Tests cover the active-date initialization, signed verification, exact amounts/currency/payer, cancellation/error/refresh recovery, and mocked success without making a real charge. Existing responsive, gallery, search, sorting, normal-store/cart and reference-video QA remains applicable because the frontend UI is unchanged by this follow-up.
+
+Verification scope: production credentials and provider connectivity are verified through an authenticated non-charging API read. Transaction initialization and full success/cancel/failure handling are tested against the explicit local simulated provider. No real card/bank payment was submitted, no actual capture is claimed, and the sale-date lock was not bypassed for testing. Real purchases are intentionally unavailable until 9 November. The requested implementation, publication and launch-readiness work is now verified; earlier blocked-state notes below are historical.
+
 ## Credential Setup Resumed
 
 2026-11-03: the owner confirmed adding `PAYSTACK_SECRET_KEY` to Vercel and resumed the goal. The existing deployment still reported `paymentReady: false` at 08:35:30Z. Added an authenticated, non-charging readiness probe using Paystack's documented GET `/integration/payment_session_timeout`, cached for 30 seconds per warm function instance. Only a boolean/mode is public; no key, account balance or integration settings are returned. Vercel Production rejects test/public keys for initialization. Provider errors keep browsing available while readiness is false. No sale date bypass was added.
 
-Validation: **71 tests pass**, lint passes, TypeScript/Vite build passes, whitespace diff check passes. The three new regressions cover real-shaped authenticated readiness requests/cache, invalid-key/network failures, and production test/public-key rejection. The local simulator implements the read-only response explicitly and remains excluded from production. Current step: publish this update so the new Vercel environment is loaded, then inspect the real provider readiness response. Earlier blocked notes below are historical until this verification finishes.
+Validation: **71 tests pass**, lint passes, TypeScript/Vite build passes, whitespace diff check passes. The three new regressions cover real-shaped authenticated readiness requests/cache, invalid-key/network failures, and production test/public-key rejection. The local simulator implements the read-only response explicitly and remains excluded from production. This update was subsequently deployed and real provider authentication succeeded, as recorded above. Earlier blocked notes below preserve the troubleshooting history only.
 
 Primary references: https://paystack.com/docs/api/integration/ (authenticated GET timeout read, distinct from the PUT setting mutation); https://paystack.com/docs/developer-tools/api-keys/ (secret/live key prefixes, server-only storage and redeploying after key changes).
 
@@ -75,10 +92,10 @@ Read-only production recheck still returns HTTP 503 from `/api/verify-payment`: 
 | November 9-15 schedule | Shared Nigeria-time configuration, exact boundary tests, server initialization gate, live upcoming phase | Implemented and verified |
 | Supplied video structure with current brand | Reference inspected; product/photo/price strips, preview gallery, editable bag, Shipping -> Pay and gift fields; existing wine/gold/cream/fonts | Implemented and visually checked |
 | Existing inventory placeholders, each 20% off | Live API and integer-kobo quote tests; no deleted records restored | Implemented and verified |
-| Working Paystack checkout | Server initialization/resume/verification implemented; local mocked success/error/cancel/recovery tested; production key missing | **Incomplete external launch prerequisite** |
+| Working Paystack checkout | Server initialization/resume/verification implemented; local mocked success/error/cancel/recovery tested; authenticated live provider readiness now true | Implemented; non-charging launch checks verified, no real debit claimed |
 | GitHub commit and deployment | Pushed main SHA above; successful Vercel status and live routes | Verified |
 
-The full objective remains **incomplete**, because valid production Paystack credentials/provider operation are not proven. Add `PAYSTACK_SECRET_KEY` in Vercel Production, redeploy, then recheck readiness and the real provider handoff without making an unauthorized charge. Do not report a simulated receipt as payment-provider evidence. The missing credential is the sole remaining launch blocker identified by this audit; no additional code churn is a substitute for it.
+At the original release audit, the objective was incomplete because the production Paystack credential was missing. That blocker has since been resolved and verified in the Current Verified Release section above. The local simulated receipts remain simulated evidence, not evidence of a real charge.
 
 ### Configuration Revalidation
 
