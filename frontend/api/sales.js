@@ -1,15 +1,29 @@
 import { NOVEMBER_SALE, salePhase, saleProducts } from '../src/lib/novemberSale.js'
-import { initializeSale, readSaleInventory, SaleError, verifySale } from '../server/salesService.js'
+import { checkSalePaymentReady, initializeSale, readSaleInventory, salePaymentKeyAllowed, SaleError, verifySale } from '../server/salesService.js'
 
 export function createSalesHandler({ now = () => new Date(), request = (...args) => fetch(...args) } = {}) {
+  let paymentCheck
+  let paymentCheckKey
+  let paymentCheckExpiresAt = 0
+  function paymentReady() {
+    if (!salePaymentKeyAllowed()) return Promise.resolve(false)
+    const key = process.env.PAYSTACK_SECRET_KEY
+    if (key !== paymentCheckKey || Date.now() >= paymentCheckExpiresAt) {
+      paymentCheckKey = key
+      paymentCheckExpiresAt = Date.now() + 30000
+      paymentCheck = checkSalePaymentReady(request)
+    }
+    return paymentCheck
+  }
   return async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store')
     res.setHeader('X-Content-Type-Options', 'nosniff')
     try {
       if (req.method === 'GET') {
-        const products = saleProducts(await readSaleInventory(request))
+        const [inventory, ready] = await Promise.all([readSaleInventory(request), paymentReady()])
+        const products = saleProducts(inventory)
         res.status(200).json({ campaign: NOVEMBER_SALE, phase: salePhase(now()), serverTime: new Date(now()).toISOString(),
-          products, paymentReady: Boolean(process.env.PAYSTACK_SECRET_KEY) })
+          products, paymentReady: ready, paymentMode: process.env.PAYSTACK_SECRET_KEY?.startsWith('sk_live_') ? 'live' : process.env.PAYSTACK_SECRET_KEY?.startsWith('sk_test_') ? 'test' : 'unconfigured' })
         return
       }
       if (req.method !== 'POST') { res.setHeader('Allow', 'GET,POST'); res.status(405).json({ error: 'Method not allowed' }); return }
@@ -19,6 +33,7 @@ export function createSalesHandler({ now = () => new Date(), request = (...args)
       const body = req.body
       if (!body || typeof body !== 'object' || Array.isArray(body)) throw new SaleError('Request data is invalid.')
       if (body.action === 'initialize') {
+        if (!salePaymentKeyAllowed()) throw new SaleError('Secure payment is temporarily unavailable. Please contact our WhatsApp team.', 503)
         const products = await readSaleInventory(request)
         res.status(200).json(await initializeSale(body, products, now(), request))
       } else if (body.action === 'verify') res.status(200).json(await verifySale(body, request))

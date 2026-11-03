@@ -16,6 +16,7 @@ let clock = '2026-11-10T12:00:00+01:00'
 let brokenInventory = false
 const request = async (url, init) => {
   if (url.startsWith(process.env.SUPABASE_URL)) return brokenInventory ? new Response('', { status: 503 }) : Response.json(rows)
+  if (url === 'https://api.paystack.co/integration/payment_session_timeout') return Response.json({ status: true, data: { payment_session_timeout: 1800 } })
   if (!url.startsWith('https://api.paystack.co/transaction/')) throw new Error('Unexpected QA provider request')
   if (url.endsWith('/initialize')) {
     const transaction = JSON.parse(init.body)

@@ -26,6 +26,7 @@ function harness({ clock = '2026-11-10T12:00:00+01:00', inventory = rows } = {})
     state.calls.push({ url, init })
     if (url.startsWith(process.env.SUPABASE_URL)) return Response.json(state.inventory)
     if (state.providerError) return Response.json({ status: false }, { status: 502 })
+    if (url.endsWith('/integration/payment_session_timeout')) return Response.json({ status: true, data: { payment_session_timeout: 1800 } })
     if (url.endsWith('/initialize')) {
       const data = JSON.parse(init.body)
       state.transactions.set(data.reference, { ...data, status: 'success', customer: { email: data.email } })
@@ -195,6 +196,55 @@ test('unsupported methods and cross-origin initialization are rejected', async (
   const state = harness()
   assert.equal((await state.send(undefined, 'DELETE')).statusCode, 405)
   assert.equal((await state.send(validBody(), 'POST', { origin: 'https://other.invalid', host: 'store.invalid' })).statusCode, 403)
+})
+
+test('payment readiness authenticates with Paystack without creating a transaction and caches briefly', async () => {
+  const state = harness()
+  assert.equal((await state.send(undefined, 'GET')).body.paymentReady, true)
+  assert.equal((await state.send(undefined, 'GET')).body.paymentReady, true)
+  const probes = state.calls.filter(call => call.url.endsWith('/integration/payment_session_timeout'))
+  assert.equal(probes.length, 1)
+  assert.equal(probes[0].init.method, 'GET')
+  assert.equal(probes[0].init.headers.Authorization, `Bearer ${secret}`)
+  assert.equal(state.transactions.size, 0)
+})
+
+test('invalid credentials and provider outages keep the catalogue browsable but payments unready', async () => {
+  for (const failure of ['invalid', 'offline']) {
+    const handler = createSalesHandler({ request: async url => {
+      if (url.startsWith(process.env.SUPABASE_URL)) return Response.json(rows)
+      if (failure === 'offline') throw new Error('Local QA network failure')
+      return Response.json({ status: false, message: 'Invalid key' }, { status: 401 })
+    } })
+    const res = response(); await handler({ method: 'GET' }, res)
+    assert.equal(res.statusCode, 200)
+    assert.equal(res.body.products.length, 2)
+    assert.equal(res.body.paymentReady, false)
+    assert.equal(JSON.stringify(res.body).includes(secret), false)
+  }
+})
+
+test('production cannot accept test-mode or public API keys as real payments', async () => {
+  const environment = process.env.VERCEL_ENV
+  process.env.VERCEL_ENV = 'production'
+  try {
+    for (const key of ['sk_test_local_fake_key', 'pk_live_local_fake_key']) {
+      process.env.PAYSTACK_SECRET_KEY = key
+      const state = harness()
+      assert.equal((await state.send(undefined, 'GET')).body.paymentReady, false)
+      assert.equal((await state.send(validBody())).statusCode, 503)
+      assert.equal(state.transactions.size, 0)
+    }
+    process.env.PAYSTACK_SECRET_KEY = 'sk_live_local_fake_key'
+    const state = harness()
+    const res = await state.send(undefined, 'GET')
+    assert.equal(res.body.paymentReady, true)
+    assert.equal(res.body.paymentMode, 'live')
+  } finally {
+    process.env.PAYSTACK_SECRET_KEY = secret
+    if (environment === undefined) delete process.env.VERCEL_ENV
+    else process.env.VERCEL_ENV = environment
+  }
 })
 test('sales entry has crawler metadata, narrow routes and a sitemap entry', () => {
   const html = readFileSync(new URL('../sales.html', import.meta.url), 'utf8')

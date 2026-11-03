@@ -6,6 +6,24 @@ export class SaleError extends Error {
   constructor(message, status = 400, details = {}) { super(message); this.status = status; this.details = details }
 }
 
+export function salePaymentKeyAllowed() {
+  const key = process.env.PAYSTACK_SECRET_KEY || ''
+  return /^sk_(live|test)_\S+$/.test(key) && (process.env.VERCEL_ENV !== 'production' || key.startsWith('sk_live_'))
+}
+
+export async function checkSalePaymentReady(request) {
+  if (!salePaymentKeyAllowed()) return false
+  try {
+    // Authenticated read only: no transaction, customer or charge is created.
+    const response = await request('https://api.paystack.co/integration/payment_session_timeout', {
+      method: 'GET', headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` },
+      signal: AbortSignal.timeout(4000),
+    })
+    const payload = await response.json().catch(() => null)
+    return response.ok && payload?.status === true && Number.isFinite(payload.data?.payment_session_timeout)
+  } catch { return false }
+}
+
 function text(value, label, limit = 200, required = true) {
   if (typeof value !== 'string' || value.trim().length > limit || (required && !value.trim())) {
     throw new SaleError(`${label} is invalid.`)

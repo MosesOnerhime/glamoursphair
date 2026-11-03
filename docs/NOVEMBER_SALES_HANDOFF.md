@@ -1,5 +1,13 @@
 # November Sales Implementation
 
+## Credential Setup Resumed
+
+2026-11-03: the owner confirmed adding `PAYSTACK_SECRET_KEY` to Vercel and resumed the goal. The existing deployment still reported `paymentReady: false` at 08:35:30Z. Added an authenticated, non-charging readiness probe using Paystack's documented GET `/integration/payment_session_timeout`, cached for 30 seconds per warm function instance. Only a boolean/mode is public; no key, account balance or integration settings are returned. Vercel Production rejects test/public keys for initialization. Provider errors keep browsing available while readiness is false. No sale date bypass was added.
+
+Validation: **71 tests pass**, lint passes, TypeScript/Vite build passes, whitespace diff check passes. The three new regressions cover real-shaped authenticated readiness requests/cache, invalid-key/network failures, and production test/public-key rejection. The local simulator implements the read-only response explicitly and remains excluded from production. Current step: publish this update so the new Vercel environment is loaded, then inspect the real provider readiness response. Earlier blocked notes below are historical until this verification finishes.
+
+Primary references: https://paystack.com/docs/api/integration/ (authenticated GET timeout read, distinct from the PUT setting mutation); https://paystack.com/docs/developer-tools/api-keys/ (secret/live key prefixes, server-only storage and redeploying after key changes).
+
 ## Owner Objective
 
 Build and publish `https://www.glamoursphairluxury.com/sales`, following the supplied video closely in GLAMOURSPHAIR's palette/style. Use selected existing products as replaceable placeholders with 20% off. Campaign dates: 9-15 November 2026 inclusive in Africa/Lagos. Preserve regular inventory/prices and ensure the sale total, delivery and Paystack flow agree. Commit to GitHub and verify the live page. Work autonomously; do not mark the goal complete without evidence for the full objective.
