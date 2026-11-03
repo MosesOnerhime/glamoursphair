@@ -25,6 +25,7 @@ Build and publish `https://www.glamoursphairluxury.com/sales`, following the sup
 
 - Paystack InlineJS: https://paystack.com/docs/developer-tools/inlinejs/ . Backend initialization and `resumeTransaction` flow; callbacks and amounts in the currency's subunit.
 - Paystack Transaction API: https://paystack.com/docs/api/transaction/ . Initialize and verify with server-only secret key; independently verify reference, amount, currency and successful status.
+- Paystack test-payment reference: https://paystack.com/docs/payments/test-payments/ . Official sandbox fixtures are distinct from real payments. No official test card or real card was submitted during this task because the account's required secret is unavailable.
 
 ## QA And Release
 
@@ -49,4 +50,24 @@ Read-only production recheck still returns HTTP 503 from `/api/verify-payment`: 
 
 ### Release Evidence
 
-Pending final tests, commit, GitHub push and production route/API/browser verification. Keep the complete goal active until the payment configuration prerequisite is verified rather than declaring the full objective achieved from local tests alone.
+- Implementation commit **`2866430f88091037750369462f763ef8a06fb12a`**, pushed to `origin/main`. GitHub's Vercel status is **success**, "Deployment has completed", at 2026-11-03T05:49:12Z. Deployment: https://vercel.com/moses-onerhimes-projects/glamoursphair/oAZmCYbobKfBfsKJpySisLHBwKaN .
+- Live `https://www.glamoursphairluxury.com/sales` and `/sales/`: HTTP 200 with the dedicated November title, production canonical and approved sharing image in initial HTML.
+- Live `/api/sales`: HTTP 200, `Cache-Control: no-store`, phase **upcoming**, Nigeria campaign boundaries and 20% discount, IDs 11/112 at NGN 520000/276000. It returns **`paymentReady: false`**. Safe incomplete initialization returns HTTP 503 with the payment-unavailable message; no transaction was created.
+- Regular `/api/products` still has NGN 650000/345000 prices and 25 deletion tombstones. The campaign did not modify database prices, publication, deletion or ordering.
+- Live browser: desktop and 390x844 mobile render real photos without overflow. Search "18" isolates the correct unit, price-low sorting orders 276000 before 520000, and the first product gallery advances to image 2 of 3. Escape closes the product. Navigation back to the regular store and back to November sale works. Fresh sale page has no console errors.
+- Regular cart regression: added one Signature Straight at its regular NGN 650000, confirmed the cart subtotal, then removed this QA item and verified a fresh regular-store visit reports zero cart items. No shipping/payment was submitted on production.
+- `docs/qa/november-sale-live-desktop.png` and `november-sale-live-mobile.png` show the actual deployed upcoming page, unlike the explicitly simulated receipt images.
+- Final source checks: **68 tests pass, lint passes, TypeScript/Vite production build passes, staged diff whitespace check passes**. Production JS contains no local gateway fixture or fake key. The separate pending flyer directory `marketing/` remains untracked and unpublished.
+
+### Requirement Audit
+
+| Requirement | Current evidence | Result |
+| --- | --- | --- |
+| Dedicated public `/sales` page | HTTP 200, dedicated crawler HTML and live rendered desktop/mobile | Implemented and live |
+| November 9-15 schedule | Shared Nigeria-time configuration, exact boundary tests, server initialization gate, live upcoming phase | Implemented and verified |
+| Supplied video structure with current brand | Reference inspected; product/photo/price strips, preview gallery, editable bag, Shipping -> Pay and gift fields; existing wine/gold/cream/fonts | Implemented and visually checked |
+| Existing inventory placeholders, each 20% off | Live API and integer-kobo quote tests; no deleted records restored | Implemented and verified |
+| Working Paystack checkout | Server initialization/resume/verification implemented; local mocked success/error/cancel/recovery tested; production key missing | **Incomplete external launch prerequisite** |
+| GitHub commit and deployment | Pushed main SHA above; successful Vercel status and live routes | Verified |
+
+The full objective remains **active, not complete**, because valid production Paystack credentials/provider operation are not proven. Add `PAYSTACK_SECRET_KEY` in Vercel Production, redeploy, then recheck readiness and the real provider handoff without making an unauthorized charge. Do not report a simulated receipt as payment-provider evidence. The missing credential is the sole remaining launch blocker identified by this audit; no additional code churn is a substitute for it.
