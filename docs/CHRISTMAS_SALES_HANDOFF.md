@@ -1,0 +1,49 @@
+# Christmas Sales And Shared Inventory Loading
+
+## Owner Request
+
+- Rename the campaign to Christmas Sales, keeping **9-15 November 2026**, Africa/Lagos, as explicitly confirmed by the owner.
+- Let admin select sale products. Use an independent sale-membership flag so existing Signature/Awoof/custom collections are not overwritten. Sale members may be published on the sale page independently of home/full-shop placement.
+- Stop deleted/old bundled products flashing before the shared inventory arrives on home and `/products`.
+- Preserve the `/sales` URL, 20% discount, existing photography/brand, server-authoritative pricing/dates and authenticated Paystack integration.
+
+## Database Upgrade
+
+`frontend/supabase-christmas-sales.sql` was applied to the production Glamoursphair project (`xucgambipmegbhikqumc`) with the owner's explicit authorization during the November 3-4 session. Do not rerun it for this release. It adds `in_christmas_sale` and keeps the current two campaign selections (11/112) only on first installation. It does not restore deleted products, alter collections or prices, and rerunning it does not overwrite later admin choices. Existing unupgraded databases remain readable, but sale-membership writes fail clearly until this column is available.
+
+Before and after the migration, read-only SQL verified **27 total records**, **25 deletion tombstones**, and the identical inventory fingerprint `60d576498b2a3025979aaa2db996a14d`. The fingerprint covers id, name, price, original price, description, primary collection, deletion state, homepage/catalogue flags and sort order. The final sale-member IDs were `[11,112]`. Evidence: `qa/christmas-migration-2026-11-03.png`.
+
+No direct database credentials or authenticated Supabase CLI were available locally, so the migration used the signed-in Supabase SQL Editor. Initial browser/session interruptions were recovered; a read-only column check confirmed the migration had not applied before the one successful execution. Supabase reported `Success. No rows returned`, followed by the integrity verification above. No customer data, credentials, real transactions or payment settings were accessed or changed.
+
+## Compatibility And Loading Rules
+
+Keep the existing `november-2026` internal campaign identity, `GLAM-NOV-` payment reference prefix and persisted bag/payment keys: this is a rename of the same dated offer, not a new campaign that should invalidate existing signed payment sessions. Public names, metadata, support messages and analytics should use Christmas Sales; November remains in the actual date copy.
+
+Shared inventory is authoritative when configured. Render no bundled or locally cached products before a successful shared snapshot. Network errors show retry, not deleted seed products. A successful shared snapshot must not merge stale local-only products back into the published catalogue. Offline local demo mode may still use seed products when no database is configured.
+
+## Implementation
+
+- Product types, API row mapping, direct Supabase read mapping and save/reorder validation preserve `inChristmasSale` / `in_christmas_sale`, including explicit false values. Mixed bulk writes preserve existing database membership for omitted flags rather than reselecting legacy IDs.
+- Admin editor and inventory rows expose independent sale membership; the inventory collection filter includes Christmas Sales. The editor shows the actual 20% discount and November dates. Save errors retain the prior selection, and missing schema disables only sale controls.
+- Shopper collection navigation links to `/sales`, keeping discounted sale purchases separate from the regular cart. Public titles, schema, navigation, copy, support messages and analytics use Christmas Sales.
+- Sale membership follows saved inventory order. Explicitly selected sale-only items are eligible even when hidden from the regular shop; deleted items never are. Existing fixed IDs are only a temporary compatibility fallback for unupgraded databases.
+- Shared inventory no longer merges missing seed products or local-only uploads into a successful database snapshot. Initial loading and errors render no products. Retry, cancellation, timeouts and uncached reads are implemented. Collection/product URL state is preserved during loading, and writes are blocked before the first inventory snapshot.
+- Homepage limit remains 10 and server validation now counts actual shared inventory, not nonexistent seed records.
+
+## QA And Release Status
+
+Validation completed November 4, 2026. The final unit/API run passed **81 tests**, including date boundaries, dynamic membership, prices/delivery in kobo, authenticated server verification, signed pending-session compatibility, deletion/loading/empty/retry, abort cleanup and protected writes. Final ESLint and TypeScript/Vite production build passed. `git diff --check` passed.
+
+Earlier browser QA confirmed delayed inventory initially rendered zero products, collection deep links survived loading, failed reads showed no legacy fallback, retry recovered, and desktop admin selection preserved group/price. Headless Playwright coverage finished mobile QA without using the user's open browser or desktop inputs. The first run passed 16/18; the loading tests needed a deterministic response gate because normal page navigation outlasted the simulated delay. The final run passed **20/20 browser tests** in separate desktop and mobile contexts.
+
+Browser coverage: initial loading with a DOM mutation log proving no legacy/local product ever painted; collection deep links; deleting a seed product followed by full navigation and reload; network failure/retry; membership selection/removal; editing/sorting with preserved membership, group and price; failed-save rollback; missing migration capability; actual `/sales` navigation, Christmas naming, November dates and upcoming checkout guard; regular search/no-results recovery, product dialog Escape and cart addition. Responsive overflow/visible-control checks ran at 360, 390, 430, 768, 1024, 1280, 1440 and 1920 CSS pixels. No real purchase was made.
+
+Visually inspected screenshots: `qa/christmas-admin-desktop.png`, `qa/christmas-admin-mobile.png`, `qa/christmas-sales-mobile.png`. They use explicitly local test inventory, not production mutations. The mobile sale controls wrap cleanly, both admin columns fit desktop, and sale copy/images fit mobile without overlapping. This is desktop-browser mobile emulation, not testing on a physical iPhone/Android device.
+
+Reproduce with `cd frontend` then `npm run test:ui`. The test-only Vite config binds to loopback; its APIs never call Supabase or Paystack. A review preview can run with `node node_modules/vite/bin/vite.js --config tests/vite-inventory-qa.config.ts` at `http://127.0.0.1:5184`. Local admin URL: `/?admin=products`, test password `local-qa-only`. This is simulated data and must not be deployed. Test outputs/traces are ignored; reviewed evidence is saved above.
+
+`npm audit --omit=dev` reports zero production vulnerabilities. The install audit reports 23 development-toolchain advisories; no broad or breaking dependency upgrades were attempted for this scoped release. The existing Browserslist age warning is non-blocking.
+
+## Publication
+
+The owner explicitly authorized committing and publishing to `main` on November 4, 2026. Release checks are being repeated before the push. The Supabase migration is already applied and must not run again. Record the deployed commit and live verification here after deployment succeeds. The private `marketing/` directory is unrelated and remains excluded from the release.

@@ -1,11 +1,11 @@
 export const NOVEMBER_SALE = Object.freeze({
   id: 'november-2026',
-  name: 'November Sales',
+  name: 'Christmas Sales',
   startsAt: '2026-11-09T00:00:00+01:00',
   endsAt: '2026-11-16T00:00:00+01:00',
   timeZone: 'Africa/Lagos',
   discountPercent: 20,
-  // Current published inventory, selected as replaceable campaign placeholders.
+  // Legacy selections only, until the database sale-membership migration is applied.
   productIds: [11, 112],
 })
 
@@ -23,13 +23,15 @@ export function salePrices(priceNgn) {
   return { regularKobo, saleKobo, savingsKobo: regularKobo - saleKobo }
 }
 
+export function isChristmasSaleProduct(product) {
+  if (product.isDeleted) return false
+  return product.inChristmasSale ?? (NOVEMBER_SALE.productIds.includes(product.id) && product.showInCatalog !== false)
+}
+
 export function saleProducts(products) {
-  const byId = new Map(products.map(product => [product.id, product]))
-  return NOVEMBER_SALE.productIds.flatMap(id => {
-    const product = byId.get(id)
-    if (!product || product.isDeleted || product.showInCatalog === false) return []
+  return products.filter(isChristmasSaleProduct).map(product => {
     const { regularKobo, saleKobo } = salePrices(product.price)
-    return [{ ...product, regularPrice: regularKobo / 100, originalPrice: regularKobo / 100,
-      price: saleKobo / 100, campaignId: NOVEMBER_SALE.id, discountPercent: NOVEMBER_SALE.discountPercent }]
+    return { ...product, regularPrice: regularKobo / 100, originalPrice: regularKobo / 100,
+      price: saleKobo / 100, campaignId: NOVEMBER_SALE.id, discountPercent: NOVEMBER_SALE.discountPercent }
   })
 }

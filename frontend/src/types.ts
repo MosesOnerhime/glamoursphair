@@ -18,6 +18,7 @@ export interface Product {
   instagramLink?: string
   showOnHomepage?: boolean
   showInCatalog?: boolean
+  inChristmasSale?: boolean
 }
 
 export interface CartItem extends Product {

@@ -63,8 +63,10 @@ test('empty migrated database is detected using a zero-row columns probe', async
   const res = response()
   await handler(request('GET'), res)
   assert.equal(res.body.placementSupported, true)
-  assert.equal(calls.length, 2)
+  assert.equal(res.body.salePlacementSupported, true)
+  assert.equal(calls.length, 3)
   assert.match(calls[1], /select=show_on_homepage,show_in_catalog&limit=0/)
+  assert.match(calls[2], /select=in_christmas_sale&limit=0/)
 })
 
 test('legacy schema is readable but refuses placement writes with a useful migration error', async context => {
@@ -90,9 +92,9 @@ test('visibility must be boolean and is validated before any database request', 
   assert.equal(fetch.mock.callCount(), 0)
 })
 
-test('server rejects an eleventh home product including unpersisted legacy selections', async context => {
+test('server rejects an eleventh home product using authoritative database inventory', async context => {
   const calls = []
-  context.mock.method(globalThis, 'fetch', async (url, init) => { calls.push({ url, init }); return Response.json([112, 113, 114, 115].map(id => row(id, true))) })
+  context.mock.method(globalThis, 'fetch', async (url, init) => { calls.push({ url, init }); return Response.json(Array.from({ length: 10 }, (_, index) => row(200 + index, true))) })
   const res = response()
   await handler(request('POST', { product: product(116, { showOnHomepage: true }) }), res)
   assert.equal(res.statusCode, 409)
@@ -100,17 +102,62 @@ test('server rejects an eleventh home product including unpersisted legacy selec
   assert.equal(calls.length, 1)
 })
 
-test('server accepts a tenth home product and preserves legacy defaults', async context => {
+test('server accepts a tenth home product without counting nonexistent seed rows', async context => {
   const calls = []
   context.mock.method(globalThis, 'fetch', async (url, init) => {
     calls.push({ url, init })
-    return Response.json(init.method ? [row(115, true)] : [112, 113, 114].map(id => row(id, true)))
+    return Response.json(init.method ? [row(115, true)] : Array.from({ length: 9 }, (_, index) => row(200 + index, true)))
   })
   const res = response()
   await handler(request('POST', { product: product(115, { showOnHomepage: true }) }), res)
   assert.equal(res.statusCode, 200)
   assert.equal(res.body.showOnHomepage, true)
   assert.equal(calls.length, 2)
+})
+
+test('sale membership is boolean, schema-gated and never alters primary collections or prices', async context => {
+  const calls = []
+  let migrated = false
+  context.mock.method(globalThis, 'fetch', async (url, init) => {
+    calls.push({ url, init })
+    return Response.json([{ ...row(101), ...(migrated ? { in_christmas_sale: false } : {}) }])
+  })
+  const invalid = response()
+  await handler(request('POST', { product: product(101, { inChristmasSale: 'true' }) }), invalid)
+  assert.equal(invalid.statusCode, 400)
+  assert.equal(calls.length, 0)
+  const read = response()
+  await handler(request('GET'), read)
+  assert.equal(read.body.salePlacementSupported, false)
+  const blocked = response()
+  await handler(request('POST', { product: product(101, { inChristmasSale: true }) }), blocked)
+  assert.equal(blocked.statusCode, 409)
+  assert.match(blocked.body.error, /supabase-christmas-sales.sql/)
+  assert.ok(calls.every(call => !call.init.method))
+  migrated = true
+  for (const value of [true, false]) {
+    const saved = response()
+    await handler(request('POST', { product: product(101, { inChristmasSale: value, group: 'Awoof Sales' }) }), saved)
+    assert.equal(saved.statusCode, 200)
+    const record = JSON.parse(calls.at(-1).init.body)
+    assert.equal(record.in_christmas_sale, value)
+    assert.equal(record.collection, 'Awoof Sales')
+    assert.equal(record.price, 200000)
+  }
+})
+
+test('bulk reorder preserves explicit sale exclusions and normalizes mixed keys', async context => {
+  const writes = []
+  context.mock.method(globalThis, 'fetch', async (url, init) => {
+    if (init.method) writes.push(JSON.parse(init.body))
+    return Response.json([{ ...row(11), in_christmas_sale: false }])
+  })
+  const res = response()
+  await handler(request('PATCH', { products: [product(112, { inChristmasSale: false }), product(300, { inChristmasSale: true }), product(11)] }), res)
+  assert.equal(res.statusCode, 204)
+  assert.deepEqual(writes[0].map(item => item.id), [112, 300, 11])
+  assert.deepEqual(writes[0].map(item => item.in_christmas_sale), [false, true, false])
+  assert.deepEqual(Object.keys(writes[0][0]), Object.keys(writes[0][2]))
 })
 
 test('server rejects an over-limit bulk placement before writing', async context => {

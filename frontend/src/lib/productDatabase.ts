@@ -27,6 +27,7 @@ type DatabaseProduct = {
   is_deleted: boolean | null
   show_on_homepage?: boolean | null
   show_in_catalog?: boolean
+  in_christmas_sale?: boolean
 }
 
 export type ProductDatabaseSnapshot = {
@@ -34,6 +35,7 @@ export type ProductDatabaseSnapshot = {
   hiddenIds: number[]
   order: number[]
   placementSupported: boolean
+  salePlacementSupported: boolean
 }
 
 export function isProductDatabaseConfigured() {
@@ -57,6 +59,8 @@ async function databaseRequest<T>(path: string, init?: RequestInit): Promise<T> 
 
   const response = await fetch(`${SUPABASE_URL}${path}`, {
     ...init,
+    cache: 'no-store',
+    signal: init?.signal ?? AbortSignal.timeout(12000),
     headers: supabaseHeaders({
       'Content-Type': 'application/json',
       ...(init?.headers ?? {}),
@@ -93,23 +97,26 @@ function fromDatabaseProduct(product: DatabaseProduct): Product {
     instagramLink: product.instagram_link ?? undefined,
     showOnHomepage: product.show_on_homepage ?? undefined,
     showInCatalog: product.show_in_catalog,
+    inChristmasSale: product.in_christmas_sale,
   }
 }
 
-export async function fetchDatabaseProducts(): Promise<ProductDatabaseSnapshot | null> {
+export async function fetchDatabaseProducts(signal?: AbortSignal): Promise<ProductDatabaseSnapshot | null> {
   if (!isProductDatabaseConfigured()) return null
 
-  try {
-    if (!PRODUCTS_API_URL) throw new Error('Products API is not configured.')
-    const response = await fetch(PRODUCTS_API_URL)
-    if (response.ok) return await response.json() as ProductDatabaseSnapshot
-  } catch {
-    // Fall through to direct Supabase fallback for non-Vercel local previews.
+  if (PRODUCTS_API_URL) {
+    const response = await fetch(PRODUCTS_API_URL, { cache: 'no-store', signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(12000)]) : AbortSignal.timeout(12000) })
+    if (!response.ok) throw new Error('Shared inventory is temporarily unavailable.')
+    const snapshot = await response.json() as ProductDatabaseSnapshot
+    if (!Array.isArray(snapshot.products) || !Array.isArray(snapshot.hiddenIds) || !Array.isArray(snapshot.order)) throw new Error('Invalid inventory response.')
+    return snapshot
   }
 
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) throw new Error('Product database is not configured.')
 
-  const rows = await databaseRequest<DatabaseProduct[]>('/rest/v1/products?select=*&order=sort_order.asc.nullslast,id.asc')
+  const rows = await databaseRequest<DatabaseProduct[]>('/rest/v1/products?select=*&order=sort_order.asc.nullslast,id.asc', {
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(12000)]) : AbortSignal.timeout(12000),
+  })
   const activeRows = rows.filter(row => !row.is_deleted)
 
   return {
@@ -117,6 +124,7 @@ export async function fetchDatabaseProducts(): Promise<ProductDatabaseSnapshot |
     hiddenIds: rows.filter(row => row.is_deleted).map(row => row.id),
     order: activeRows.map(row => row.id),
     placementSupported: false,
+    salePlacementSupported: false,
   }
 }
 

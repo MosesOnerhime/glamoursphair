@@ -7,7 +7,7 @@ interface NavbarProps { cartCount: number; onCartClick: () => void; productsPage
 const links = [
   { label: 'Home', id: 'home' },
   { label: 'All products', id: 'shop' },
-  { label: 'November sale', id: 'sales' },
+  { label: 'Christmas sale', id: 'sales' },
   { label: 'About', id: 'about' },
   { label: 'Support', id: 'shopping-support' },
   { label: 'Contact', id: 'contact' },

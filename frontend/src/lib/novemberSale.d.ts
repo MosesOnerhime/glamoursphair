@@ -13,3 +13,4 @@ export const NOVEMBER_SALE: {
 export function salePhase(now?: Date | string | number): SalePhase
 export function salePrices(priceNgn: number): { regularKobo: number; saleKobo: number; savingsKobo: number }
 export function saleProducts(products: Product[]): SaleProduct[]
+export function isChristmasSaleProduct(product: Product & { isDeleted?: boolean }): boolean

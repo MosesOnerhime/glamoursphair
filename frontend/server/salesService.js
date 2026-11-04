@@ -91,12 +91,14 @@ export async function readSaleInventory(request) {
   if (!response.ok) throw new SaleError('Shared inventory is temporarily unavailable. Please try again.', 503)
   const rows = await response.json()
   if (!Array.isArray(rows)) throw new SaleError('Shared inventory is temporarily unavailable.', 503)
-  return rows.filter(row => !row.is_deleted && row.show_in_catalog !== false).map(row => ({
+  return rows.filter(row => !row.is_deleted).map(row => ({
     id: row.id, name: row.name, slug: row.slug || String(row.id), price: row.price,
     description: row.description, image: row.image || undefined, images: row.images || undefined,
     source: row.source || undefined, length: row.length || undefined, fitting: row.fitting || undefined,
     volume: row.volume || undefined, group: row.collection || undefined,
     gradient: row.gradient || 'from-neutral-950 to-stone-900',
+    showInCatalog: row.show_in_catalog,
+    inChristmasSale: row.in_christmas_sale,
   }))
 }
 
@@ -125,7 +127,7 @@ async function paystack(path, init, request) {
 }
 
 export async function initializeSale(body, products, now, request) {
-  if (salePhase(now) !== 'active') throw new SaleError('November sale checkout is available only from 9 to 15 November, Nigeria time.', 409)
+  if (salePhase(now) !== 'active') throw new SaleError('Christmas sale checkout is available only from 9 to 15 November, Nigeria time.', 409)
   const { customer, shipping, location } = validateDetails(body)
   const quote = quoteSale(body.items, products, location.id)
   if (!Number.isSafeInteger(body.expectedAmountKobo) || body.expectedAmountKobo !== quote.totalKobo) {
@@ -138,7 +140,7 @@ export async function initializeSale(body, products, now, request) {
     email: customer.email, amount: quote.totalKobo, currency: 'NGN', reference,
     callback_url: 'https://www.glamoursphairluxury.com/sales?payment=return',
     metadata: { glamoursphairSale: { order, signature }, custom_fields: [
-      { display_name: 'Campaign', variable_name: 'campaign', value: 'November Sales: 9-15 November 2026' },
+      { display_name: 'Campaign', variable_name: 'campaign', value: 'Christmas Sales: 9-15 November 2026' },
       { display_name: 'Customer', variable_name: 'customer', value: `${customer.name} / ${customer.phone}` },
       { display_name: 'Delivery', variable_name: 'delivery', value: `${shipping.address}, ${shipping.city}, ${shipping.state}, ${shipping.country}` },
       { display_name: 'Gift recipient', variable_name: 'gift_recipient', value: shipping.isGift ? `${shipping.recipientName} / ${shipping.recipientPhone}` : 'Not a gift' },

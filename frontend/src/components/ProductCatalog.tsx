@@ -6,6 +6,9 @@ import type { Product } from '../types'
 
 interface ProductCatalogProps {
   productsPage: boolean
+  loading: boolean
+  loadError: string
+  onRetry: () => void
   products: Product[]
   collections: { name: string; products: Product[] }[]
   collection: string
@@ -80,6 +83,7 @@ export default function ProductCatalog(props: ProductCatalogProps) {
         <div className="catalog-collections" aria-label="Product collections">
           <button type="button" aria-pressed={props.collection === 'All Collections'} onClick={() => { props.onCollection('All Collections'); setPosition(0) }}>All collections</button>
           {props.collections.map(collection => <button type="button" key={collection.name} aria-pressed={props.collection === collection.name} onClick={() => { props.onCollection(collection.name); setPosition(0) }}>{collection.name} <span>{collection.products.length}</span></button>)}
+          <a href="/sales">Christmas Sales <HiArrowRight size={15} aria-hidden="true" /></a>
         </div>
         <div className="catalog-search">
           <HiSearch size={17} aria-hidden="true" />
@@ -89,8 +93,8 @@ export default function ProductCatalog(props: ProductCatalogProps) {
         </div>
       </div>
       {props.filtersOpen && <div id="product-filters" className="catalog-filters">{props.filters}</div>}
-      <div className="catalog-results"><p className="catalog-count" role="status" aria-live="polite">{count} product{count === 1 ? '' : 's'}{props.collection !== 'All Collections' ? ` in ${props.collection}` : ''}{props.filterCount > 0 || props.search ? ' matching your selection' : ''}</p>{props.productsPage && props.sortControl}</div>
-      {count > 0 ? view === 'carousel' ? (
+      {!props.loading && !props.loadError && <div className="catalog-results"><p className="catalog-count" role="status" aria-live="polite">{count} product{count === 1 ? '' : 's'}{props.collection !== 'All Collections' ? ` in ${props.collection}` : ''}{props.filterCount > 0 || props.search ? ' matching your selection' : ''}</p>{props.productsPage && props.sortControl}</div>}
+      {props.loading ? <div className="catalog-loading" role="status" aria-live="polite"><div className="catalog-loading-shapes" aria-hidden="true"><span /><span /><span /></div><p>Loading the current collection...</p></div> : props.loadError ? <div className="catalog-empty" role="alert"><h3>Collection unavailable</h3><p>{props.loadError}</p><button type="button" className="luxury-button outline" onClick={props.onRetry}>Try again</button></div> : count > 0 ? view === 'carousel' ? (
         <div className="product-showcase" role="region" aria-roledescription="carousel" aria-label="Hair collection"
           onPointerDown={event => { swipe.current = { x: event.clientX, y: event.clientY }; suppressClick.current = false }}
           onPointerUp={event => {

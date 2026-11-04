@@ -18,6 +18,7 @@ create table if not exists public.products (
   instagram_link text,
   show_on_homepage boolean,
   show_in_catalog boolean not null default true,
+  in_christmas_sale boolean not null default false,
   sort_order integer default 0,
   is_deleted boolean default false,
   created_at timestamptz default now(),
@@ -27,6 +28,7 @@ create table if not exists public.products (
 -- Non-destructive upgrade for existing installations; restoration is separate.
 alter table public.products add column if not exists show_on_homepage boolean;
 alter table public.products add column if not exists show_in_catalog boolean not null default true;
+-- Existing sites: run supabase-christmas-sales.sql to preserve the campaign's initial selections.
 
 create index if not exists products_visible_sort_idx
   on public.products (is_deleted, sort_order, id);

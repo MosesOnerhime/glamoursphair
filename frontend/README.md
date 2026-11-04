@@ -87,11 +87,13 @@ Implementation, database boundaries and QA are recorded in `../docs/PRODUCTS_PAG
 - When `VITE_PAYSTACK_VERIFY_API_URL` and `PAYSTACK_SECRET_KEY` are configured, successful popup payments are verified server-side before the receipt is shown.
 - Fulfilment details are sent through the existing EmailJS templates and can also be confirmed on WhatsApp.
 
-## November Sales
+## Christmas Sales
 
 `/sales` is the dedicated campaign storefront for **9-15 November 2026**, Africa/Lagos. Before opening it is a preview; checkout is enforced server-side only between 00:00 on 9 November and 00:00 on 16 November. The page shows the closed-sale state afterwards. There is no client date override in production.
 
-- Choose replacement placeholder product IDs in `src/lib/novemberSale.js`. Only currently published, non-deleted Supabase products are eligible. Do not restore old deletion tombstones to populate the sale.
+- Use **Christmas Sales** in the admin inventory rows or product editor to select sale members. The selection is independent of Homepage, Products page and the primary collection. Inventory drag order also controls sale order. Do not restore deletion tombstones to populate the sale.
+- Existing installations need `supabase-christmas-sales.sql` once. It adds `in_christmas_sale` and initializes the existing two selections without altering prices, collections or deletions. Sale controls remain disabled until the column is detected. This migration was applied and verified for the live project; see `../docs/CHRISTMAS_SALES_HANDOFF.md`.
+- The owner confirmed the Christmas Sales name with the existing **9-15 November** dates. Internal campaign IDs, reference formats and saved payment/bag keys intentionally retain their old November identifiers for compatibility.
 - The 20% discount uses the product's current NGN price, not an old comparison price. Database prices and the regular store cart remain unchanged.
 - `/api/sales` uses the existing server-only Supabase environment variables and **`PAYSTACK_SECRET_KEY`**. The new sale flow initializes Paystack on the server, so it does not use a browser public key. Production requires the correct live secret in Vercel Production followed by redeployment; never prefix it with `VITE_` or commit it.
 - The server rechecks dates, inventory, quantity, discount, delivery and expected payable total. Payment is confirmed only after server verification of the reference, signed order, amount, NGN currency and payer. Missing configuration fails closed, with WhatsApp recovery.
@@ -107,6 +109,10 @@ node node_modules/vite/bin/vite.js --config tests/vite-sale-qa.config.ts
 ```
 
 Open `http://127.0.0.1:5180/sales`. This explicitly opt-in fixture uses the real sale handler with a fake date and fake provider, binds only to loopback and never calls Paystack or writes to production. Its clearly labelled simulator is excluded from production builds. Do not deploy the QA config or expose its loopback API. For the normal Vite dev server, an optional `SALES_DEV_API_PROXY` can point to a local Vercel function server. Full implementation/release evidence is in `../docs/NOVEMBER_SALES_HANDOFF.md`.
+
+For repeatable inventory UI regression checks, run `npm run test:ui`. These tests use a separate headless browser and a loopback-only inventory simulator, never live Supabase or Paystack. Windows defaults to installed Microsoft Edge; elsewhere run `npx playwright install chromium` first. `PLAYWRIGHT_CHANNEL` can override the browser channel. The tests cover desktop/mobile sale selection, edit/sort, save failures, loading/retry, deleted products, catalogue search, galleries and cart. Generated traces and test screenshots are ignored by Git.
+
+When shared inventory is configured, home and `/products` wait for the uncached database snapshot. A failure shows retry instead of falling back to bundled or locally cached products. An empty shared inventory stays empty. Local seed products are used only in unconfigured demo environments.
 
 ## Business facts
 

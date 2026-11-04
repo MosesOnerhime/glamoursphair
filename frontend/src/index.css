@@ -54,7 +54,8 @@
 .view-tool { position: absolute; right: 0; }
 .catalog-discovery { max-width: 1100px; margin: auto; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 18px 30px; }
 .catalog-collections { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 24px; }
-.catalog-collections button { min-height: 44px; font-size: 13px; color: #c7bcb1; border-bottom: 1px solid transparent; }
+.catalog-collections button, .catalog-collections a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 13px; color: #c7bcb1; border-bottom: 1px solid transparent; }
+.catalog-collections a { color: var(--store-champagne); }
 .catalog-collections button[aria-pressed=true] { color: var(--store-champagne); border-color: var(--store-champagne); }
 .catalog-collections span { margin-left: 5px; font-size: 11px; color: #b4a798; }
 .catalog-search { width: 260px; height: 44px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #cbb07a40; color: var(--store-champagne); }
@@ -96,6 +97,14 @@
 .catalog-empty { padding: 80px 20px; text-align: center; }
 .catalog-empty h3 { font-family: 'Cormorant Garamond', serif; font-size: 32px; }
 .catalog-empty p { margin: 12px 0 22px; color: #c7bcb1; }
+.catalog-loading { min-height: 460px; padding-top: 40px; text-align: center; color: #c7bcb1; }
+.catalog-loading-shapes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; max-width: 1060px; margin: 0 auto 24px; }
+.catalog-loading-shapes span { display: block; aspect-ratio: 3 / 4; max-height: 350px; background: #ffffff08; border: 1px solid #ffffff0d; }
+@media (max-width: 640px) {
+  .catalog-loading-shapes { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .catalog-loading-shapes span:last-child { display: none; }
+  .catalog-loading { min-height: 360px; }
+}
 .catalog-view-all { margin-top: 38px; text-align: center; }
 .products-page { padding-top: 28px; min-height: 70svh; }
 .catalog-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #c7bcb1; margin-bottom: 30px; }

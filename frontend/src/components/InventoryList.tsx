@@ -3,12 +3,14 @@ import type { DragEvent, PointerEvent } from 'react'
 import { HiArrowDown, HiArrowUp, HiPencil, HiSearch, HiSwitchVertical, HiTrash, HiX } from 'react-icons/hi'
 import type { Product } from '../types'
 import { HOME_PRODUCT_LIMIT, isCatalogProduct, isHomepageProduct } from '../lib/productPlacement.js'
+import { isChristmasSaleProduct } from '../lib/novemberSale.js'
 
 interface InventoryListProps {
   products: Product[]
   busy: boolean
   placementSupported: boolean
-  onPlacement: (product: Product, field: 'showOnHomepage' | 'showInCatalog', value: boolean) => void
+  salePlacementSupported: boolean
+  onPlacement: (product: Product, field: 'showOnHomepage' | 'showInCatalog' | 'inChristmasSale', value: boolean) => void
   editingId: number | null
   draggedId: number | null
   hoveredId: number | null
@@ -29,7 +31,7 @@ export default function InventoryList(props: InventoryListProps) {
   const group = (product: Product) => product.group?.trim() || 'Signature Collection'
   const collections = [...new Set(props.products.map(group))]
   const visible = useMemo(() => props.products.filter(product =>
-    (collection === 'all' || group(product) === collection) &&
+    (collection === 'all' || (collection === 'christmas-sale' ? isChristmasSaleProduct(product) : `group:${group(product)}` === collection)) &&
     `${product.name} ${product.description} ${group(product)} ${product.length ?? ''} ${product.fitting ?? ''}`.toLowerCase().includes(query.trim().toLowerCase())
   ), [collection, props.products, query])
 
@@ -37,7 +39,7 @@ export default function InventoryList(props: InventoryListProps) {
     <div className="inventory-list">
       <div className="inventory-toolbar">
         <div className="inventory-search"><HiSearch size={18} aria-hidden="true" /><label className="sr-only" htmlFor="inventory-search">Search inventory</label><input id="inventory-search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search inventory" type="search" />{query && <button type="button" onClick={() => setQuery('')} aria-label="Clear inventory search"><HiX size={17} /></button>}</div>
-        <label className="sr-only" htmlFor="inventory-collection">Inventory collection</label><select id="inventory-collection" value={collection} onChange={event => setCollection(event.target.value)}><option value="all">All collections</option>{collections.map(name => <option key={name}>{name}</option>)}</select>
+        <label className="sr-only" htmlFor="inventory-collection">Inventory collection</label><select id="inventory-collection" value={collection} onChange={event => setCollection(event.target.value)}><option value="all">All collections</option><option value="christmas-sale">Christmas Sales</option>{collections.map(name => <option key={name} value={`group:${name}`}>{name}</option>)}</select>
       </div>
       <p className="inventory-result-count" role="status">{visible.length} of {props.products.length} products</p>
       <div className="inventory-scroll">
@@ -51,6 +53,7 @@ export default function InventoryList(props: InventoryListProps) {
             <div className="inventory-row-info"><button type="button" onClick={() => props.onEdit(product)} disabled={props.busy} className="inventory-product-name">{product.name}</button><p className="inventory-row-price">{`\u20a6${product.price.toLocaleString('en-NG')}`}<span>{group(product)}</span></p><p className="inventory-row-specs">{[product.length, product.volume, product.fitting].filter(Boolean).join(' / ') || product.description}</p><div className="inventory-placement">
               <label title={`Homepage selection: maximum ${HOME_PRODUCT_LIMIT}`}><input type="checkbox" aria-label={`Show ${product.name} on homepage`} checked={isHomepageProduct(product)} disabled={props.busy || !props.placementSupported || props.editingId === product.id} onChange={event => props.onPlacement(product, 'showOnHomepage', event.target.checked)} />Homepage</label>
               <label><input type="checkbox" aria-label={`Show ${product.name} on full products page`} checked={isCatalogProduct(product)} disabled={props.busy || !props.placementSupported || props.editingId === product.id} onChange={event => props.onPlacement(product, 'showInCatalog', event.target.checked)} />Products page</label>
+              <label><input type="checkbox" aria-label={`Include ${product.name} in Christmas Sales`} checked={isChristmasSaleProduct(product)} disabled={props.busy || !props.salePlacementSupported || props.editingId === product.id} onChange={event => props.onPlacement(product, 'inChristmasSale', event.target.checked)} />Christmas Sales</label>
             </div></div>
             <div className="inventory-row-actions">
               <span className="inventory-position" aria-label={`Position ${index + 1}`}>{index + 1}</span>

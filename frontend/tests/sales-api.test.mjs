@@ -41,12 +41,32 @@ function harness({ clock = '2026-11-10T12:00:00+01:00', inventory = rows } = {})
 }
 
 test('campaign runs exactly 9-15 November in Nigeria time', () => {
+  assert.equal(NOVEMBER_SALE.name, 'Christmas Sales')
+  assert.equal(NOVEMBER_SALE.id, 'november-2026')
   assert.equal(salePhase('2026-11-08T22:59:59.999Z'), 'upcoming')
   assert.equal(salePhase('2026-11-08T23:00:00.000Z'), 'active')
   assert.equal(salePhase('2026-11-15T22:59:59.999Z'), 'active')
   assert.equal(salePhase('2026-11-15T23:00:00.000Z'), 'ended')
   assert.equal(salePhase('2027-11-10T00:00:00Z'), 'ended')
   assert.throws(() => salePhase('not-a-date'))
+})
+
+test('admin selections override legacy IDs, retain sort order and allow sale-only publication', async () => {
+  const state = harness({ inventory: [
+    { ...rows[1], in_christmas_sale: false },
+    { ...rows[0], id: 300, in_christmas_sale: true, show_in_catalog: false },
+    { ...rows[0], in_christmas_sale: true },
+    { ...rows[0], id: 301, in_christmas_sale: true, is_deleted: true },
+  ] })
+  const res = await state.send(undefined, 'GET')
+  assert.deepEqual(res.body.products.map(product => product.id), [300, 11])
+  assert.equal(res.body.campaign.name, 'Christmas Sales')
+  const body = validBody(); body.items = [{ id: 300, qty: 1 }]
+  assert.equal((await state.send(body)).statusCode, 200)
+  body.items = [{ id: 112, qty: 1 }]
+  const removed = await state.send(body)
+  assert.equal(removed.statusCode, 409)
+  assert.equal(state.transactions.size, 1)
 })
 test('sale prices use 20% off the current price, not an inflated older comparison price', () => {
   assert.deepEqual(salePrices(650000), { regularKobo: 65000000, saleKobo: 52000000, savingsKobo: 13000000 })
@@ -248,7 +268,7 @@ test('production cannot accept test-mode or public API keys as real payments', a
 })
 test('sales entry has crawler metadata, narrow routes and a sitemap entry', () => {
   const html = readFileSync(new URL('../sales.html', import.meta.url), 'utf8')
-  assert.ok(html.includes('<title>November Sales: 9-15 November | GLAMOURSPHAIR</title>'))
+  assert.ok(html.includes('<title>Christmas Sales: 9-15 November | GLAMOURSPHAIR</title>'))
   assert.ok(html.includes('href="https://www.glamoursphairluxury.com/sales"'))
   assert.ok(html.includes('property="og:image"'))
   const config = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url)))

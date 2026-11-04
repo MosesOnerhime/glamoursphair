@@ -158,23 +158,23 @@ export default function SaleCheckout({ open, onClose, items, snapshot, onPaid, o
 
   const orderSummary = (quote: SaleQuote) => <dl className="sale-totals">
     <div><dt>Items</dt><dd>{koboMoney(quote.subtotalKobo)}</dd></div>
-    <div className="sale-savings"><dt>November savings</dt><dd>{koboMoney(quote.savingsKobo)}</dd></div>
+    <div className="sale-savings"><dt>Christmas savings</dt><dd>{koboMoney(quote.savingsKobo)}</dd></div>
     <div><dt>Delivery · {quote.deliveryLabel}</dt><dd>{koboMoney(quote.deliveryFeeKobo)}</dd></div>
     <div className="sale-grand-total"><dt>Total</dt><dd>{koboMoney(quote.totalKobo)}</dd></div>
   </dl>
-  const support = pending ? `https://wa.me/2348128288948?text=${encodeURIComponent(`Hello GLAMOURSPHAIR, please help confirm my November sale payment. Reference: ${pending.reference}. Total: ${koboMoney(pending.quote.totalKobo)}.`)}` : ''
+  const support = pending ? `https://wa.me/2348128288948?text=${encodeURIComponent(`Hello GLAMOURSPHAIR, please help confirm my Christmas sale payment. Reference: ${pending.reference}. Total: ${koboMoney(pending.quote.totalKobo)}.`)}` : ''
 
   if (!open) return null
   return <div className="sale-dialog-backdrop">
     <div className="sale-dialog-scrim" aria-hidden="true" onClick={close} />
     <div ref={dialogRef} className="sale-checkout sale-dialog" role="dialog" aria-modal="true" aria-labelledby="sale-checkout-title" tabIndex={-1}>
-      <header className="sale-dialog-header"><div><span className="sale-eyebrow">GLAMOURSPHAIR</span><h2 id="sale-checkout-title">{receipt ? 'Payment confirmed' : 'November Sales'}</h2></div><button className="sale-icon" type="button" onClick={close} disabled={isBusy} aria-label="Close sale checkout" title="Close checkout"><HiX size={23} /></button></header>
+      <header className="sale-dialog-header"><div><span className="sale-eyebrow">GLAMOURSPHAIR</span><h2 id="sale-checkout-title">{receipt ? 'Payment confirmed' : 'Christmas Sales'}</h2></div><button className="sale-icon" type="button" onClick={close} disabled={isBusy} aria-label="Close sale checkout" title="Close checkout"><HiX size={23} /></button></header>
       {receipt ? <div className="sale-receipt">
         <HiCheckCircle size={44} aria-hidden="true" /><h3>Thank you, {receipt.customer.name}.</h3><p role="status">Your Paystack payment is verified.</p>
         <p className="sale-reference">{receipt.reference}</p>
         <ul className="sale-review-items">{receipt.quote.items.map(item => <li key={item.id}><span>{item.name} × {item.qty}</span><strong>{koboMoney(item.lineKobo)}</strong></li>)}</ul>
         {orderSummary(receipt.quote)}<address>{receipt.shipping.isGift ? receipt.shipping.recipientName : receipt.customer.name}<br />{receipt.shipping.address}<br />{receipt.shipping.city}, {receipt.shipping.state}<br />{receipt.shipping.country}</address>
-        <div className="sale-receipt-actions"><button type="button" className="sale-button secondary" onClick={() => window.print()}><HiPrinter /> Print receipt</button><a className="sale-button" href={`https://wa.me/2348128288948?text=${encodeURIComponent(`Hello GLAMOURSPHAIR, my November sale payment is verified. Reference: ${receipt.reference}. Total: ${koboMoney(receipt.quote.totalKobo)}. Please confirm delivery.`)}`} target="_blank" rel="noopener noreferrer"><FaWhatsapp /> Confirm delivery</a></div>
+        <div className="sale-receipt-actions"><button type="button" className="sale-button secondary" onClick={() => window.print()}><HiPrinter /> Print receipt</button><a className="sale-button" href={`https://wa.me/2348128288948?text=${encodeURIComponent(`Hello GLAMOURSPHAIR, my Christmas sale payment is verified. Reference: ${receipt.reference}. Total: ${koboMoney(receipt.quote.totalKobo)}. Please confirm delivery.`)}`} target="_blank" rel="noopener noreferrer"><FaWhatsapp /> Confirm delivery</a></div>
         <button type="button" className="sale-text-button" onClick={close}>Continue shopping</button>
       </div> : pending ? <div className="sale-payment-recovery">
         <HiLockClosed size={30} aria-hidden="true" /><h3>Your payment session</h3><p className="sale-reference">{pending.reference}</p>
@@ -186,7 +186,7 @@ export default function SaleCheckout({ open, onClose, items, snapshot, onPaid, o
         <a href={support} target="_blank" rel="noopener noreferrer" className="sale-text-button"><FaWhatsapp /> Get help with this reference</a>
       </div> : <>
         <ol className="sale-steps" aria-label="Checkout progress"><li aria-current={step === 'shipping' ? 'step' : undefined}><span>1</span> Shipping</li><li aria-current={step === 'pay' ? 'step' : undefined}><span>2</span> Pay</li></ol>
-        {!active && <p className="sale-notice" role="status">{snapshot?.phase === 'ended' ? 'The November sale has ended.' : 'Sale checkout opens on 9 November, Nigeria time.'}</p>}
+        {!active && <p className="sale-notice" role="status">{snapshot?.phase === 'ended' ? 'The Christmas sale has ended.' : 'Sale checkout opens on 9 November, Nigeria time.'}</p>}
         {active && !snapshot?.paymentReady && <p className="sale-notice error" role="alert">Secure checkout is temporarily unavailable. Contact our WhatsApp team before paying.</p>}
         {step === 'shipping' ? <form className="sale-checkout-form" noValidate onSubmit={continueToPay}>
           <label className="sale-checkbox"><input type="checkbox" checked={shipping.isGift} onChange={event => updateShipping('isGift', event.target.checked)} /> Is this a gift?</label>
