@@ -46,4 +46,14 @@ Reproduce with `cd frontend` then `npm run test:ui`. The test-only Vite config b
 
 ## Publication
 
-The owner explicitly authorized committing and publishing to `main` on November 4, 2026. Release checks are being repeated before the push. The Supabase migration is already applied and must not run again. Record the deployed commit and live verification here after deployment succeeds. The private `marketing/` directory is unrelated and remains excluded from the release.
+The owner explicitly authorized committing and publishing to `main` on November 4, 2026. Application commit **`d04def805acbbbe47a22c63b50bfb5602e5337ec`** (`feat: manage Christmas sales and prevent stale product flashes`) was pushed to GitHub main. Vercel reported `success / Deployment has completed` at `https://vercel.com/moses-onerhimes-projects/glamoursphair/Drgh6zk5sN5mWmNX56jfutneQdvB`.
+
+Pre-push unit/API tests passed 81/81 again; ESLint, TypeScript/Vite build and staged diff checks passed. The previously completed desktop/mobile browser suite passed 20/20 against the same application code. The private `marketing/` directory remains excluded.
+
+Live checks: `/`, `/products`, `/sales` and `/sales/` returned HTTP 200. The sales HTML has the Christmas Sales title. `/api/products` reports both placement capabilities ready, two active products and 25 deletion tombstones. `/api/sales` reports Christmas Sales, the confirmed November 9 opening / November 16 exclusive closing timestamps, `upcoming`, `paymentReady: true`, `paymentMode: live`, and the correct 20% offer prices: product 11 NGN 520,000 from NGN 650,000; product 112 NGN 276,000 from NGN 345,000. No transaction or charge was created.
+
+Read-only production browser smoke checks ran at desktop 1440x900 and mobile 390x844. `/products` and `/sales` rendered exactly IDs `[11,112]`, with no deleted IDs ever observed in the catalogue DOM mutation log, no horizontal overflow and no JavaScript page errors. Live screenshots: `qa/christmas-live-products-mobile.png`, `qa/christmas-live-sales-desktop.png`.
+
+Initial live verification revealed neither remaining product had an explicit homepage selection and neither belonged to the old legacy featured-ID set. The owner explicitly approved **featuring both on the homepage**. One scoped SQL update set `show_on_homepage = true` for non-deleted IDs 11 and 112 only. Returned rows and the live products API confirmed prices (650,000 / 345,000), primary collections, full-shop visibility and sale membership were unchanged; the deletion count stayed 25. Supabase's normal updated-at trigger may change metadata. The actual live homepage then visibly rendered both products. Evidence: `qa/christmas-homepage-placement.png` and `qa/christmas-live-homepage.png`.
+
+The original sale-membership migration was not rerun. This final publication record and live screenshots are a documentation-only follow-up to the application release.
