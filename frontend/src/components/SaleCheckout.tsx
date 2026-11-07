@@ -158,7 +158,7 @@ export default function SaleCheckout({ open, onClose, items, snapshot, onPaid, o
 
   const orderSummary = (quote: SaleQuote) => <dl className="sale-totals">
     <div><dt>Items</dt><dd>{koboMoney(quote.subtotalKobo)}</dd></div>
-    <div className="sale-savings"><dt>Christmas savings</dt><dd>{koboMoney(quote.savingsKobo)}</dd></div>
+    {quote.savingsKobo > 0 && <div className="sale-savings"><dt>Christmas savings</dt><dd>{koboMoney(quote.savingsKobo)}</dd></div>}
     <div><dt>Delivery · {quote.deliveryLabel}</dt><dd>{koboMoney(quote.deliveryFeeKobo)}</dd></div>
     <div className="sale-grand-total"><dt>Total</dt><dd>{koboMoney(quote.totalKobo)}</dd></div>
   </dl>
@@ -206,7 +206,7 @@ export default function SaleCheckout({ open, onClose, items, snapshot, onPaid, o
           <Field name="email" label="Email address" error={errors.email}><input {...inputProps('email')} type="email" autoComplete="email" maxLength={200} value={customer.email} onChange={event => updateCustomer('email', event.target.value)} /></Field>
           <Field name="phone" label="Phone number" error={errors.phone}><input {...inputProps('phone')} type="tel" autoComplete="tel" maxLength={40} value={customer.phone} onChange={event => updateCustomer('phone', event.target.value)} /></Field>
           <ul className="sale-review-items">{items.map(item => <li key={item.id}><span>{offers.get(item.id)?.name ?? 'Unavailable item'} × {item.qty}</span><strong>{money((offers.get(item.id)?.price ?? 0) * item.qty)}</strong></li>)}</ul>
-          <dl className="sale-totals"><div><dt>Sale subtotal</dt><dd>{money(subtotal)}</dd></div><div className="sale-savings"><dt>You save 20%</dt><dd>{money(savings)}</dd></div><div><dt>Delivery · {region?.label}</dt><dd>{money(region?.fee ?? 0)}</dd></div><div className="sale-grand-total"><dt>Total payable</dt><dd>{koboMoney(totalKobo)}</dd></div></dl>
+          <dl className="sale-totals"><div><dt>Sale subtotal</dt><dd>{money(subtotal)}</dd></div>{savings > 0 && <div className="sale-savings"><dt>You save</dt><dd>{money(savings)}</dd></div>}<div><dt>Delivery · {region?.label}</dt><dd>{money(region?.fee ?? 0)}</dd></div><div className="sale-grand-total"><dt>Total payable</dt><dd>{koboMoney(totalKobo)}</dd></div></dl>
           {error && <p className="sale-notice error" role="alert">{error}</p>}
           <button type="submit" className="sale-button" disabled={!canPay || isBusy}><HiLockClosed />{isBusy ? 'Opening Paystack…' : `Pay ${koboMoney(totalKobo)}`}</button>
           <p className="sale-payment-note">Secure Paystack checkout. Your payment is charged in NGN.</p>

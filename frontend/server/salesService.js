@@ -69,7 +69,7 @@ export function quoteSale(items, products, locationId) {
     if (!Number.isSafeInteger(item?.id) || !Number.isInteger(item?.qty) || item.qty < 1 || item.qty > 20) throw new SaleError('Product quantities must be between 1 and 20.')
     const product = offers.get(item.id)
     if (!product) throw new SaleError('An item is no longer in this sale. Refresh your bag.', 409)
-    const prices = salePrices(product.regularPrice)
+    const prices = salePrices(product.price, product.originalPrice)
     return { id: product.id, name: product.name, slug: product.slug, image: product.images?.[0] || product.image,
       qty: item.qty, regularKobo: prices.regularKobo, unitKobo: prices.saleKobo, lineKobo: prices.saleKobo * item.qty }
   })
@@ -93,6 +93,7 @@ export async function readSaleInventory(request) {
   if (!Array.isArray(rows)) throw new SaleError('Shared inventory is temporarily unavailable.', 503)
   return rows.filter(row => !row.is_deleted).map(row => ({
     id: row.id, name: row.name, slug: row.slug || String(row.id), price: row.price,
+    originalPrice: row.original_price ?? undefined,
     description: row.description, image: row.image || undefined, images: row.images || undefined,
     source: row.source || undefined, length: row.length || undefined, fitting: row.fitting || undefined,
     volume: row.volume || undefined, group: row.collection || undefined,

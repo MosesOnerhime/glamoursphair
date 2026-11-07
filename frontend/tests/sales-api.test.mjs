@@ -14,8 +14,8 @@ const rows = [
   { id: 11, name: 'Signature Straight 22"', slug: 'signature-straight-22', price: 650000, original_price: 850000, description: 'Verified catalogue description', images: ['/images/11a.jpeg', '/images/11b.jpeg'], show_in_catalog: true },
   { id: 112, name: 'SDD Luxury Bone Straight 18" 5 by 5', slug: 'sdd-luxury-bone-straight-18-13x4', price: 345000, description: 'Verified catalogue description', image: '/images/SDD luxury bone straight length 18 volume 330 fitting 13 by 4.jpeg', show_in_catalog: true },
 ]
-const catalogue = rows.map(row => ({ ...row, images: row.images, showInCatalog: row.show_in_catalog }))
-const validBody = () => ({ action: 'initialize', items: [{ id: 11, qty: 1 }], expectedAmountKobo: 52400000,
+const catalogue = rows.map(row => ({ ...row, originalPrice: row.original_price, images: row.images, showInCatalog: row.show_in_catalog }))
+const validBody = () => ({ action: 'initialize', items: [{ id: 11, qty: 1 }], expectedAmountKobo: 65400000,
   customer: { name: 'Local QA Buyer', email: 'buyer@example.test', phone: '+2348000000000' },
   shipping: { deliveryLocationId: 'abuja', countryCode: 'NG', address: 'Local QA address', city: 'Abuja', state: 'FCT', deliveryNote: '', isGift: false },
 })
@@ -68,23 +68,44 @@ test('admin selections override legacy IDs, retain sort order and allow sale-onl
   assert.equal(removed.statusCode, 409)
   assert.equal(state.transactions.size, 1)
 })
-test('sale prices use 20% off the current price, not an inflated older comparison price', () => {
-  assert.deepEqual(salePrices(650000), { regularKobo: 65000000, saleKobo: 52000000, savingsKobo: 13000000 })
-  assert.equal(salePrices(345000).saleKobo, 27600000)
+test('sale prices are the saved admin price, with individual discounts from original prices', () => {
+  assert.deepEqual(salePrices(650000, 850000), { regularKobo: 85000000, saleKobo: 65000000, savingsKobo: 20000000, discountPercent: 23.5 })
+  assert.deepEqual(salePrices(300000, 400000), { regularKobo: 40000000, saleKobo: 30000000, savingsKobo: 10000000, discountPercent: 25 })
+  assert.equal(salePrices(345000, 690000).discountPercent, 50)
+  assert.equal(salePrices(100000, 400000).discountPercent, 75)
+  assert.equal(salePrices(66.67, 100).discountPercent, 33.3)
+  assert.equal(salePrices(0.01, 100).discountPercent, 99.9)
   const products = saleProducts(catalogue)
-  assert.equal(products[0].price, 520000)
-  assert.equal(products[0].originalPrice, 650000)
+  assert.equal(products[0].price, 650000)
+  assert.equal(products[0].originalPrice, 850000)
+  assert.equal(products[0].discountPercent, 23.5)
   assert.equal(catalogue[0].price, 650000)
+  assert.equal(catalogue[0].originalPrice, 850000)
   assert.equal(saleProducts([{ ...catalogue[0], showInCatalog: false }]).length, 0)
-  assert.throws(() => salePrices(-1))
+  for (const price of [-1, 0, NaN, Infinity, Number.MAX_SAFE_INTEGER, '650000']) assert.throws(() => salePrices(price))
+})
+
+test('missing, invalid or lower original prices never invent a discount or comparison', () => {
+  for (const original of [undefined, null, 0, -1, 300000, 345000, NaN, Infinity, Number.MAX_SAFE_INTEGER, '690000']) {
+    assert.deepEqual(salePrices(345000, original), { regularKobo: 34500000, saleKobo: 34500000, savingsKobo: 0, discountPercent: 0 })
+  }
+  const product = saleProducts([catalogue[1]])[0]
+  assert.equal(product.price, 345000)
+  assert.equal(product.regularPrice, 345000)
+  assert.equal(product.originalPrice, undefined)
+  assert.equal(product.discountPercent, 0)
 })
 test('quantity, mixed-product discount and delivery are calculated in kobo', () => {
   const quote = quoteSale([{ id: 11, qty: 1 }, { id: 112, qty: 1 }], catalogue, 'abuja')
-  assert.equal(quote.subtotalKobo, 79600000)
-  assert.equal(quote.savingsKobo, 19900000)
+  assert.equal(quote.subtotalKobo, 99500000)
+  assert.equal(quote.savingsKobo, 20000000)
   assert.equal(quote.deliveryFeeKobo, 400000)
-  assert.equal(quote.totalKobo, 80000000)
-  assert.equal(quoteSale([{ id: 112, qty: 2 }], catalogue, 'uk').totalKobo, 63200000)
+  assert.equal(quote.totalKobo, 99900000)
+  assert.equal(quoteSale([{ id: 112, qty: 2 }], catalogue, 'uk').totalKobo, 77000000)
+  const mixed = quoteSale([{ id: 11, qty: 2 }, { id: 112, qty: 3 }], [catalogue[0], { ...catalogue[1], originalPrice: 690000 }], 'abuja')
+  assert.equal(mixed.subtotalKobo, 233500000)
+  assert.equal(mixed.savingsKobo, 143500000)
+  assert.equal(mixed.totalKobo, 233900000)
 })
 test('existing delivery fee amounts remain unchanged', () => {
   assert.deepEqual(Object.fromEntries(deliveryLocations.map(item => [item.id, item.fee])), { uk: 80000, usa: 98000, uae: 125000, 'african-countries': 90000, 'within-nigeria': 10000, abuja: 4000, canada: 88000, italy: 115000 })
@@ -98,20 +119,41 @@ test('GET returns only selected published inventory, never tombstones or unselec
   const res = await state.send(undefined, 'GET')
   assert.equal(res.statusCode, 200)
   assert.deepEqual(res.body.products.map(product => product.id), [112])
-  assert.equal(res.body.products[0].price, 276000)
+  assert.equal(res.body.products[0].price, 345000)
+  assert.equal(res.body.products[0].discountPercent, 0)
   assert.equal(res.body.paymentReady, true)
   assert.equal(res.headers['Cache-Control'], 'no-store')
   assert.equal(JSON.stringify(res.body).includes(secret), false)
 })
+test('API maps saved original prices and reflects admin price changes without a second discount', async () => {
+  const state = harness({ inventory: structuredClone(rows) })
+  const first = await state.send(undefined, 'GET')
+  assert.equal(first.body.products[0].price, 650000)
+  assert.equal(first.body.products[0].regularPrice, 850000)
+  assert.equal(first.body.products[0].discountPercent, 23.5)
+  Object.assign(state.inventory[0], { price: 300000, original_price: 600000 })
+  const updated = await state.send(undefined, 'GET')
+  assert.equal(updated.body.products[0].price, 300000)
+  assert.equal(updated.body.products[0].discountPercent, 50)
+  const staleQuote = await state.send(validBody())
+  assert.equal(staleQuote.statusCode, 409)
+  assert.equal(staleQuote.body.quote.totalKobo, 30400000)
+  assert.equal(state.transactions.size, 0)
+  const initialized = await state.send({ ...validBody(), expectedAmountKobo: 30400000 })
+  assert.equal(initialized.statusCode, 200)
+  assert.equal(state.transactions.get(initialized.body.reference).amount, 30400000)
+})
+
 test('initialization ignores browser-supplied prices and sends the server quote to Paystack', async () => {
   const state = harness()
-  const body = validBody(); body.items[0].price = 1; body.deliveryFee = 0
+  const body = validBody(); Object.assign(body.items[0], { price: 1, originalPrice: 2, discountPercent: 99 }); body.deliveryFee = 0
   const res = await state.send(body)
   assert.equal(res.statusCode, 200)
   const transaction = state.transactions.get(res.body.reference)
-  assert.equal(transaction.amount, 52400000)
+  assert.equal(transaction.amount, 65400000)
   assert.equal(transaction.currency, 'NGN')
-  assert.equal(transaction.metadata.glamoursphairSale.order.quote.totalKobo, 52400000)
+  assert.equal(transaction.metadata.glamoursphairSale.order.quote.totalKobo, 65400000)
+  assert.equal(transaction.metadata.glamoursphairSale.order.quote.items[0].regularKobo, 85000000)
   assert.equal(transaction.metadata.glamoursphairSale.signature, signOrder(transaction.metadata.glamoursphairSale.order, secret))
   assert.match(res.body.reference, /^GLAM-NOV-[a-f0-9-]{36}$/)
   assert.equal(res.body.verificationToken, verificationToken(res.body.reference, secret))
@@ -120,7 +162,7 @@ test('changed totals are shown for review and never silently charged', async () 
   const state = harness(); const body = validBody(); body.expectedAmountKobo = 1
   const res = await state.send(body)
   assert.equal(res.statusCode, 409)
-  assert.equal(res.body.quote.totalKobo, 52400000)
+  assert.equal(res.body.quote.totalKobo, 65400000)
   assert.equal(state.transactions.size, 0)
 })
 test('sale cannot be paid before opening or after closing', async () => {
@@ -146,7 +188,7 @@ test('verification requires the session token and signed server-created order', 
   assert.equal(wrong.statusCode, 403)
   const verified = await state.send(payload)
   assert.equal(verified.statusCode, 200); assert.equal(verified.body.verified, true)
-  assert.equal(verified.body.order.quote.totalKobo, 52400000)
+  assert.equal(verified.body.order.quote.totalKobo, 65400000)
   const transaction = state.transactions.get(payload.reference)
   transaction.metadata.glamoursphairSale.order.quote.totalKobo = 1
   assert.equal((await state.send(payload)).statusCode, 409)
@@ -173,6 +215,20 @@ test('a genuine signed payment can still be verified after the campaign closes',
   const verified = await state.send({ action: 'verify', reference: initialized.body.reference, verificationToken: initialized.body.verificationToken })
   assert.equal(verified.body.verified, true)
 })
+test('previously signed placeholder-price sessions still verify at their authorized amount', async () => {
+  const state = harness(); const initialized = await state.send(validBody())
+  const transaction = state.transactions.get(initialized.body.reference)
+  const record = transaction.metadata.glamoursphairSale
+  Object.assign(record.order.quote.items[0], { regularKobo: 65000000, unitKobo: 52000000, lineKobo: 52000000 })
+  Object.assign(record.order.quote, { subtotalKobo: 52000000, savingsKobo: 13000000, totalKobo: 52400000 })
+  record.signature = signOrder(record.order, secret)
+  transaction.amount = 52400000
+  state.inventory = []
+  const verified = await state.send({ action: 'verify', reference: initialized.body.reference, verificationToken: initialized.body.verificationToken })
+  assert.equal(verified.body.verified, true)
+  assert.equal(verified.body.order.quote.totalKobo, 52400000)
+})
+
 test('provider failure never returns a fake success or leaks secrets', async () => {
   const state = harness(); state.providerError = true
   const res = await state.send(validBody())
@@ -183,7 +239,7 @@ test('provider failure never returns a fake success or leaks secrets', async () 
 test('other African destinations require their actual country and preserve it for fulfilment', async () => {
   const state = harness(); const body = validBody()
   Object.assign(body.shipping, { deliveryLocationId: 'african-countries', countryCode: 'AFRICA' })
-  body.expectedAmountKobo = 61000000
+  body.expectedAmountKobo = 74000000
   assert.equal((await state.send(body)).statusCode, 400)
   body.shipping.countryName = 'Ghana'
   const initialized = await state.send(body)
@@ -275,5 +331,8 @@ test('sales entry has crawler metadata, narrow routes and a sitemap entry', () =
   assert.deepEqual(config.rewrites.filter(item => item.source.startsWith('/sales')), [{ source: '/sales', destination: '/sales.html' }, { source: '/sales/', destination: '/sales.html' }])
   assert.ok(!config.rewrites.some(item => item.source.includes('api')))
   assert.ok(readFileSync(new URL('../public/sitemap.xml', import.meta.url), 'utf8').includes('<loc>https://www.glamoursphairluxury.com/sales</loc>'))
-  assert.equal(NOVEMBER_SALE.discountPercent, 20)
+  assert.equal(NOVEMBER_SALE.maxDiscountPercent, 50)
+  assert.equal(NOVEMBER_SALE.discountPercent, undefined)
+  assert.ok(html.includes('up to 50% off selected luxury hair pieces'))
+  assert.ok(!html.includes('20% off'))
 })

@@ -22,6 +22,7 @@
 .sale-date-stamp { border-left: 1px solid #e7ce8c60; padding-left: 36px; min-width: 220px; }
 .sale-date-stamp strong { font-family: 'Cormorant Garamond', serif; font-size: 80px; line-height: .9; font-weight: 500; color: #f0d991; }
 .sale-date-stamp strong span { font-size: 45px; }
+.sale-date-stamp strong small { display: block; margin-bottom: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.2; }
 .sale-date-stamp > span { display: block; margin-top: 10px; color: #f0d991; font-size: 10px; font-weight: 600; }
 .sale-date-stamp p { font-size: 12px; margin-top: 14px; color: var(--sale-cream); }
 .sale-catalog { max-width: 1120px; margin: auto; padding: 0 28px 56px; outline-offset: 3px; }
@@ -191,6 +192,7 @@
   .sale-date-stamp { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 11px; margin-top: 18px; border-left: 0; border-top: 1px solid #f6efe63b; padding: 14px 0 0; }
   .sale-date-stamp strong { font-family: 'DM Sans',sans-serif; font-size: 24px; line-height: 1; font-weight: 500; }
   .sale-date-stamp strong span { font-size: 19px; }
+  .sale-date-stamp strong small { display: inline; margin: 0 6px 0 0; font-size: 12px; }
   .sale-date-stamp > span { margin-top: 0; font-size: 9px; }
   .sale-date-stamp p { margin: 0 0 0 auto; font-size: 10px; }
   .sale-catalog { padding: 0 16px 34px; }

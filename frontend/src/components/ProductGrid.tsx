@@ -1723,7 +1723,7 @@ const writeAdminCache = (key: string, value: unknown) => {
                   </fieldset>
                   <fieldset className="admin-placement" disabled={!salePlacementSupported}>
                     <legend>Christmas Sales</legend>
-                    <label><input type="checkbox" checked={productForm.inChristmasSale} onChange={event => setProductForm(prev => ({ ...prev, inChristmasSale: event.target.checked }))} />Include in Christmas Sales <span>20% off · 9-15 November 2026</span></label>
+                    <label><input type="checkbox" checked={productForm.inChristmasSale} onChange={event => setProductForm(prev => ({ ...prev, inChristmasSale: event.target.checked }))} />Include in Christmas Sales <span>9-15 November 2026</span></label>
                   </fieldset>
 
                   <div className="grid gap-3 md:grid-cols-2">
@@ -1736,7 +1736,7 @@ const writeAdminCache = (key: string, value: unknown) => {
                         className={adminInputClass}
                       />
                     </AdminField>
-                    <AdminField label="Price (NGN)">
+                    <AdminField label={productForm.inChristmasSale ? 'Sale price (NGN)' : 'Price (NGN)'}>
                       <input
                         value={productForm.price}
                         onChange={event => setProductForm(prev => ({ ...prev, price: event.target.value }))}

@@ -1,5 +1,25 @@
 # Christmas Sales And Shared Inventory Loading
 
+## November 7 Pricing Refinement
+
+The owner has replaced the original blanket 20% placeholder with **Up to 50% off** campaign messaging and admin-defined product prices. This section supersedes the older pricing descriptions and November 4 production examples below; those remain historical release evidence.
+
+- `Product.price` / database `price` is the actual payable sale price. `originalPrice` / `original_price` is the admin's higher pre-sale comparison. No new column, migration, automatic database edit or additional percentage reduction is needed.
+- The shared pricing helper computes `(originalPrice - price) / originalPrice * 100` per item. Displayed percentages round down to one decimal place, avoiding overstated savings (for example, 650,000 versus 850,000 displays 23.5% off). Whole-number results have no trailing decimal. The marketing maximum does not multiply or cap individual product prices/discounts.
+- Missing, invalid, equal or lower original prices produce no discount badge, comparison strikethrough or savings claim. The saved payable price remains available. Existing admin validation still rejects a supplied original price that is not higher than the payable price.
+- Admin labels the existing price field **Sale price (NGN)** when Christmas Sales is selected. Removing sale membership does not rewrite either price or the primary collection.
+- Cards, detail dialogs, bag, WhatsApp product messages, active Product/Offer schema and checkout use the saved price. Checkout sums exact item savings rather than claiming a blanket percentage. The server independently reads both prices, quotes integer kobo, and rejects stale browser totals before initializing payment.
+- Headline, crawlable page description, Open Graph/Twitter descriptions and collection schema use **Up to 50% off**. Dates remain the owner's confirmed 9-15 November 2026, Africa/Lagos.
+- Campaign identity, bag/payment storage keys, signed payment format, delivery fees and Paystack verification remain unchanged. Previously initialized signed sessions still verify at their authorized amount, even if inventory/pricing changes later.
+
+Validation completed locally: **84/84 unit/API tests** and **24/24 desktop/mobile browser tests** pass, as do ESLint, TypeScript/Vite production build and `git diff --check`. Browser coverage includes admin editing both prices, different discounts on the same page, missing-original handling, modal/WhatsApp prices, bag subtotal, mixed-discount checkout savings/delivery and active Offer schema. Responsive overflow checks include 360, 390, 430, 768, 1024, 1280, 1440 and 1920 CSS pixels. The price-edit browser test also passed a focused desktop/mobile rerun with explicit image-load readiness.
+
+Reviewed local fixture evidence is saved in `qa/christmas-pricing-desktop.png`, `qa/christmas-pricing-mobile.png`, `qa/christmas-pricing-mobile-product.png` and `qa/christmas-pricing-checkout-mobile.png`. These example admin prices are test-only, not live inventory edits. Initial offscreen full-page mobile capture did not paint the second photo; scrolling that card into view and awaiting image decoding confirmed the photo renders normally. The final mobile evidence uses actual viewport captures. This is desktop-browser mobile emulation, not a physical device test.
+
+The loopback-only fixture supports an explicit active campaign for testing shipping/checkout summaries, but rejects payment POST requests and never calls real Supabase or Paystack. The preview is running at `http://127.0.0.1:5184/sales` with test inventory; its active date override is not part of production. No live inventory writes or real charges have been made for this refinement. Private `marketing/` remains untouched. The existing Browserslist age notice remains a non-blocking build warning.
+
+The owner explicitly authorized committing and publishing this refinement to GitHub `main` on November 7. Pre-publication checks repeated successfully: 84/84 unit/API tests, ESLint, TypeScript/Vite build and whitespace validation. The previously completed 24/24 desktop/mobile browser checks cover the same application code. GitHub main matched local HEAD before staging. Only pricing source/tests, documentation and reviewed QA screenshots are included; private flyer work is excluded. Vercel deployment and live read-only verification follow the push.
+
 ## Owner Request
 
 - Rename the campaign to Christmas Sales, keeping **9-15 November 2026**, Africa/Lagos, as explicitly confirmed by the owner.

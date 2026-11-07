@@ -8,9 +8,9 @@ export interface SaleProduct extends Product {
 }
 export const NOVEMBER_SALE: {
   readonly id: string; readonly name: string; readonly startsAt: string; readonly endsAt: string
-  readonly timeZone: string; readonly discountPercent: number; readonly productIds: number[]
+  readonly timeZone: string; readonly maxDiscountPercent: number; readonly productIds: number[]
 }
 export function salePhase(now?: Date | string | number): SalePhase
-export function salePrices(priceNgn: number): { regularKobo: number; saleKobo: number; savingsKobo: number }
+export function salePrices(priceNgn: number, originalPriceNgn?: number): { regularKobo: number; saleKobo: number; savingsKobo: number; discountPercent: number }
 export function saleProducts(products: Product[]): SaleProduct[]
 export function isChristmasSaleProduct(product: Product & { isDeleted?: boolean }): boolean

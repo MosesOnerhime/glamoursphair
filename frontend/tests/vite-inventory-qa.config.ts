@@ -20,6 +20,7 @@ const inventoryQa: Plugin = {
     ]
     let products = structuredClone(initialProducts)
     let delay = 0, failures = 0, migrated = true, failWrite = false
+    let phase: 'upcoming' | 'active' | 'ended' = 'upcoming'
     server.middlewares.use(async (req, res, next) => {
       const url = new URL(req.url || '/', 'http://127.0.0.1')
       if (!['/api/products', '/api/sales', '/__qa/inventory'].includes(url.pathname)) return next()
@@ -32,14 +33,16 @@ const inventoryQa: Plugin = {
       }
       if (url.pathname === '/__qa/inventory') {
         const body = await readBody()
-        if (body.reset) { products = structuredClone(initialProducts); delay = 0; failures = 0; migrated = true; failWrite = false }
+        if (body.reset) { products = structuredClone(initialProducts); delay = 0; failures = 0; migrated = true; failWrite = false; phase = 'upcoming' }
         delay = body.delay ?? delay; failures = body.failures ?? failures; migrated = body.migrated ?? migrated
         failWrite = body.failWrite ?? failWrite
+        if (['upcoming', 'active', 'ended'].includes(body.phase)) phase = body.phase
         if (body.products) products = body.products
         json({ delay, failures, migrated, products }); return
       }
       if (url.pathname === '/api/sales') {
-        json({ campaign: NOVEMBER_SALE, phase: 'upcoming', serverTime: '2026-11-03T12:00:00+01:00', products: saleProducts(products), paymentReady: false }); return
+        if (req.method !== 'GET') { json({ error: 'Payments are disabled in the local QA fixture.' }, 503); return }
+        json({ campaign: NOVEMBER_SALE, phase, serverTime: phase === 'active' ? '2026-11-10T12:00:00+01:00' : '2026-11-03T12:00:00+01:00', products: saleProducts(products), paymentReady: phase === 'active' }); return
       }
       if (req.method === 'GET') {
         await new Promise(resolve => setTimeout(resolve, delay))
