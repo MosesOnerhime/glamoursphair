@@ -15,7 +15,7 @@ const links = [
 const popularSearches = ['HD Lace', 'Bouncy', 'Straight', 'Blonde', 'Awoof Sales']
 
 export default function Navbar({ cartCount, onCartClick, productsPage = false }: NavbarProps) {
-  const linkHref = (id: string) => id === 'shop' ? '/products' : id === 'sales' ? '/sales' : id === 'shopping-support' ? '#shopping-support' : `${productsPage ? '/' : ''}#${id}`
+  const linkHref = (id: string) => id === 'shop' ? '/products' : id === 'sales' ? '/christmas-sales' : id === 'shopping-support' ? '#shopping-support' : `${productsPage ? '/' : ''}#${id}`
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')

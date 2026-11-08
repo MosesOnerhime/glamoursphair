@@ -3,6 +3,8 @@
   "rewrites": [
     { "source": "/products", "destination": "/index.html" },
     { "source": "/products/", "destination": "/index.html" },
+    { "source": "/christmas-sales", "destination": "/sales.html" },
+    { "source": "/christmas-sales/", "destination": "/sales.html" },
     { "source": "/sales", "destination": "/sales.html" },
     { "source": "/sales/", "destination": "/sales.html" }
   ]

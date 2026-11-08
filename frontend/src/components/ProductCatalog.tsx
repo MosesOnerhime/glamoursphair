@@ -83,7 +83,7 @@ export default function ProductCatalog(props: ProductCatalogProps) {
         <div className="catalog-collections" aria-label="Product collections">
           <button type="button" aria-pressed={props.collection === 'All Collections'} onClick={() => { props.onCollection('All Collections'); setPosition(0) }}>All collections</button>
           {props.collections.map(collection => <button type="button" key={collection.name} aria-pressed={props.collection === collection.name} onClick={() => { props.onCollection(collection.name); setPosition(0) }}>{collection.name} <span>{collection.products.length}</span></button>)}
-          <a href="/sales">Christmas Sales <HiArrowRight size={15} aria-hidden="true" /></a>
+          <a href="/christmas-sales">Christmas Sales <HiArrowRight size={15} aria-hidden="true" /></a>
         </div>
         <div className="catalog-search">
           <HiSearch size={17} aria-hidden="true" />

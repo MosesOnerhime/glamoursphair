@@ -132,7 +132,7 @@ function Storefront() {
 
 export default function App() {
   const path = window.location.pathname.replace(/\/$/, '')
-  return path === '/sales'
+  return path === '/sales' || path === '/christmas-sales'
     ? <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-black font-display text-2xl text-[#c9a84c]" role="status">GLAMOURSPHAIR</div>}><SalesPage /></Suspense>
     : <Storefront />
 }

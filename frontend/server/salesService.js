@@ -1,6 +1,6 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto'
 import { NOVEMBER_SALE, salePhase, salePrices, saleProducts } from '../src/lib/novemberSale.js'
-import { countries, deliveryLocations } from '../src/lib/deliveryLocations.js'
+import { countries, deliveryLocations, normalizeCountryCode } from '../src/lib/deliveryLocations.js'
 
 export class SaleError extends Error {
   constructor(message, status = 400, details = {}) { super(message); this.status = status; this.details = details }
@@ -40,7 +40,8 @@ export function validateDetails(body) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) throw new SaleError('Enter a valid email address.')
   if (customer.phone.replace(/\D/g, '').length < 7) throw new SaleError('Enter a valid phone number.')
   const location = deliveryLocations.find(item => item.id === body.shipping?.deliveryLocationId)
-  const country = countries.find(item => item.code === body.shipping?.countryCode)
+  const countryCode = normalizeCountryCode(body.shipping?.countryCode)
+  const country = countries.find(item => item.code === countryCode)
   if (!location || !country || !location.countryCodes.includes('*') && !location.countryCodes.includes(country.code)) throw new SaleError('Choose a matching country and delivery option.')
   const pickup = location.id === 'pickup'
   const shipping = {

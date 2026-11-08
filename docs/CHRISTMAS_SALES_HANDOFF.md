@@ -83,3 +83,7 @@ Read-only production browser smoke checks ran at desktop 1440x900 and mobile 390
 Initial live verification revealed neither remaining product had an explicit homepage selection and neither belonged to the old legacy featured-ID set. The owner explicitly approved **featuring both on the homepage**. One scoped SQL update set `show_on_homepage = true` for non-deleted IDs 11 and 112 only. Returned rows and the live products API confirmed prices (650,000 / 345,000), primary collections, full-shop visibility and sale membership were unchanged; the deletion count stayed 25. Supabase's normal updated-at trigger may change metadata. The actual live homepage then visibly rendered both products. Evidence: `qa/christmas-homepage-placement.png` and `qa/christmas-live-homepage.png`.
 
 The original sale-membership migration was not rerun. This final publication record and live screenshots are a documentation-only follow-up to the application release.
+
+## Canonical URL Update (November 9, 2026)
+
+The owner requested `https://www.glamoursphairluxury.com/christmas-sales` as the public Christmas Sales link. This is now the canonical path in navigation, product links/sharing, metadata and sitemap. `/sales` remains a backwards-compatible route alias to the same campaign page.

@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { createSalesHandler } from '../api/sales.js'
 import { NOVEMBER_SALE, salePhase, salePrices, saleProducts } from '../src/lib/novemberSale.js'
 import { quoteSale, sameSignature, signOrder, verificationToken } from '../server/salesService.js'
-import { countries, deliveryLocations, deliveryOptionsForCountry } from '../src/lib/deliveryLocations.js'
+import { countries, deliveryLocations, deliveryOptionsForCountry, normalizeCountryCode } from '../src/lib/deliveryLocations.js'
 
 process.env.SUPABASE_URL = 'https://inventory.test.invalid'
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'local-fake-supabase-key'
@@ -112,6 +112,9 @@ test('approved delivery options and fee bands match across countries', () => {
   assert.deepEqual(deliveryLocations.map(item => item.id), ['abuja', 'within-nigeria', 'uk', 'usa-canada', 'other-countries', 'pickup'])
   for (const code of ['FR', 'JP', 'AU', 'BR']) assert.deepEqual(deliveryOptionsForCountry(code).map(item => item.id), ['other-countries'])
   assert.deepEqual(deliveryOptionsForCountry('GB').map(item => item.id), ['uk'])
+  for (const value of ['UK', 'United Kingdom', 'United Kingdom of Great Britain and Northern Ireland']) assert.deepEqual(deliveryOptionsForCountry(value).map(item => item.id), ['uk'])
+  assert.equal(normalizeCountryCode('United Kingdom'), 'GB')
+  assert.deepEqual(countries.filter(country => country.name === 'United Kingdom'), [{ code: 'GB', name: 'United Kingdom' }])
   assert.deepEqual(deliveryOptionsForCountry('CA').map(item => item.id), ['usa-canada'])
   assert.deepEqual(deliveryOptionsForCountry('NG').map(item => item.id), ['abuja', 'within-nigeria', 'pickup'])
   assert.ok(countries.some(country => country.code === 'JP' && country.name === 'Japan'))
@@ -268,6 +271,18 @@ test('other African destinations require their actual country and preserve it fo
   assert.equal(state.transactions.get(initialized.body.reference).metadata.glamoursphairSale.order.shipping.country, 'Ghana')
 })
 
+test('UK country aliases resolve to the UK fee and are stored canonically', async () => {
+  const state = harness(); const body = validBody()
+  Object.assign(body.shipping, { deliveryLocationId: 'uk', countryCode: 'United Kingdom' })
+  body.expectedAmountKobo = 73900000
+  const initialized = await state.send(body)
+  assert.equal(initialized.statusCode, 200)
+  const order = state.transactions.get(initialized.body.reference).metadata.glamoursphairSale.order
+  assert.equal(order.shipping.countryCode, 'GB')
+  assert.equal(order.quote.deliveryFeeKobo, 8900000)
+  assert.equal(order.quote.totalKobo, 73900000)
+})
+
 test('unavailable shared inventory never substitutes seed products or opens a payment', async () => {
   const handler = createSalesHandler({ request: async () => new Response('', { status: 503 }) })
   const res = response(); await handler({ method: 'GET' }, res)
@@ -346,12 +361,14 @@ test('production cannot accept test-mode or public API keys as real payments', a
 test('sales entry has crawler metadata, narrow routes and a sitemap entry', () => {
   const html = readFileSync(new URL('../sales.html', import.meta.url), 'utf8')
   assert.ok(html.includes('<title>Christmas Sales: 9-15 November | GLAMOURSPHAIR</title>'))
-  assert.ok(html.includes('href="https://www.glamoursphairluxury.com/sales"'))
+  assert.ok(html.includes('href="https://www.glamoursphairluxury.com/christmas-sales"'))
   assert.ok(html.includes('property="og:image"'))
   const config = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url)))
+  assert.deepEqual(config.rewrites.filter(item => item.source.startsWith('/christmas-sales')), [{ source: '/christmas-sales', destination: '/sales.html' }, { source: '/christmas-sales/', destination: '/sales.html' }])
   assert.deepEqual(config.rewrites.filter(item => item.source.startsWith('/sales')), [{ source: '/sales', destination: '/sales.html' }, { source: '/sales/', destination: '/sales.html' }])
   assert.ok(!config.rewrites.some(item => item.source.includes('api')))
-  assert.ok(readFileSync(new URL('../public/sitemap.xml', import.meta.url), 'utf8').includes('<loc>https://www.glamoursphairluxury.com/sales</loc>'))
+  assert.ok(readFileSync(new URL('../public/sitemap.xml', import.meta.url), 'utf8').includes('<loc>https://www.glamoursphairluxury.com/christmas-sales</loc>'))
+  assert.ok(!readFileSync(new URL('../public/sitemap.xml', import.meta.url), 'utf8').includes('<loc>https://www.glamoursphairluxury.com/sales</loc>'))
   assert.equal(NOVEMBER_SALE.maxDiscountPercent, 50)
   assert.equal(NOVEMBER_SALE.discountPercent, undefined)
   assert.ok(html.includes('up to 50% off selected luxury hair pieces'))

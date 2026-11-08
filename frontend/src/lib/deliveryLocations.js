@@ -13,11 +13,18 @@ const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 export const countries = letters.split('').flatMap(first => letters.split('').flatMap(second => {
   const code = `${first}${second}`
   const name = regionNames.of(code)
-  return name && name !== code ? [{ code, name }] : []
+  return name && name !== code && code !== 'UK' ? [{ code, name }] : []
 })).sort((a, b) => a.name.localeCompare(b.name))
 
+export function normalizeCountryCode(countryCode) {
+  const value = String(countryCode ?? '').trim().toUpperCase()
+  if (['UK', 'UNITED KINGDOM', 'UNITED KINGDOM OF GREAT BRITAIN AND NORTHERN IRELAND'].includes(value)) return 'GB'
+  return value
+}
+
 export function deliveryOptionsForCountry(countryCode) {
+  const normalizedCode = normalizeCountryCode(countryCode)
   return deliveryLocations.filter(location => location.countryCodes.includes('*')
-    ? !['NG', 'GB', 'US', 'CA'].includes(countryCode)
-    : location.countryCodes.includes(countryCode))
+    ? !['NG', 'GB', 'US', 'CA'].includes(normalizedCode)
+    : location.countryCodes.includes(normalizedCode))
 }

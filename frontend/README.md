@@ -89,7 +89,7 @@ Implementation, database boundaries and QA are recorded in `../docs/PRODUCTS_PAG
 
 ## Christmas Sales
 
-`/sales` is the dedicated campaign storefront for **9-15 November 2026**, Africa/Lagos. Before opening it is a preview; checkout is enforced server-side only between 00:00 on 9 November and 00:00 on 16 November. The page shows the closed-sale state afterwards. There is no client date override in production.
+`/christmas-sales` is the dedicated campaign storefront for **9-15 November 2026**, Africa/Lagos. The previous `/sales` URL remains a working alias. Before opening it is a preview; checkout is enforced server-side only between 00:00 on 9 November and 00:00 on 16 November. The page shows the closed-sale state afterwards. There is no client date override in production.
 
 - Use **Christmas Sales** in the admin inventory rows or product editor to select sale members. The selection is independent of Homepage, Products page and the primary collection. Inventory drag order also controls sale order. Do not restore deletion tombstones to populate the sale.
 - Existing installations need `supabase-christmas-sales.sql` once. It adds `in_christmas_sale` and initializes the existing two selections without altering prices, collections or deletions. Sale controls remain disabled until the column is detected. This migration was applied and verified for the live project; see `../docs/CHRISTMAS_SALES_HANDOFF.md`.

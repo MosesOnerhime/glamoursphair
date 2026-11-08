@@ -13,7 +13,7 @@ Checkout offers only the owner-approved delivery and collection options. Prices 
 | Other countries | NGN 169,000 |
 | Pick up at Abuja studio | Free |
 
-The country selector lists all two-letter region entries supported by the browser's English `Intl.DisplayNames` data. Nigeria, the United Kingdom, the United States and Canada are excluded from the Other countries option. Countries are selected first; the delivery option list then shows only options valid for that country. Nigeria offers Abuja, Within Nigeria and studio pickup.
+The country selector lists two-letter region entries supported by the browser's English `Intl.DisplayNames` data, using canonical country codes (for example, `GB`; the deprecated duplicate `UK` alias is omitted). Nigeria, the United Kingdom, the United States and Canada are excluded from the Other countries option. Countries are selected first; the delivery option list then shows only options valid for that country. Nigeria offers Abuja, Within Nigeria and studio pickup.
 
 ## Checkout behavior
 
@@ -41,4 +41,4 @@ Unit/API tests cover all fee mappings, international countries, checkout amount 
 
 QA completed November 8, 2026: 85 unit/API tests passed; ESLint and the TypeScript/Vite production build passed; all 24 desktop/mobile Playwright tests passed. The browser tests verify international option filtering and regular checkout address fields, as well as sale totals and responsive behavior. The responsive sweep covers 360, 430, 768, 1024, 1280 and 1920 CSS pixels. The sweep has a 120-second test budget because it repeatedly loads the catalogue, admin and sales page at each width. No real payment was created.
 
-After the regular cart form was aligned with the reference's separate address, city and state fields, the focused desktop/mobile checkout tests passed again, along with the 85 unit/API tests, lint and production build.
+After the regular cart form was aligned with the reference's separate address, city and state fields, the focused desktop/mobile checkout tests passed again, along with the 85 unit/API tests, lint and production build. The UK alias regression is covered by a canonical country-list assertion, alias normalization tests, a server-priced UK quote test, and desktop/mobile checkout UI checks for the UK delivery option and fee.
