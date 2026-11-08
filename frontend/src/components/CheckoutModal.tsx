@@ -60,6 +60,8 @@ interface Receipt {
   deliveryLocation: string
   deliveryCountry: string
   deliveryAddress: string
+  deliveryCity: string
+  deliveryState: string
   total: string
   currency: CurrencyCode
   symbol: string
@@ -74,6 +76,8 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
   const [deliveryLocationId, setDeliveryLocationId] = useState('')
   const [deliveryCountryCode, setDeliveryCountryCode] = useState('NG')
   const [deliveryAddress, setDeliveryAddress] = useState('')
+  const [deliveryCity, setDeliveryCity] = useState('')
+  const [deliveryState, setDeliveryState] = useState('')
   const [currencies, setCurrencies] = useState<Currency[]>(fallbackCurrencies)
   const [currency, setCurrency] = useState<Currency>(fallbackCurrencies[0])
   const [rateStatus, setRateStatus] = useState<'idle' | 'loading' | 'live' | 'cached' | 'fallback'>('idle')
@@ -199,6 +203,8 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
     const trimmedEmail = email.trim()
     const trimmedPhone = phone.trim()
     const trimmedAddress = deliveryAddress.trim()
+    const trimmedCity = deliveryCity.trim()
+    const trimmedState = deliveryState.trim()
 
     const nextFieldErrors: Record<string, string> = {}
     if (!trimmedName) nextFieldErrors.name = 'Enter your full name.'
@@ -207,6 +213,8 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
     if (!trimmedPhone) nextFieldErrors.phone = 'Enter your phone number.'
     if (!selectedDelivery) nextFieldErrors.deliveryLocation = 'Choose a delivery location.'
     if (!isPickup && !trimmedAddress) nextFieldErrors.deliveryAddress = 'Enter the full delivery address.'
+    if (!isPickup && !trimmedCity) nextFieldErrors.deliveryCity = 'Enter the delivery city.'
+    if (!isPickup && !trimmedState) nextFieldErrors.deliveryState = 'Enter the state or region.'
 
     if (items.length === 0) {
       setError('Your cart is empty.')
@@ -245,6 +253,8 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
             { display_name: 'Delivery Location', variable_name: 'delivery_location', value: selectedDelivery!.label },
             { display_name: 'Delivery Country', variable_name: 'delivery_country', value: deliveryCountry?.name ?? '' },
             { display_name: 'Delivery Address', variable_name: 'delivery_address', value: isPickup ? selectedDelivery!.note : trimmedAddress },
+            { display_name: 'Delivery City', variable_name: 'delivery_city', value: isPickup ? 'Abuja' : trimmedCity },
+            { display_name: 'Delivery State', variable_name: 'delivery_state', value: isPickup ? 'FCT' : trimmedState },
             { display_name: 'Delivery Fee', variable_name: 'delivery_fee', value: formatMoney(deliveryFeeNgn, fallbackCurrencies[0]) },
             { display_name: 'Order Summary', variable_name: 'order_summary', value: orderSummary },
           ],
@@ -306,6 +316,8 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
       deliveryLocation: selectedDelivery?.label ?? 'Not selected',
       deliveryCountry: deliveryCountry?.name ?? '',
       deliveryAddress: isPickup ? selectedDelivery!.note : deliveryAddress.trim(),
+      deliveryCity: isPickup ? 'Abuja' : deliveryCity.trim(),
+      deliveryState: isPickup ? 'FCT' : deliveryState.trim(),
       total: displayTotal,
       currency: 'NGN',
       symbol: fallbackCurrencies[0].symbol,
@@ -328,6 +340,8 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
           delivery_location: receiptData.deliveryLocation,
           delivery_country: receiptData.deliveryCountry,
           delivery_address: receiptData.deliveryAddress,
+          delivery_city: receiptData.deliveryCity,
+          delivery_state: receiptData.deliveryState,
           delivery_fee: receiptData.deliveryFee,
           subtotal: receiptData.subtotal,
           total: receiptData.total,
@@ -348,6 +362,8 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
           delivery_location: receiptData.deliveryLocation,
           delivery_country: receiptData.deliveryCountry,
           delivery_address: receiptData.deliveryAddress,
+          delivery_city: receiptData.deliveryCity,
+          delivery_state: receiptData.deliveryState,
           delivery_fee: receiptData.deliveryFee,
           subtotal: receiptData.subtotal,
           total: receiptData.total,
@@ -368,7 +384,7 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
   const whatsappConfirm = () => {
     if (!receipt) return
     const msg = encodeURIComponent(
-      `Hello GLAMOURSPHAIR! I just completed payment.\n\n*Name:* ${receipt.name}\n*Reference:* ${receipt.reference}\n*Delivery:* ${receipt.deliveryLocation}\n*Address:* ${receipt.deliveryAddress}\n*Total:* ${receipt.total}\n\nPlease confirm my order. Thank you!`
+      `Hello GLAMOURSPHAIR! I just completed payment.\n\n*Name:* ${receipt.name}\n*Reference:* ${receipt.reference}\n*Delivery:* ${receipt.deliveryLocation}\n*Address:* ${receipt.deliveryAddress}\n*City:* ${receipt.deliveryCity}\n*State:* ${receipt.deliveryState}\n*Country:* ${receipt.deliveryCountry}\n*Total:* ${receipt.total}\n\nPlease confirm my order. Thank you!`
     )
     window.open(`https://wa.me/${WHATSAPP}?text=${msg}`, '_blank')
   }
@@ -486,6 +502,7 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
                 <p>Delivery: <span className="text-neutral-300">{receipt.deliveryLocation}</span></p>
                 <p>Country: <span className="text-neutral-300">{receipt.deliveryCountry}</span></p>
                 <p>Address: <span className="text-neutral-300">{receipt.deliveryAddress}</span></p>
+                <p>City / State: <span className="text-neutral-300">{receipt.deliveryCity}, {receipt.deliveryState}</span></p>
                 <p>Ref: <span className="text-neutral-300">{receipt.reference}</span></p>
                 <p>GLAMOURSPHAIR Abuja studio</p>
               </div>
@@ -637,10 +654,10 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
               {selectedDelivery && (
                 <p className="text-neutral-600 text-xs">{selectedDelivery.note}</p>
               )}
-              {isPickup ? <p className="text-neutral-400 text-sm">Pick up at the Abuja studio: {selectedDelivery.note}</p> : <><label htmlFor="delivery-address" className="block text-sm font-medium text-neutral-300">Full delivery address</label><textarea
+              {isPickup ? <p className="text-neutral-400 text-sm">Pick up at the Abuja studio: {selectedDelivery.note}</p> : <><label htmlFor="delivery-address" className="block text-sm font-medium text-neutral-300">Full address</label><textarea
                 id="delivery-address"
                 name="street-address"
-                placeholder="Full delivery address"
+                placeholder="Street address and building details"
                 value={deliveryAddress}
                 onChange={e => {
                   setDeliveryAddress(e.target.value)
@@ -653,6 +670,18 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
                 className="w-full resize-none border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-neutral-600 focus:border-[#c9a84c]/50 aria-[invalid=true]:border-red-400"
               />
               {fieldErrors.deliveryAddress && <p id="delivery-address-error" className="text-xs text-red-400">{fieldErrors.deliveryAddress}</p>}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <label htmlFor="delivery-city" className="block text-sm font-medium text-neutral-300">City</label>
+                  <input id="delivery-city" name="shipping locality" autoComplete="shipping address-level2" placeholder="City" value={deliveryCity} onChange={event => { setDeliveryCity(event.target.value); setFieldErrors(current => ({ ...current, deliveryCity: '' })) }} aria-invalid={Boolean(fieldErrors.deliveryCity)} aria-describedby={fieldErrors.deliveryCity ? 'delivery-city-error' : undefined} className="w-full border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-neutral-600 focus:border-[#c9a84c]/50 aria-[invalid=true]:border-red-400" />
+                  {fieldErrors.deliveryCity && <p id="delivery-city-error" className="text-xs text-red-400">{fieldErrors.deliveryCity}</p>}
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="delivery-state" className="block text-sm font-medium text-neutral-300">State / region</label>
+                  <input id="delivery-state" name="shipping region" autoComplete="shipping address-level1" placeholder="State / region" value={deliveryState} onChange={event => { setDeliveryState(event.target.value); setFieldErrors(current => ({ ...current, deliveryState: '' })) }} aria-invalid={Boolean(fieldErrors.deliveryState)} aria-describedby={fieldErrors.deliveryState ? 'delivery-state-error' : undefined} className="w-full border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-neutral-600 focus:border-[#c9a84c]/50 aria-[invalid=true]:border-red-400" />
+                  {fieldErrors.deliveryState && <p id="delivery-state-error" className="text-xs text-red-400">{fieldErrors.deliveryState}</p>}
+                </div>
+              </div>
               </>}
             </div>
 

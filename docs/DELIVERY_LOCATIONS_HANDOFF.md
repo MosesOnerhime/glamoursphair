@@ -18,6 +18,7 @@ The country selector lists all two-letter region entries supported by the browse
 ## Checkout behavior
 
 - The regular cart checkout and Christmas Sales checkout share the same rates and country mapping from `frontend/src/lib/deliveryLocations.js`.
+- Both checkouts collect a separate street address, city, state/region and country for delivery, then offer only the applicable shipping option(s).
 - The sale API independently validates the submitted country and delivery option, and computes the delivery amount in kobo before initializing Paystack. A customer's browser cannot choose a different fee by changing the submitted amount.
 - Pickup is zero-cost, skips street/city/state entry, and records the confirmed studio address: 3rd Floor, Cappador Galaxy Mall, 81 Aminu Kano Crescent, Wuse 2, Abuja, Nigeria.
 - The country and selected delivery method/fee are included in checkout details and the order receipt/payment metadata.
@@ -38,4 +39,6 @@ npm run test:ui
 
 Unit/API tests cover all fee mappings, international countries, checkout amount calculation and free pickup validation. Browser tests exercise the sale checkout and responsive layout. No real Paystack payment should be initiated during QA.
 
-QA completed November 8, 2026: 85 unit/API tests passed; ESLint and the TypeScript/Vite production build passed; all 24 desktop/mobile Playwright tests passed. The responsive sweep covers 360, 430, 768, 1024, 1280 and 1920 CSS pixels. The sweep has a 120-second test budget because it repeatedly loads the catalogue, admin and sales page at each width. No real payment was created.
+QA completed November 8, 2026: 85 unit/API tests passed; ESLint and the TypeScript/Vite production build passed; all 24 desktop/mobile Playwright tests passed. The browser tests verify international option filtering and regular checkout address fields, as well as sale totals and responsive behavior. The responsive sweep covers 360, 430, 768, 1024, 1280 and 1920 CSS pixels. The sweep has a 120-second test budget because it repeatedly loads the catalogue, admin and sales page at each width. No real payment was created.
+
+After the regular cart form was aligned with the reference's separate address, city and state fields, the focused desktop/mobile checkout tests passed again, along with the 85 unit/API tests, lint and production build.
