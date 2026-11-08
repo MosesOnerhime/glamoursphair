@@ -4,7 +4,7 @@ import { FaWhatsapp } from 'react-icons/fa'
 import emailjs from '@emailjs/browser'
 import type { CartItem } from '../types'
 import { useDialogA11y } from '../hooks/useDialogA11y'
-import { deliveryLocations } from '../lib/deliveryLocations.js'
+import { countries, deliveryLocations, deliveryOptionsForCountry } from '../lib/deliveryLocations.js'
 
 interface CheckoutModalProps {
   open: boolean
@@ -58,6 +58,7 @@ interface Receipt {
   subtotal: string
   deliveryFee: string
   deliveryLocation: string
+  deliveryCountry: string
   deliveryAddress: string
   total: string
   currency: CurrencyCode
@@ -71,6 +72,7 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [deliveryLocationId, setDeliveryLocationId] = useState('')
+  const [deliveryCountryCode, setDeliveryCountryCode] = useState('NG')
   const [deliveryAddress, setDeliveryAddress] = useState('')
   const [currencies, setCurrencies] = useState<Currency[]>(fallbackCurrencies)
   const [currency, setCurrency] = useState<Currency>(fallbackCurrencies[0])
@@ -152,6 +154,8 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
   }, [open])
 
   const selectedDelivery = deliveryLocations.find(location => location.id === deliveryLocationId)
+  const isPickup = selectedDelivery?.id === 'pickup'
+  const deliveryCountry = countries.find(country => country.code === deliveryCountryCode)
   const subtotalNgn = items.reduce((sum, i) => sum + i.price * i.qty, 0)
   const deliveryFeeNgn = selectedDelivery?.fee ?? 0
   const orderTotalNgn = subtotalNgn + deliveryFeeNgn
@@ -175,6 +179,7 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
   const orderSummary = [
     ...items.map(i => `${i.name} x${i.qty} - ${formatMoney(i.price * i.qty, fallbackCurrencies[0])}`),
     `Subtotal: ${subtotalDisplay}`,
+    deliveryCountry ? `Country: ${deliveryCountry.name}` : 'Country: Not selected',
     selectedDelivery ? `Delivery (${selectedDelivery.label}): ${deliveryFeeDisplay}` : 'Delivery: Not selected',
     `Total: ${displayTotal}`,
   ].join('\n')
@@ -201,7 +206,7 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
     else if (!/\S+@\S+\.\S+/.test(trimmedEmail)) nextFieldErrors.email = 'Enter a valid email address.'
     if (!trimmedPhone) nextFieldErrors.phone = 'Enter your phone number.'
     if (!selectedDelivery) nextFieldErrors.deliveryLocation = 'Choose a delivery location.'
-    if (!trimmedAddress) nextFieldErrors.deliveryAddress = 'Enter the full delivery address.'
+    if (!isPickup && !trimmedAddress) nextFieldErrors.deliveryAddress = 'Enter the full delivery address.'
 
     if (items.length === 0) {
       setError('Your cart is empty.')
@@ -238,7 +243,8 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
             { display_name: 'Customer Name', variable_name: 'customer_name', value: trimmedName },
             { display_name: 'Phone', variable_name: 'phone', value: trimmedPhone },
             { display_name: 'Delivery Location', variable_name: 'delivery_location', value: selectedDelivery!.label },
-            { display_name: 'Delivery Address', variable_name: 'delivery_address', value: trimmedAddress },
+            { display_name: 'Delivery Country', variable_name: 'delivery_country', value: deliveryCountry?.name ?? '' },
+            { display_name: 'Delivery Address', variable_name: 'delivery_address', value: isPickup ? selectedDelivery!.note : trimmedAddress },
             { display_name: 'Delivery Fee', variable_name: 'delivery_fee', value: formatMoney(deliveryFeeNgn, fallbackCurrencies[0]) },
             { display_name: 'Order Summary', variable_name: 'order_summary', value: orderSummary },
           ],
@@ -298,7 +304,8 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
       subtotal: subtotalDisplay,
       deliveryFee: selectedDelivery ? deliveryFeeDisplay : formatMoney(0),
       deliveryLocation: selectedDelivery?.label ?? 'Not selected',
-      deliveryAddress: deliveryAddress.trim(),
+      deliveryCountry: deliveryCountry?.name ?? '',
+      deliveryAddress: isPickup ? selectedDelivery!.note : deliveryAddress.trim(),
       total: displayTotal,
       currency: 'NGN',
       symbol: fallbackCurrencies[0].symbol,
@@ -319,6 +326,7 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
           customer_email: receiptData.email,
           order_summary: orderSummary,
           delivery_location: receiptData.deliveryLocation,
+          delivery_country: receiptData.deliveryCountry,
           delivery_address: receiptData.deliveryAddress,
           delivery_fee: receiptData.deliveryFee,
           subtotal: receiptData.subtotal,
@@ -338,6 +346,7 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
           customer_phone: phone.trim(),
           order_summary: orderSummary,
           delivery_location: receiptData.deliveryLocation,
+          delivery_country: receiptData.deliveryCountry,
           delivery_address: receiptData.deliveryAddress,
           delivery_fee: receiptData.deliveryFee,
           subtotal: receiptData.subtotal,
@@ -475,6 +484,7 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
               <div className="h-px bg-white/5" />
               <div className="space-y-1 text-xs text-neutral-500">
                 <p>Delivery: <span className="text-neutral-300">{receipt.deliveryLocation}</span></p>
+                <p>Country: <span className="text-neutral-300">{receipt.deliveryCountry}</span></p>
                 <p>Address: <span className="text-neutral-300">{receipt.deliveryAddress}</span></p>
                 <p>Ref: <span className="text-neutral-300">{receipt.reference}</span></p>
                 <p>GLAMOURSPHAIR Abuja studio</p>
@@ -588,7 +598,22 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
             {/* Delivery details */}
             <div className="space-y-3">
               <h3 className="text-neutral-400 text-xs uppercase tracking-widest">Delivery Location</h3>
-              <label htmlFor="delivery-location" className="block text-sm font-medium text-neutral-300">Delivery area</label>
+              <label htmlFor="delivery-country" className="block text-sm font-medium text-neutral-300">Country</label>
+              <select
+                id="delivery-country"
+                name="delivery-country"
+                autoComplete="shipping country"
+                value={deliveryCountryCode}
+                onChange={event => {
+                  setDeliveryCountryCode(event.target.value)
+                  setDeliveryLocationId('')
+                  setFieldErrors(current => ({ ...current, deliveryLocation: '' }))
+                }}
+                className="w-full border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none transition-colors focus:border-[#c9a84c]/50"
+              >
+                {countries.map(country => <option key={country.code} value={country.code}>{country.name}</option>)}
+              </select>
+              <label htmlFor="delivery-location" className="block text-sm font-medium text-neutral-300">Delivery option</label>
               <select
                 id="delivery-location"
                 name="delivery-location"
@@ -601,8 +626,8 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
                 aria-describedby={fieldErrors.deliveryLocation ? 'delivery-location-error' : undefined}
                 className="w-full border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none transition-colors focus:border-[#c9a84c]/50 aria-[invalid=true]:border-red-400"
               >
-                <option value="">Choose delivery area</option>
-                {deliveryLocations.map(location => (
+                <option value="">Select delivery option</option>
+                {deliveryOptionsForCountry(deliveryCountryCode).map(location => (
                   <option key={location.id} value={location.id}>
                     {location.label} - {formatMoney(location.fee, fallbackCurrencies[0])}
                   </option>
@@ -612,8 +637,7 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
               {selectedDelivery && (
                 <p className="text-neutral-600 text-xs">{selectedDelivery.note}</p>
               )}
-              <label htmlFor="delivery-address" className="block text-sm font-medium text-neutral-300">Full delivery address</label>
-              <textarea
+              {isPickup ? <p className="text-neutral-400 text-sm">Pick up at the Abuja studio: {selectedDelivery.note}</p> : <><label htmlFor="delivery-address" className="block text-sm font-medium text-neutral-300">Full delivery address</label><textarea
                 id="delivery-address"
                 name="street-address"
                 placeholder="Full delivery address"
@@ -629,6 +653,7 @@ export default function CheckoutModal({ open, onClose, items, onSuccess }: Check
                 className="w-full resize-none border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-neutral-600 focus:border-[#c9a84c]/50 aria-[invalid=true]:border-red-400"
               />
               {fieldErrors.deliveryAddress && <p id="delivery-address-error" className="text-xs text-red-400">{fieldErrors.deliveryAddress}</p>}
+              </>}
             </div>
 
             {/* Customer details */}

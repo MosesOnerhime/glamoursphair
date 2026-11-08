@@ -1,11 +1,23 @@
-// Existing storefront fees, shared with server-side sale checkout calculations.
+// Shared checkout options; prices are NGN and must stay aligned with server quotes.
 export const deliveryLocations = [
-  { id: 'uk', countryCode: 'GB', country: 'United Kingdom', label: 'UK', fee: 80000, note: 'Within the United Kingdom' },
-  { id: 'usa', countryCode: 'US', country: 'United States', label: 'USA', fee: 98000, note: 'Within the United States of America' },
-  { id: 'uae', countryCode: 'AE', country: 'United Arab Emirates', label: 'UAE', fee: 125000, note: 'Anywhere in the United Arab Emirates' },
-  { id: 'african-countries', countryCode: 'AFRICA', country: 'Other African countries', label: 'Other African Countries', fee: 90000, note: 'Any country within Africa asides Nigeria' },
-  { id: 'within-nigeria', countryCode: 'NG', country: 'Nigeria', label: 'Within Nigeria', fee: 10000, note: 'Any state within Nigeria' },
-  { id: 'abuja', countryCode: 'NG', country: 'Nigeria', label: 'Abuja', fee: 4000, note: 'Within Abuja' },
-  { id: 'canada', countryCode: 'CA', country: 'Canada', label: 'Canada', fee: 88000, note: 'Within Canada' },
-  { id: 'italy', countryCode: 'IT', country: 'Italy', label: 'Italy', fee: 115000, note: 'Within Italy' },
+  { id: 'abuja', countryCodes: ['NG'], label: 'Abuja', fee: 5000, note: 'Delivery within Abuja' },
+  { id: 'within-nigeria', countryCodes: ['NG'], label: 'Within Nigeria', fee: 10000, note: 'Delivery elsewhere in Nigeria' },
+  { id: 'uk', countryCodes: ['GB'], label: 'UK', fee: 89000, note: 'Delivery within the United Kingdom' },
+  { id: 'usa-canada', countryCodes: ['US', 'CA'], label: 'USA / Canada', fee: 98000, note: 'Delivery to the United States or Canada' },
+  { id: 'other-countries', countryCodes: ['*'], label: 'Other countries', fee: 169000, note: 'Delivery to other international destinations' },
+  { id: 'pickup', countryCodes: ['NG'], label: 'Pick up at Abuja studio', fee: 0, note: 'Collect from 3rd Floor, Cappador Galaxy Mall, 81 Aminu Kano Crescent, Wuse 2, Abuja, Nigeria' },
 ]
+
+const regionNames = new Intl.DisplayNames(['en'], { type: 'region' })
+const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+export const countries = letters.split('').flatMap(first => letters.split('').flatMap(second => {
+  const code = `${first}${second}`
+  const name = regionNames.of(code)
+  return name && name !== code ? [{ code, name }] : []
+})).sort((a, b) => a.name.localeCompare(b.name))
+
+export function deliveryOptionsForCountry(countryCode) {
+  return deliveryLocations.filter(location => location.countryCodes.includes('*')
+    ? !['NG', 'GB', 'US', 'CA'].includes(countryCode)
+    : location.countryCodes.includes(countryCode))
+}

@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { createSalesHandler } from '../api/sales.js'
 import { NOVEMBER_SALE, salePhase, salePrices, saleProducts } from '../src/lib/novemberSale.js'
 import { quoteSale, sameSignature, signOrder, verificationToken } from '../server/salesService.js'
-import { deliveryLocations } from '../src/lib/deliveryLocations.js'
+import { countries, deliveryLocations, deliveryOptionsForCountry } from '../src/lib/deliveryLocations.js'
 
 process.env.SUPABASE_URL = 'https://inventory.test.invalid'
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'local-fake-supabase-key'
@@ -15,7 +15,7 @@ const rows = [
   { id: 112, name: 'SDD Luxury Bone Straight 18" 5 by 5', slug: 'sdd-luxury-bone-straight-18-13x4', price: 345000, description: 'Verified catalogue description', image: '/images/SDD luxury bone straight length 18 volume 330 fitting 13 by 4.jpeg', show_in_catalog: true },
 ]
 const catalogue = rows.map(row => ({ ...row, originalPrice: row.original_price, images: row.images, showInCatalog: row.show_in_catalog }))
-const validBody = () => ({ action: 'initialize', items: [{ id: 11, qty: 1 }], expectedAmountKobo: 65400000,
+const validBody = () => ({ action: 'initialize', items: [{ id: 11, qty: 1 }], expectedAmountKobo: 65500000,
   customer: { name: 'Local QA Buyer', email: 'buyer@example.test', phone: '+2348000000000' },
   shipping: { deliveryLocationId: 'abuja', countryCode: 'NG', address: 'Local QA address', city: 'Abuja', state: 'FCT', deliveryNote: '', isGift: false },
 })
@@ -99,16 +99,22 @@ test('quantity, mixed-product discount and delivery are calculated in kobo', () 
   const quote = quoteSale([{ id: 11, qty: 1 }, { id: 112, qty: 1 }], catalogue, 'abuja')
   assert.equal(quote.subtotalKobo, 99500000)
   assert.equal(quote.savingsKobo, 20000000)
-  assert.equal(quote.deliveryFeeKobo, 400000)
-  assert.equal(quote.totalKobo, 99900000)
-  assert.equal(quoteSale([{ id: 112, qty: 2 }], catalogue, 'uk').totalKobo, 77000000)
+  assert.equal(quote.deliveryFeeKobo, 500000)
+  assert.equal(quote.totalKobo, 100000000)
+  assert.equal(quoteSale([{ id: 112, qty: 2 }], catalogue, 'uk').totalKobo, 77900000)
   const mixed = quoteSale([{ id: 11, qty: 2 }, { id: 112, qty: 3 }], [catalogue[0], { ...catalogue[1], originalPrice: 690000 }], 'abuja')
   assert.equal(mixed.subtotalKobo, 233500000)
   assert.equal(mixed.savingsKobo, 143500000)
-  assert.equal(mixed.totalKobo, 233900000)
+  assert.equal(mixed.totalKobo, 234000000)
 })
-test('existing delivery fee amounts remain unchanged', () => {
-  assert.deepEqual(Object.fromEntries(deliveryLocations.map(item => [item.id, item.fee])), { uk: 80000, usa: 98000, uae: 125000, 'african-countries': 90000, 'within-nigeria': 10000, abuja: 4000, canada: 88000, italy: 115000 })
+test('approved delivery options and fee bands match across countries', () => {
+  assert.deepEqual(Object.fromEntries(deliveryLocations.map(item => [item.id, item.fee])), { abuja: 5000, 'within-nigeria': 10000, uk: 89000, 'usa-canada': 98000, 'other-countries': 169000, pickup: 0 })
+  assert.deepEqual(deliveryLocations.map(item => item.id), ['abuja', 'within-nigeria', 'uk', 'usa-canada', 'other-countries', 'pickup'])
+  for (const code of ['FR', 'JP', 'AU', 'BR']) assert.deepEqual(deliveryOptionsForCountry(code).map(item => item.id), ['other-countries'])
+  assert.deepEqual(deliveryOptionsForCountry('GB').map(item => item.id), ['uk'])
+  assert.deepEqual(deliveryOptionsForCountry('CA').map(item => item.id), ['usa-canada'])
+  assert.deepEqual(deliveryOptionsForCountry('NG').map(item => item.id), ['abuja', 'within-nigeria', 'pickup'])
+  assert.ok(countries.some(country => country.code === 'JP' && country.name === 'Japan'))
 })
 test('invalid bags, quantities and removed products are rejected before payment', () => {
   for (const items of [[], [{ id: 11, qty: 0 }], [{ id: 11, qty: 21 }], [{ id: 11, qty: 1.5 }], [{ id: '11', qty: 1 }], [{ id: 11, qty: 1 }, { id: 11, qty: 1 }], [{ id: 999, qty: 1 }]]) assert.throws(() => quoteSale(items, catalogue, 'abuja'))
@@ -137,11 +143,11 @@ test('API maps saved original prices and reflects admin price changes without a 
   assert.equal(updated.body.products[0].discountPercent, 50)
   const staleQuote = await state.send(validBody())
   assert.equal(staleQuote.statusCode, 409)
-  assert.equal(staleQuote.body.quote.totalKobo, 30400000)
+  assert.equal(staleQuote.body.quote.totalKobo, 30500000)
   assert.equal(state.transactions.size, 0)
-  const initialized = await state.send({ ...validBody(), expectedAmountKobo: 30400000 })
+  const initialized = await state.send({ ...validBody(), expectedAmountKobo: 30500000 })
   assert.equal(initialized.statusCode, 200)
-  assert.equal(state.transactions.get(initialized.body.reference).amount, 30400000)
+  assert.equal(state.transactions.get(initialized.body.reference).amount, 30500000)
 })
 
 test('initialization ignores browser-supplied prices and sends the server quote to Paystack', async () => {
@@ -150,9 +156,9 @@ test('initialization ignores browser-supplied prices and sends the server quote 
   const res = await state.send(body)
   assert.equal(res.statusCode, 200)
   const transaction = state.transactions.get(res.body.reference)
-  assert.equal(transaction.amount, 65400000)
+  assert.equal(transaction.amount, 65500000)
   assert.equal(transaction.currency, 'NGN')
-  assert.equal(transaction.metadata.glamoursphairSale.order.quote.totalKobo, 65400000)
+  assert.equal(transaction.metadata.glamoursphairSale.order.quote.totalKobo, 65500000)
   assert.equal(transaction.metadata.glamoursphairSale.order.quote.items[0].regularKobo, 85000000)
   assert.equal(transaction.metadata.glamoursphairSale.signature, signOrder(transaction.metadata.glamoursphairSale.order, secret))
   assert.match(res.body.reference, /^GLAM-NOV-[a-f0-9-]{36}$/)
@@ -162,7 +168,7 @@ test('changed totals are shown for review and never silently charged', async () 
   const state = harness(); const body = validBody(); body.expectedAmountKobo = 1
   const res = await state.send(body)
   assert.equal(res.statusCode, 409)
-  assert.equal(res.body.quote.totalKobo, 65400000)
+  assert.equal(res.body.quote.totalKobo, 65500000)
   assert.equal(state.transactions.size, 0)
 })
 test('sale cannot be paid before opening or after closing', async () => {
@@ -172,7 +178,7 @@ test('sale cannot be paid before opening or after closing', async () => {
   }
 })
 test('customer, shipping, region and gift recipient are validated', async () => {
-  const mutations = [body => { body.customer.email = 'invalid' }, body => { body.customer.phone = '1' }, body => { body.shipping.address = '' }, body => { body.shipping.countryCode = 'GB' }, body => { body.shipping.isGift = true }, body => { body.shipping.recipientPhone = '1'; body.shipping.isGift = true; body.shipping.recipientName = 'Recipient' }]
+  const mutations = [body => { body.customer.email = 'invalid' }, body => { body.customer.phone = '1' }, body => { body.shipping.address = '' }, body => { body.shipping.countryCode = 'GB' }, body => { body.shipping.countryCode = 'JP' }, body => { body.shipping.deliveryLocationId = 'unknown' }, body => { body.shipping.isGift = true }, body => { body.shipping.recipientPhone = '1'; body.shipping.isGift = true; body.shipping.recipientName = 'Recipient' }]
   for (const mutate of mutations) {
     const state = harness(); const body = validBody(); mutate(body); const res = await state.send(body)
     assert.equal(res.statusCode, 400); assert.equal(state.transactions.size, 0)
@@ -181,6 +187,23 @@ test('customer, shipping, region and gift recipient are validated', async () => 
   const res = await state.send(body); assert.equal(res.statusCode, 200)
   assert.equal(state.transactions.get(res.body.reference).metadata.glamoursphairSale.order.shipping.recipientName, 'QA Recipient')
 })
+
+test('pickup is free, uses the studio address and does not require a street address', async () => {
+  const state = harness()
+  const body = validBody()
+  body.shipping.deliveryLocationId = 'pickup'
+  body.shipping.address = ''
+  body.shipping.city = ''
+  body.shipping.state = ''
+  body.expectedAmountKobo = 65000000
+  const initialized = await state.send(body)
+  assert.equal(initialized.statusCode, 200)
+  const order = state.transactions.get(initialized.body.reference).metadata.glamoursphairSale.order
+  assert.equal(order.quote.deliveryFeeKobo, 0)
+  assert.equal(order.quote.totalKobo, 65000000)
+  assert.equal(order.shipping.country, 'Nigeria')
+  assert.match(order.shipping.address, /Cappador Galaxy Mall.*Abuja, Nigeria/)
+})
 test('verification requires the session token and signed server-created order', async () => {
   const state = harness(); const initialized = await state.send(validBody())
   const payload = { action: 'verify', reference: initialized.body.reference, verificationToken: initialized.body.verificationToken }
@@ -188,7 +211,7 @@ test('verification requires the session token and signed server-created order', 
   assert.equal(wrong.statusCode, 403)
   const verified = await state.send(payload)
   assert.equal(verified.statusCode, 200); assert.equal(verified.body.verified, true)
-  assert.equal(verified.body.order.quote.totalKobo, 65400000)
+  assert.equal(verified.body.order.quote.totalKobo, 65500000)
   const transaction = state.transactions.get(payload.reference)
   transaction.metadata.glamoursphairSale.order.quote.totalKobo = 1
   assert.equal((await state.send(payload)).statusCode, 409)
@@ -238,10 +261,8 @@ test('provider failure never returns a fake success or leaks secrets', async () 
 
 test('other African destinations require their actual country and preserve it for fulfilment', async () => {
   const state = harness(); const body = validBody()
-  Object.assign(body.shipping, { deliveryLocationId: 'african-countries', countryCode: 'AFRICA' })
-  body.expectedAmountKobo = 74000000
-  assert.equal((await state.send(body)).statusCode, 400)
-  body.shipping.countryName = 'Ghana'
+  Object.assign(body.shipping, { deliveryLocationId: 'other-countries', countryCode: 'GH' })
+  body.expectedAmountKobo = 81900000
   const initialized = await state.send(body)
   assert.equal(initialized.statusCode, 200)
   assert.equal(state.transactions.get(initialized.body.reference).metadata.glamoursphairSale.order.shipping.country, 'Ghana')

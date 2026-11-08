@@ -3,7 +3,7 @@ import type { FormEvent, ReactNode } from 'react'
 import { HiArrowLeft, HiCheckCircle, HiLockClosed, HiPrinter, HiX } from 'react-icons/hi'
 import { FaWhatsapp } from 'react-icons/fa'
 import { useDialogA11y } from '../hooks/useDialogA11y'
-import { deliveryLocations } from '../lib/deliveryLocations.js'
+import { countries, deliveryLocations, deliveryOptionsForCountry } from '../lib/deliveryLocations.js'
 import { openSaleGateway } from '../lib/salePayment'
 import {
   initializeSalePayment, koboMoney, money, readSalePayment, SALE_PAYMENT_KEY, verifySalePayment,
@@ -19,7 +19,7 @@ interface Props {
   onRefresh: () => void
 }
 const emptyShipping: SaleShipping = { countryCode: 'NG', countryName: '', address: '', city: '', state: '', deliveryLocationId: '', deliveryNote: '', isGift: false, recipientName: '', recipientPhone: '' }
-const countries = [...new Map(deliveryLocations.map(item => [item.countryCode, item.country])).entries()].sort(([a], [b]) => a === 'NG' ? -1 : b === 'NG' ? 1 : a.localeCompare(b))
+const studioAddress = '3rd Floor, Cappador Galaxy Mall, 81 Aminu Kano Crescent, Wuse 2, Abuja, Nigeria'
 
 function Field({ name, label, error, children }: { name: string; label: string; error?: string; children: ReactNode }) {
   return <div className="sale-field"><label htmlFor={`sale-${name}`}>{label}</label>{children}{error && <p id={`sale-${name}-error`} className="sale-field-error">{error}</p>}</div>
@@ -41,6 +41,8 @@ export default function SaleCheckout({ open, onClose, items, snapshot, onPaid, o
   const gatewayOpen = status === 'opening' || status === 'paying'
   const dialogRef = useDialogA11y<HTMLDivElement>(open, close, gatewayOpen)
   const region = deliveryLocations.find(item => item.id === shipping.deliveryLocationId)
+  const pickup = region?.id === 'pickup'
+  const selectedCountry = countries.find(item => item.code === shipping.countryCode)
   const offers = new Map(snapshot?.products.map(product => [product.id, product]))
   const subtotal = items.reduce((sum, item) => sum + (offers.get(item.id)?.price ?? 0) * item.qty, 0)
   const savings = items.reduce((sum, item) => { const product = offers.get(item.id); return sum + (product ? product.regularPrice - product.price : 0) * item.qty }, 0)
@@ -77,11 +79,12 @@ export default function SaleCheckout({ open, onClose, items, snapshot, onPaid, o
   function continueToPay(event: FormEvent) {
     event.preventDefault()
     const next: Record<string, string> = {}
-    for (const [key, label] of [['address', 'full address'], ['city', 'city'], ['state', 'state or region']] as const) {
-      if (!shipping[key].trim()) next[key] = `Enter your ${label}.`
+    if (!pickup) {
+      for (const [key, label] of [['address', 'full address'], ['city', 'city'], ['state', 'state or region']] as const) {
+        if (!shipping[key].trim()) next[key] = `Enter your ${label}.`
+      }
     }
-    if (!region || region.countryCode !== shipping.countryCode) next.deliveryLocationId = 'Choose a delivery region.'
-    if (shipping.countryCode === 'AFRICA' && !shipping.countryName.trim()) next.countryName = 'Enter the destination country.'
+    if (!region || !region.countryCodes.includes('*') && !region.countryCodes.includes(shipping.countryCode)) next.deliveryLocationId = 'Choose a delivery option for this country.'
     if (shipping.isGift) {
       if (!shipping.recipientName.trim()) next.recipientName = 'Enter the recipient name.'
       if (shipping.recipientPhone.replace(/\D/g, '').length < 7) next.recipientPhone = 'Enter a valid recipient phone number.'
@@ -191,17 +194,17 @@ export default function SaleCheckout({ open, onClose, items, snapshot, onPaid, o
         {step === 'shipping' ? <form className="sale-checkout-form" noValidate onSubmit={continueToPay}>
           <label className="sale-checkbox"><input type="checkbox" checked={shipping.isGift} onChange={event => updateShipping('isGift', event.target.checked)} /> Is this a gift?</label>
           {shipping.isGift && <fieldset className="sale-gift-fields"><legend>Recipient details</legend><Field name="recipientName" label="Recipient name" error={errors.recipientName}><input {...inputProps('recipientName')} autoComplete="shipping name" maxLength={120} value={shipping.recipientName} onChange={event => updateShipping('recipientName', event.target.value)} /></Field><Field name="recipientPhone" label="Recipient phone" error={errors.recipientPhone}><input {...inputProps('recipientPhone')} type="tel" autoComplete="shipping tel" maxLength={40} value={shipping.recipientPhone} onChange={event => updateShipping('recipientPhone', event.target.value)} /></Field></fieldset>}
-          <h3>Delivery address</h3>
-          <Field name="address" label="Full address" error={errors.address}><input {...inputProps('address')} autoComplete="shipping street-address" maxLength={300} value={shipping.address} onChange={event => updateShipping('address', event.target.value)} /></Field>
-          <div className="sale-field-row"><Field name="city" label="City" error={errors.city}><input {...inputProps('city')} autoComplete="shipping address-level2" maxLength={100} value={shipping.city} onChange={event => updateShipping('city', event.target.value)} /></Field><Field name="state" label="State / region" error={errors.state}><input {...inputProps('state')} autoComplete="shipping address-level1" maxLength={100} value={shipping.state} onChange={event => updateShipping('state', event.target.value)} /></Field></div>
-          <Field name="countryCode" label="Country"><select {...inputProps('countryCode')} autoComplete="shipping country" value={shipping.countryCode} onChange={event => setShipping(current => ({ ...current, countryCode: event.target.value, deliveryLocationId: '' }))}>{countries.map(([code, name]) => <option key={code} value={code}>{name}</option>)}</select></Field>
-          {shipping.countryCode === 'AFRICA' && <Field name="countryName" label="Destination country" error={errors.countryName}><input {...inputProps('countryName')} maxLength={100} value={shipping.countryName} onChange={event => updateShipping('countryName', event.target.value)} /></Field>}
+          <Field name="countryCode" label="Country"><select {...inputProps('countryCode')} autoComplete="shipping country" value={shipping.countryCode} onChange={event => setShipping(current => ({ ...current, countryCode: event.target.value, deliveryLocationId: '' }))}><option value="">Select a country</option>{countries.map(country => <option key={country.code} value={country.code}>{country.name}</option>)}</select></Field>
+          {!pickup ? <><h3>Delivery address</h3>
+            <Field name="address" label="Full address" error={errors.address}><input {...inputProps('address')} autoComplete="shipping street-address" maxLength={300} value={shipping.address} onChange={event => updateShipping('address', event.target.value)} /></Field>
+            <div className="sale-field-row"><Field name="city" label="City" error={errors.city}><input {...inputProps('city')} autoComplete="shipping address-level2" maxLength={100} value={shipping.city} onChange={event => updateShipping('city', event.target.value)} /></Field><Field name="state" label="State / region" error={errors.state}><input {...inputProps('state')} autoComplete="shipping address-level1" maxLength={100} value={shipping.state} onChange={event => updateShipping('state', event.target.value)} /></Field></div>
+          </> : <p className="sale-notice">Studio collection: {studioAddress}</p>}
           <Field name="deliveryNote" label="Delivery note (optional)"><textarea {...inputProps('deliveryNote')} rows={2} maxLength={500} value={shipping.deliveryNote} onChange={event => updateShipping('deliveryNote', event.target.value)} /></Field>
-          <Field name="deliveryLocationId" label="Shipping region" error={errors.deliveryLocationId}><select {...inputProps('deliveryLocationId')} value={shipping.deliveryLocationId} onChange={event => updateShipping('deliveryLocationId', event.target.value)}><option value="">Select a shipping region</option>{deliveryLocations.filter(item => item.countryCode === shipping.countryCode).map(item => <option key={item.id} value={item.id}>{item.label} — {money(item.fee)}</option>)}</select></Field>
+          <Field name="deliveryLocationId" label="Delivery option" error={errors.deliveryLocationId}><select {...inputProps('deliveryLocationId')} value={shipping.deliveryLocationId} onChange={event => updateShipping('deliveryLocationId', event.target.value)}><option value="">Select delivery option</option>{deliveryOptionsForCountry(shipping.countryCode).map(item => <option key={item.id} value={item.id}>{item.label} — {money(item.fee)}</option>)}</select></Field>
           <div className="sale-shipping-total"><span>Items {money(subtotal)}</span><strong>{region ? `Delivery ${money(region.fee)}` : 'Choose delivery region'}</strong></div>
           <button type="submit" className="sale-button">Continue to pay</button><button type="button" className="sale-text-button" onClick={onClose}><HiArrowLeft /> Back to sale</button>
         </form> : <form className="sale-checkout-form" noValidate onSubmit={event => void pay(event)}>
-          <div className="sale-address-review"><p>{shipping.isGift ? shipping.recipientName : 'Deliver to'}</p><address>{shipping.address}, {shipping.city}, {shipping.state}<br />{shipping.countryCode === 'AFRICA' ? shipping.countryName : region?.country}</address><button type="button" className="sale-text-button" onClick={() => setStep('shipping')}>Edit shipping</button></div>
+          <div className="sale-address-review"><p>{shipping.isGift ? shipping.recipientName : pickup ? 'Studio collection' : 'Deliver to'}</p><address>{pickup ? studioAddress : `${shipping.address}, ${shipping.city}, ${shipping.state}, ${selectedCountry?.name ?? ''}`}</address><button type="button" className="sale-text-button" onClick={() => setStep('shipping')}>Edit shipping</button></div>
           <Field name="name" label="Your full name" error={errors.name}><input {...inputProps('name')} autoComplete="billing name" maxLength={120} value={customer.name} onChange={event => updateCustomer('name', event.target.value)} /></Field>
           <Field name="email" label="Email address" error={errors.email}><input {...inputProps('email')} type="email" autoComplete="email" maxLength={200} value={customer.email} onChange={event => updateCustomer('email', event.target.value)} /></Field>
           <Field name="phone" label="Phone number" error={errors.phone}><input {...inputProps('phone')} type="tel" autoComplete="tel" maxLength={40} value={customer.phone} onChange={event => updateCustomer('phone', event.target.value)} /></Field>

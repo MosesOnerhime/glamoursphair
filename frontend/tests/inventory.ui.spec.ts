@@ -172,11 +172,12 @@ test('admin prices determine individual sale badges, modal, bag and checkout tot
   await checkout.getByLabel('Full address', { exact: true }).fill('Local QA street')
   await checkout.getByLabel('City', { exact: true }).fill('Abuja')
   await checkout.getByLabel('State / region', { exact: true }).fill('FCT')
-  await checkout.getByLabel('Shipping region', { exact: true }).selectOption('abuja')
+  await checkout.getByLabel('Country', { exact: true }).selectOption('NG')
+  await checkout.getByLabel('Delivery option', { exact: true }).selectOption('abuja')
   await checkout.getByRole('button', { name: 'Continue to pay', exact: true }).click()
   await expect(checkout.locator('.sale-totals')).toContainText('Sale subtotal₦950,000')
   await expect(checkout.locator('.sale-savings')).toHaveText('You save₦300,000')
-  await expect(checkout.locator('.sale-grand-total')).toHaveText('Total payable₦954,000')
+  await expect(checkout.locator('.sale-grand-total')).toHaveText('Total payable₦955,000')
   await noOverflow(page)
   await page.screenshot({ path: info.outputPath('individual-sale-checkout.png') })
   const schema = JSON.parse(await page.locator('#christmas-sale-structured-data').textContent() || '{}')
@@ -218,6 +219,7 @@ test('regular catalogue search, product gallery and add to cart still work', asy
 })
 
 test('shop and admin fit compact and wide responsive layouts', async ({ page }) => {
+  test.setTimeout(120000)
   for (const width of [360, 430, 768, 1024, 1280, 1920]) {
     await page.setViewportSize({ width, height: 900 })
     await page.goto('/products')

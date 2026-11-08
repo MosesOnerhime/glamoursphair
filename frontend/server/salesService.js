@@ -1,6 +1,6 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto'
 import { NOVEMBER_SALE, salePhase, salePrices, saleProducts } from '../src/lib/novemberSale.js'
-import { deliveryLocations } from '../src/lib/deliveryLocations.js'
+import { countries, deliveryLocations } from '../src/lib/deliveryLocations.js'
 
 export class SaleError extends Error {
   constructor(message, status = 400, details = {}) { super(message); this.status = status; this.details = details }
@@ -40,16 +40,17 @@ export function validateDetails(body) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) throw new SaleError('Enter a valid email address.')
   if (customer.phone.replace(/\D/g, '').length < 7) throw new SaleError('Enter a valid phone number.')
   const location = deliveryLocations.find(item => item.id === body.shipping?.deliveryLocationId)
-  if (!location || body.shipping?.countryCode !== location.countryCode) throw new SaleError('Choose a matching country and delivery region.')
+  const country = countries.find(item => item.code === body.shipping?.countryCode)
+  if (!location || !country || !location.countryCodes.includes('*') && !location.countryCodes.includes(country.code)) throw new SaleError('Choose a matching country and delivery option.')
+  const pickup = location.id === 'pickup'
   const shipping = {
-    deliveryLocationId: location.id, countryCode: location.countryCode, country: location.country,
-    address: text(body.shipping?.address, 'Delivery address', 300),
-    city: text(body.shipping?.city, 'City', 100),
-    state: text(body.shipping?.state, 'State or region', 100),
+    deliveryLocationId: location.id, countryCode: country.code, country: country.name,
+    address: pickup ? location.note : text(body.shipping?.address, 'Delivery address', 300),
+    city: pickup ? 'Abuja' : text(body.shipping?.city, 'City', 100),
+    state: pickup ? 'FCT' : text(body.shipping?.state, 'State or region', 100),
     deliveryNote: text(body.shipping?.deliveryNote ?? '', 'Delivery note', 500, false),
     isGift: body.shipping?.isGift === true,
   }
-  if (location.countryCode === 'AFRICA') shipping.country = text(body.shipping?.countryName, 'Country name', 100)
   if (shipping.isGift) {
     shipping.recipientName = text(body.shipping?.recipientName, 'Recipient name', 120)
     shipping.recipientPhone = text(body.shipping?.recipientPhone, 'Recipient phone', 40)
