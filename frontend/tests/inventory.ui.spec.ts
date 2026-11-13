@@ -131,6 +131,9 @@ test('Christmas Sales canonical route and legacy alias open the same campaign', 
 })
 
 test('sales collection link opens the renamed campaign with November dates and current offers', async ({ page }, info) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (value: string) => localStorage.setItem('qa-copied-product-link', value) } })
+  })
   await page.goto('/products')
   await page.locator('.catalog-collections').getByRole('link', { name: 'Christmas Sales' }).click()
   await expect(page.getByRole('heading', { name: 'Christmas Sales', exact: true })).toBeVisible()
@@ -142,6 +145,11 @@ test('sales collection link opens the renamed campaign with November dates and c
   await expect(page.getByText('Opens 9 November', { exact: true })).toBeVisible()
   await page.getByRole('link', { name: `View ${signature}`, exact: true }).click()
   await expect(page.getByRole('dialog', { name: signature })).toBeVisible()
+  const copySaleLink = page.getByRole('button', { name: `Copy link for ${signature}`, exact: true })
+  await expect(copySaleLink).toBeVisible()
+  await copySaleLink.click()
+  const copiedSaleLink = await page.evaluate(() => localStorage.getItem('qa-copied-product-link'))
+  expect(new URL(copiedSaleLink!).searchParams.get('productId')).toBe(await page.locator(`[data-sale-product-id]`).getAttribute('data-sale-product-id'))
   await expect(page.getByText('Sale checkout opens 9 November, Nigeria time.', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Close sale product', exact: true }).press('Escape')
   await expect(page.getByRole('dialog', { name: signature })).not.toBeVisible()
@@ -255,6 +263,34 @@ test('regular catalogue search, product gallery and add to cart still work', asy
   await expect(checkout.getByLabel('Full address', { exact: true })).toBeVisible()
   await expect(checkout.getByLabel('City', { exact: true })).toBeVisible()
   await expect(checkout.getByLabel('State / region', { exact: true })).toBeVisible()
+})
+
+test('each product card copies a unique link that opens that exact product', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (value: string) => localStorage.setItem('qa-copied-product-link', value) } })
+  })
+  await page.goto('/products')
+  const cards = page.locator('.catalog-grid [data-product-id]')
+  await expect(cards).toHaveCount(2)
+  const links: { name: string; href: string; id: string }[] = []
+  for (let index = 0; index < await cards.count(); index += 1) {
+    const card = cards.nth(index)
+    const name = (await card.locator('.catalog-product-title').innerText()).trim()
+    const id = (await card.getAttribute('data-product-id'))!
+    await card.getByRole('button', { name: `Copy link for ${name}`, exact: true }).click()
+    const copied = await page.evaluate(() => localStorage.getItem('qa-copied-product-link'))
+    expect(copied).toBeTruthy()
+    const url = new URL(copied!)
+    expect(url.searchParams.get('productId')).toBe(id)
+    links.push({ name, id, href: `${url.pathname}${url.search}` })
+  }
+  expect(new Set(links.map(link => link.href)).size).toBe(links.length)
+
+  for (const link of links) {
+    await page.goto(link.href)
+    await expect(page.getByRole('dialog', { name: link.name, exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Close product preview', exact: true }).click()
+  }
 })
 
 test('shop and admin fit compact and wide responsive layouts', async ({ page }) => {

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { HiArrowLeft, HiArrowRight, HiChevronLeft, HiChevronRight, HiMinus, HiPlus, HiRefresh, HiSearch, HiShoppingBag, HiTrash, HiX } from 'react-icons/hi'
+import { HiArrowLeft, HiArrowRight, HiCheck, HiChevronLeft, HiChevronRight, HiLink, HiMinus, HiPlus, HiRefresh, HiSearch, HiShoppingBag, HiTrash, HiX } from 'react-icons/hi'
 import { FaWhatsapp } from 'react-icons/fa'
 import { track } from '@vercel/analytics'
 import { useDialogA11y } from '../hooks/useDialogA11y'
 import { NOVEMBER_SALE } from '../lib/novemberSale.js'
 import type { SaleProduct } from '../lib/novemberSale.js'
 import { fetchSale, money, readSaleBag, readSalePayment, SALE_BAG_KEY } from '../lib/salesClient'
+import { createProductUrl, findProductForUrl } from '../lib/productLinks.js'
 import type { SaleBagItem, SaleQuote, SaleSnapshot } from '../lib/salesClient'
 import SaleCheckout from './SaleCheckout'
 import './SalesPage.css'
@@ -29,16 +30,18 @@ export default function SalesPage() {
   const [bag, setBag] = useState<SaleBagItem[]>(readSaleBag)
   const [bagOpen, setBagOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(() => Boolean(readSalePayment()))
-  const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('product'))
+  const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('productId') ?? new URLSearchParams(window.location.search).get('product'))
   const [imageIndex, setImageIndex] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [announcement, setAnnouncement] = useState('')
-  const selected = snapshot?.products.find(product => product.slug === selectedId || String(product.id) === selectedId) ?? null
+  const [copiedProductId, setCopiedProductId] = useState<number | null>(null)
+  const selected = snapshot ? findProductForUrl(snapshot.products, new URLSearchParams(`productId=${encodeURIComponent(selectedId ?? '')}`)) ?? snapshot.products.find(product => product.slug === selectedId || String(product.id) === selectedId) ?? null : null
   const active = snapshot?.phase === 'active'
   const closeProduct = useCallback(() => {
     setSelectedId(null)
     const url = new URL(window.location.href)
     url.searchParams.delete('product')
+    url.searchParams.delete('productId')
     window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
   }, [])
   const productRef = useDialogA11y<HTMLDivElement>(Boolean(selected), closeProduct)
@@ -73,14 +76,14 @@ export default function SalesPage() {
     try { localStorage.setItem(SALE_BAG_KEY, JSON.stringify(bag)) } catch { /* Shopping still works when storage is unavailable. */ }
   }, [bag])
   useEffect(() => {
-    const sync = () => { setSelectedId(new URLSearchParams(window.location.search).get('product')); setImageIndex(0); setQuantity(1) }
+    const sync = () => { const params = new URLSearchParams(window.location.search); setSelectedId(params.get('productId') ?? params.get('product')); setImageIndex(0); setQuantity(1) }
     window.addEventListener('popstate', sync)
     return () => window.removeEventListener('popstate', sync)
   }, [])
 
   useEffect(() => {
     const title = selected ? `${selected.name} - Christmas Sale | GLAMOURSPHAIR` : 'Christmas Sales: 9-15 November | GLAMOURSPHAIR'
-    const url = selected ? `${ORIGIN}${SALES_PATH}?product=${encodeURIComponent(selected.slug || String(selected.id))}` : `${ORIGIN}${SALES_PATH}`
+    const url = selected ? createProductUrl(selected, SALES_PATH) : `${ORIGIN}${SALES_PATH}`
     document.title = title
     document.querySelector('link[rel="canonical"]')?.setAttribute('href', url)
     for (const selector of ['meta[property="og:title"]', 'meta[name="twitter:title"]']) document.querySelector(selector)?.setAttribute('content', title)
@@ -91,9 +94,9 @@ export default function SalesPage() {
       name: NOVEMBER_SALE.name, itemListElement: (snapshot?.products ?? []).map((product, index) => ({
         '@type': 'ListItem', position: index + 1, item: { '@type': 'Product', name: product.name,
           description: product.description, image: product.images || [product.image],
-          url: `${ORIGIN}${SALES_PATH}?product=${encodeURIComponent(product.slug || String(product.id))}`,
+          url: createProductUrl(product, SALES_PATH),
           brand: { '@type': 'Brand', name: 'GLAMOURSPHAIR' },
-          ...(active ? { offers: { '@type': 'Offer', price: product.price, priceCurrency: 'NGN', priceValidUntil: '2026-11-15', url: `${ORIGIN}${SALES_PATH}?product=${encodeURIComponent(product.slug || String(product.id))}` } } : {}),
+          ...(active ? { offers: { '@type': 'Offer', price: product.price, priceCurrency: 'NGN', priceValidUntil: '2026-11-15', url: createProductUrl(product, SALES_PATH) } } : {}),
         },
       })),
     })
@@ -117,10 +120,21 @@ export default function SalesPage() {
   const refresh = () => { setLoading(true); setRefreshKey(value => value + 1) }
 
   function openProduct(product: SaleProduct) {
-    setSelectedId(product.slug || String(product.id)); setImageIndex(0); setQuantity(1)
-    const url = new URL(window.location.href); url.searchParams.set('product', product.slug || String(product.id))
+    setSelectedId(String(product.id)); setImageIndex(0); setQuantity(1)
+    const url = new URL(window.location.href); url.searchParams.set('product', product.slug || String(product.id)); url.searchParams.set('productId', String(product.id))
     window.history.pushState({}, '', `${url.pathname}${url.search}${url.hash}`)
     track('Christmas Sale Product View', { product: product.name })
+  }
+  async function copyProductLink(product: SaleProduct) {
+    const link = createProductUrl(product, SALES_PATH)
+    try {
+      await navigator.clipboard.writeText(link)
+      setCopiedProductId(product.id)
+      window.setTimeout(() => setCopiedProductId(null), 1800)
+      setAnnouncement(`Product link copied for ${product.name}.`)
+    } catch {
+      window.prompt('Copy this product link:', link)
+    }
   }
   function add(product: SaleProduct) {
     if (!active || loadError) return
@@ -155,8 +169,8 @@ export default function SalesPage() {
         {snapshot && <div className="sale-catalog-context"><p>{snapshot.phase === 'upcoming' ? 'Preview the Christmas edit' : snapshot.phase === 'ended' ? 'The edit, now closed' : 'The Christmas edit'}</p><span role="status">{products.length} piece{products.length === 1 ? '' : 's'}</span></div>}
         {loadError && <div className="sale-load-error" role="alert"><p>{loadError}</p><button type="button" className="sale-button secondary" onClick={refresh}><HiRefresh /> Try again</button></div>}
         {loading && !snapshot ? <div className="sale-product-grid" aria-label="Loading sale pieces" aria-busy="true">{[1, 2].map(number => <div key={number} className="sale-card-skeleton" />)}</div> : snapshot && products.length ? <div className="sale-product-grid">{products.map((product, index) => <article key={product.id} className="sale-product-card" data-sale-product-id={product.id}>
-          <a className="sale-product-photo" href={`${SALES_PATH}?product=${encodeURIComponent(product.slug || String(product.id))}`} onClick={event => { event.preventDefault(); openProduct(product) }} aria-label={`View ${product.name}`}><img src={photo(product)} alt={product.name} width="750" height="1000" loading={index < 2 ? 'eager' : 'lazy'} fetchPriority={index === 0 ? 'high' : 'auto'} decoding="async" />{product.discountPercent > 0 && <span className="sale-discount">{product.discountPercent}% OFF</span>}<span className="sale-view-label">View piece <HiArrowRight aria-hidden="true" /></span></a>
-          <div className="sale-product-caption"><p>{[product.length, product.fitting].filter(Boolean).join(' / ') || product.group || 'GLAMOURSPHAIR'}</p><h2><a href={`${SALES_PATH}?product=${encodeURIComponent(product.slug || String(product.id))}`} onClick={event => { event.preventDefault(); openProduct(product) }}>{product.name}</a></h2><div className="sale-product-prices"><span><span className="sr-only">{saleLabel}: </span>{money(product.price)}</span>{product.regularPrice > product.price && <del><span className="sr-only">Regular price: </span>{money(product.regularPrice)}</del>}<small>{saleLabel}</small></div></div>
+          <a className="sale-product-photo" href={createProductUrl(product, SALES_PATH)} onClick={event => { event.preventDefault(); openProduct(product) }} aria-label={`View ${product.name}`}><img src={photo(product)} alt={product.name} width="750" height="1000" loading={index < 2 ? 'eager' : 'lazy'} fetchPriority={index === 0 ? 'high' : 'auto'} decoding="async" />{product.discountPercent > 0 && <span className="sale-discount">{product.discountPercent}% OFF</span>}<span className="sale-view-label">View piece <HiArrowRight aria-hidden="true" /></span></a>
+          <div className="sale-product-caption"><p>{[product.length, product.fitting].filter(Boolean).join(' / ') || product.group || 'GLAMOURSPHAIR'}</p><h2><a href={createProductUrl(product, SALES_PATH)} onClick={event => { event.preventDefault(); openProduct(product) }}>{product.name}</a></h2><div className="sale-product-prices"><span><span className="sr-only">{saleLabel}: </span>{money(product.price)}</span>{product.regularPrice > product.price && <del><span className="sr-only">Regular price: </span>{money(product.regularPrice)}</del>}<small>{saleLabel}</small></div></div>
         </article>)}</div> : snapshot && <div className="sale-empty"><h2>{search ? 'No matching pieces' : 'The Christmas edit is being prepared'}</h2><p>{search ? 'Try another product name, length or fitting.' : 'Join our WhatsApp channel for collection updates.'}</p>{search ? <button className="sale-button secondary" type="button" onClick={() => setSearch('')}>Clear search</button> : <a href="https://whatsapp.com/channel/0029Vb8gQMqK5cDJFIwnVk2y" target="_blank" rel="noopener noreferrer" className="sale-button"><FaWhatsapp /> Join the channel</a>}</div>}
         {snapshot?.phase === 'ended' && <div className="sale-ended"><p>This sale ran 9-15 November 2026. Explore the current collection for regular prices.</p><a href="/products" className="sale-button secondary">Shop all products <HiArrowRight /></a></div>}
       </section>
@@ -171,8 +185,9 @@ export default function SalesPage() {
         <div className="sale-product-details"><p className="sale-eyebrow">{selected.discountPercent > 0 && `${selected.discountPercent}% OFF · `}9-15 NOVEMBER</p><h2 id="sale-product-title">{selected.name}</h2><p className="sale-modal-price">{money(selected.price)} {selected.regularPrice > selected.price && <del>{money(selected.regularPrice)}</del>}</p><p className="sale-detail-description">{selected.description}</p><dl className="sale-specifications">{[['Length', selected.length], ['Fitting', selected.fitting], ['Volume', selected.volume], ['Source', selected.source]].filter(([, value]) => value).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
           <div className="sale-buy-row"><Quantity value={quantity} onChange={setQuantity} name={selected.name} />{selected.regularPrice > selected.price && <strong>Save {money((selected.regularPrice - selected.price) * quantity)}</strong>}</div>
           {active ? <button type="button" className="sale-button" onClick={() => add(selected)} disabled={Boolean(loadError)}><HiShoppingBag /> Add to sale bag - {money(selected.price * quantity)}</button> : <p className="sale-notice">{snapshot?.phase === 'ended' ? 'This sale has ended.' : 'Sale checkout opens 9 November, Nigeria time.'}</p>}
-          {!active && <a className="sale-button secondary" href={`/products?product=${encodeURIComponent(selected.slug || String(selected.id))}`}>View the regular collection <HiArrowRight /></a>}
-          <a className="sale-text-button" href={`https://wa.me/2348128288948?text=${encodeURIComponent(`Hello GLAMOURSPHAIR, I am interested in ${selected.name} in Christmas Sales (9-15 November). Listed sale price: ${money(selected.price)}. ${ORIGIN}${SALES_PATH}?product=${selected.slug || selected.id}`)}`} target="_blank" rel="noopener noreferrer"><FaWhatsapp /> Ask about this piece</a><p className="sale-payment-note">Delivery is added at checkout. Payments are charged in NGN.</p>
+          {!active && <a className="sale-button secondary" href={createProductUrl(selected, '/products')}>View the regular collection <HiArrowRight /></a>}
+          <button type="button" className="sale-button secondary sale-copy-link" onClick={() => void copyProductLink(selected)} aria-label={copiedProductId === selected.id ? `Product link copied for ${selected.name}` : `Copy link for ${selected.name}`}>{copiedProductId === selected.id ? <HiCheck /> : <HiLink />}{copiedProductId === selected.id ? 'Link copied' : 'Copy product link'}</button>
+          <a className="sale-text-button" href={`https://wa.me/2348128288948?text=${encodeURIComponent(`Hello GLAMOURSPHAIR, I am interested in ${selected.name} in Christmas Sales (9-15 November). Listed sale price: ${money(selected.price)}. ${createProductUrl(selected, SALES_PATH)}`)}`} target="_blank" rel="noopener noreferrer"><FaWhatsapp /> Ask about this piece</a><p className="sale-payment-note">Delivery is added at checkout. Payments are charged in NGN.</p>
         </div></div>
     </div></div>}
 

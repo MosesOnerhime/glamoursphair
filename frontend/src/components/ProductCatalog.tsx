@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
-import { HiAdjustments, HiArrowLeft, HiArrowRight, HiCheck, HiChevronRight, HiCollection, HiSearch, HiShoppingBag, HiViewGrid, HiX } from 'react-icons/hi'
+import { HiAdjustments, HiArrowLeft, HiArrowRight, HiCheck, HiChevronRight, HiCollection, HiLink, HiSearch, HiShoppingBag, HiViewGrid, HiX } from 'react-icons/hi'
+import type { MouseEvent } from 'react'
 import { FaWhatsapp } from 'react-icons/fa'
 import type { Product } from '../types'
 
@@ -23,7 +24,9 @@ interface ProductCatalogProps {
   onReset: () => void
   onProduct: (product: Product) => void
   onAdd: (product: Product) => void
+  onCopyProductLink: (event: MouseEvent<HTMLButtonElement>, product: Product) => void
   added: number | null
+  copiedProductId: number | null
   productLink: (product: Product) => string
   whatsappLink: (product: Product) => string
 }
@@ -51,9 +54,14 @@ export default function ProductCatalog(props: ProductCatalogProps) {
       style={offset === undefined ? undefined : { '--offset': offset, '--scale': offset === 0 ? 1 : Math.abs(offset) === 1 ? 0.78 : 0.6, zIndex: 10 - Math.abs(offset) } as CSSProperties}
       hidden={offset !== undefined && Math.abs(offset) > 2} aria-label={product.name}
     >
-      <a href={props.productLink(product)} className="catalog-media" onClick={event => { event.preventDefault(); props.onProduct(product) }}>
-        {product.images?.[0] || product.image ? <img src={product.images?.[0] ?? product.image} alt={product.name} width="750" height="1000" loading={offset === 0 ? 'eager' : 'lazy'} fetchPriority={offset === 0 ? 'high' : 'auto'} decoding="async" /> : <HiShoppingBag size={48} aria-hidden="true" />}
-      </a>
+      <div className="catalog-media-wrap">
+        <a href={props.productLink(product)} className="catalog-media" onClick={event => { event.preventDefault(); props.onProduct(product) }}>
+          {product.images?.[0] || product.image ? <img src={product.images?.[0] ?? product.image} alt={product.name} width="750" height="1000" loading={offset === 0 ? 'eager' : 'lazy'} fetchPriority={offset === 0 ? 'high' : 'auto'} decoding="async" /> : <HiShoppingBag size={48} aria-hidden="true" />}
+        </a>
+        <button type="button" className="catalog-copy-link" onClick={event => props.onCopyProductLink(event, product)} aria-label={props.copiedProductId === product.id ? `Product link copied for ${product.name}` : `Copy link for ${product.name}`} title={props.copiedProductId === product.id ? 'Product link copied' : 'Copy product link'}>
+          {props.copiedProductId === product.id ? <HiCheck aria-hidden="true" /> : <HiLink aria-hidden="true" />}
+        </button>
+      </div>
       <div className="catalog-info">
         <ProductHeading className="catalog-product-title"><a href={props.productLink(product)} onClick={event => { event.preventDefault(); props.onProduct(product) }}>{product.name}</a></ProductHeading>
         <p className="catalog-spec">{[product.length, product.volume, product.fitting].filter(Boolean).join(' / ') || product.group || 'Signature Collection'}</p>

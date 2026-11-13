@@ -19,6 +19,7 @@ import ProductCatalog from './ProductCatalog'
 import InventoryList from './InventoryList'
 import { HOME_PRODUCT_LIMIT, catalogProducts, homepageProducts, isCatalogProduct, isHomepageProduct } from '../lib/productPlacement.js'
 import { isChristmasSaleProduct } from '../lib/novemberSale.js'
+import { createProductUrl, findProductForUrl } from '../lib/productLinks.js'
 
 const WHATSAPP = '2348128288948'
 const PRODUCT_PARAM = 'product'
@@ -723,16 +724,12 @@ export default function ProductGrid({ onAddToCart, productsPage = false }: Produ
     : []
 
   const findProductFromUrl = useCallback(() => {
-    const productParam = new URLSearchParams(window.location.search).get(PRODUCT_PARAM)
-    if (!productParam) return null
-
-    return allProducts.find(product => (isCatalogProduct(product) || isHomepageProduct(product)) && (product.slug === productParam || String(product.id) === productParam)) ?? null
+    const product = findProductForUrl(allProducts, window.location.search)
+    return product && (isCatalogProduct(product) || isHomepageProduct(product)) ? product : null
   }, [allProducts])
 
   const productUrl = (product: Product) => {
-    const url = new URL(PRODUCTION_URL)
-    url.searchParams.set(PRODUCT_PARAM, product.slug ?? String(product.id))
-    return url.toString()
+    return createProductUrl(product)
   }
 
   const openProduct = (product: Product) => {
@@ -742,6 +739,7 @@ export default function ProductGrid({ onAddToCart, productsPage = false }: Produ
 
     const url = new URL(window.location.href)
     url.searchParams.set(PRODUCT_PARAM, product.slug ?? String(product.id))
+    url.searchParams.set('productId', String(product.id))
     window.history[replacingOpenProduct ? 'replaceState' : 'pushState']({}, '', url)
   }
 
@@ -750,6 +748,7 @@ export default function ProductGrid({ onAddToCart, productsPage = false }: Produ
 
     const url = new URL(window.location.href)
     url.searchParams.delete(PRODUCT_PARAM)
+    url.searchParams.delete('productId')
     window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
   }
 
@@ -918,8 +917,7 @@ export default function ProductGrid({ onAddToCart, productsPage = false }: Produ
       return
     }
 
-    const url = new URL(PRODUCTION_URL)
-    url.searchParams.set(PRODUCT_PARAM, selected.slug ?? String(selected.id))
+    const url = new URL(productUrl(selected))
     const title = `${selected.name} | GLAMOURSPHAIR Luxury`
     const imageUrls = (selected.images ?? [selected.image]).map(absoluteImageUrl).filter(Boolean) as string[]
     document.title = title
@@ -1453,6 +1451,8 @@ const writeAdminCache = (key: string, value: unknown) => {
         onReset={resetDiscovery}
         onProduct={openProduct}
         onAdd={handleAdd}
+        onCopyProductLink={copyProductLink}
+        copiedProductId={copiedProductId}
         added={added}
         productLink={productUrl}
         whatsappLink={whatsappLink}

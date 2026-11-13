@@ -73,6 +73,10 @@
 .product-showcase { --step: 260px; --card-width: 300px; position: relative; height: 610px; overflow: hidden; touch-action: pan-y; }
 .showcase-track { position: relative; height: 100%; width: 100%; }
 .catalog-card { min-width: 0; color: var(--store-cream); }
+.catalog-media-wrap { position: relative; }
+.catalog-copy-link { position: absolute; top: 10px; right: 10px; z-index: 2; display: grid; width: 44px; height: 44px; place-items: center; border: 1px solid #cbb07a66; background: #0b0908e8; color: var(--store-champagne); transition: background-color .2s ease, color .2s ease; }
+.catalog-copy-link:hover { background: var(--store-champagne); color: #100e0c; }
+.catalog-copy-link:focus-visible { outline: 2px solid var(--store-champagne); outline-offset: 2px; }
 .showcase-card { position: absolute; top: 50%; left: 50%; width: var(--card-width); transform: translate(calc(-50% + var(--offset) * var(--step)), -50%) scale(var(--scale)); opacity: calc(1 - .13 * max(var(--offset), -1 * var(--offset))); transition: transform .5s ease, opacity .5s ease; }
 .catalog-media { display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 8px; background: #100e0c; color: var(--store-champagne); }
 .catalog-media img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }

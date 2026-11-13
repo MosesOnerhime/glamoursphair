@@ -50,6 +50,8 @@ The owner confirmed running the migration during implementation. A subsequent pr
 
 ## Release
 
+- Product sharing follow-up (2026-11-13): every product card on `/products` has a copy-link action; the product preview and Christmas Sales detail modal also expose copy actions. Share URLs include both the readable `product` slug (or ID fallback) and stable `productId` query values, so a duplicate/missing slug does not make a copied link ambiguous. Resolvers prefer `productId` while retaining support for older `?product=<slug-or-id>` links. Unit coverage checks URL uniqueness and resolution with duplicate slugs; desktop/mobile browser coverage copies each fixture catalog product link, opens its matching detail modal, and verifies the sale modal's copied ID. No catalog data or payment behavior was changed.
+
 - Feature commit `32ae1bc` was pushed to `origin/main` on 2026-10-14. Final validation before that push: build, lint, all 26 tests and `git diff --check` passed.
 - The owner paused after the push, then resumed on 2026-10-15. The deployed page now returns the full grid with **27 products**. Its JS asset is `/assets/index-BSnjBoEV.js` for the feature release.
 - Live API returns HTTP 200, `Cache-Control: no-store`, 22 active database records, zero deleted IDs, and `placementSupported: true`; all 22 database rows have catalog visibility enabled. The remaining original products are supplied by the preserved seed catalog.

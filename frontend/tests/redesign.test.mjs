@@ -3,6 +3,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
 import ts from 'typescript'
+import { createProductUrl, findProductForUrl } from '../src/lib/productLinks.js'
 
 const gridUrl = new URL('../src/components/ProductGrid.tsx', import.meta.url)
 const source = ts.createSourceFile('ProductGrid.tsx', readFileSync(gridUrl, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
@@ -29,6 +30,19 @@ test('all existing catalog items retain unique IDs, shareable slugs and valid pr
   }
   assert.equal(products.find(product => product.slug === 'wig-kelly-hd-lace').price, 298000)
   assert.equal(products.filter(product => product.group === 'Awoof Sales').length, 14)
+})
+
+test('product share URLs stay unique and resolve by stable ID even when slugs collide', () => {
+  const [first, second] = products
+  const duplicateSlugProducts = [first, { ...second, slug: first.slug }]
+  const firstUrl = createProductUrl(first)
+  const secondUrl = createProductUrl(duplicateSlugProducts[1])
+  assert.notEqual(firstUrl, secondUrl)
+  assert.equal(new URL(firstUrl).searchParams.get('productId'), String(first.id))
+  assert.equal(findProductForUrl(duplicateSlugProducts, secondUrl), duplicateSlugProducts[1])
+  assert.equal(findProductForUrl(products, `?product=${first.slug}`), first)
+  assert.equal(findProductForUrl(products, `?product=${second.id}`), second)
+  assert.equal(new URL(createProductUrl(first, '/christmas-sales')).pathname, '/christmas-sales')
 })
 
 test('every catalog photograph resolves to an existing public asset', () => {
