@@ -130,7 +130,7 @@ async function paystack(path, init, request) {
 }
 
 export async function initializeSale(body, products, now, request) {
-  if (salePhase(now) !== 'active') throw new SaleError('Christmas sale checkout is available only from 9 to 15 November, Nigeria time.', 409)
+  if (salePhase(now) !== 'active') throw new SaleError('Christmas sale checkout is available only from 9 to 18 November, Nigeria time.', 409)
   const { customer, shipping, location } = validateDetails(body)
   const quote = quoteSale(body.items, products, location.id)
   if (!Number.isSafeInteger(body.expectedAmountKobo) || body.expectedAmountKobo !== quote.totalKobo) {
@@ -143,7 +143,7 @@ export async function initializeSale(body, products, now, request) {
     email: customer.email, amount: quote.totalKobo, currency: 'NGN', reference,
     callback_url: 'https://www.glamoursphairluxury.com/sales?payment=return',
     metadata: { glamoursphairSale: { order, signature }, custom_fields: [
-      { display_name: 'Campaign', variable_name: 'campaign', value: 'Christmas Sales: 9-15 November 2026' },
+      { display_name: 'Campaign', variable_name: 'campaign', value: 'Christmas Sales: 9-18 November 2026' },
       { display_name: 'Customer', variable_name: 'customer', value: `${customer.name} / ${customer.phone}` },
       { display_name: 'Delivery', variable_name: 'delivery', value: `${shipping.address}, ${shipping.city}, ${shipping.state}, ${shipping.country}` },
       { display_name: 'Gift recipient', variable_name: 'gift_recipient', value: shipping.isGift ? `${shipping.recipientName} / ${shipping.recipientPhone}` : 'Not a gift' },

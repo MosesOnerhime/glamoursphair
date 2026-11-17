@@ -2,7 +2,7 @@ export const NOVEMBER_SALE = Object.freeze({
   id: 'november-2026',
   name: 'Christmas Sales',
   startsAt: '2026-11-09T00:00:00+01:00',
-  endsAt: '2026-11-16T00:00:00+01:00',
+  endsAt: '2026-11-19T00:00:00+01:00',
   timeZone: 'Africa/Lagos',
   maxDiscountPercent: 50,
   // Legacy selections only, until the database sale-membership migration is applied.

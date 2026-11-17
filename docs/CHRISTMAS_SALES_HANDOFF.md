@@ -1,5 +1,9 @@
 # Christmas Sales And Shared Inventory Loading
 
+## November 17 Schedule Extension
+
+The owner extended Christmas Sales through **18 November 2026**, inclusive, in Africa/Lagos. The shared cutoff is now 2026-11-19 00:00 (UTC+01:00), so checkout remains available through 23:59:59 on November 18. Both the storefront and server use the shared `NOVEMBER_SALE.endsAt` boundary. Static crawler metadata, admin labels, structured offer validity, payment metadata, WhatsApp copy, and boundary/API/UI tests must reflect the updated dates. No product, price, payment credential, or inventory data changes are part of this extension.
+
 ## November 7 Pricing Refinement
 
 The owner has replaced the original blanket 20% placeholder with **Up to 50% off** campaign messaging and admin-defined product prices. This section supersedes the older pricing descriptions and November 4 production examples below; those remain historical release evidence.

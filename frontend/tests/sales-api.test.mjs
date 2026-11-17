@@ -40,13 +40,13 @@ function harness({ clock = '2026-11-10T12:00:00+01:00', inventory = rows } = {})
   return state
 }
 
-test('campaign runs exactly 9-15 November in Nigeria time', () => {
+test('campaign runs exactly 9-18 November in Nigeria time', () => {
   assert.equal(NOVEMBER_SALE.name, 'Christmas Sales')
   assert.equal(NOVEMBER_SALE.id, 'november-2026')
   assert.equal(salePhase('2026-11-08T22:59:59.999Z'), 'upcoming')
   assert.equal(salePhase('2026-11-08T23:00:00.000Z'), 'active')
-  assert.equal(salePhase('2026-11-15T22:59:59.999Z'), 'active')
-  assert.equal(salePhase('2026-11-15T23:00:00.000Z'), 'ended')
+  assert.equal(salePhase('2026-11-18T22:59:59.999Z'), 'active')
+  assert.equal(salePhase('2026-11-18T23:00:00.000Z'), 'ended')
   assert.equal(salePhase('2027-11-10T00:00:00Z'), 'ended')
   assert.throws(() => salePhase('not-a-date'))
 })
@@ -175,7 +175,7 @@ test('changed totals are shown for review and never silently charged', async () 
   assert.equal(state.transactions.size, 0)
 })
 test('sale cannot be paid before opening or after closing', async () => {
-  for (const clock of ['2026-11-08T22:59:59Z', '2026-11-15T23:00:00Z']) {
+  for (const clock of ['2026-11-08T22:59:59Z', '2026-11-18T23:00:00Z']) {
     const state = harness({ clock }); const res = await state.send(validBody())
     assert.equal(res.statusCode, 409); assert.equal(state.transactions.size, 0)
   }
@@ -360,7 +360,7 @@ test('production cannot accept test-mode or public API keys as real payments', a
 })
 test('sales entry has crawler metadata, narrow routes and a sitemap entry', () => {
   const html = readFileSync(new URL('../sales.html', import.meta.url), 'utf8')
-  assert.ok(html.includes('<title>Christmas Sales: 9-15 November | GLAMOURSPHAIR</title>'))
+  assert.ok(html.includes('<title>Christmas Sales: 9-18 November | GLAMOURSPHAIR</title>'))
   assert.ok(html.includes('href="https://www.glamoursphairluxury.com/christmas-sales"'))
   assert.ok(html.includes('property="og:image"'))
   const config = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url)))

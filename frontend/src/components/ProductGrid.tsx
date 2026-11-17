@@ -917,7 +917,9 @@ export default function ProductGrid({ onAddToCart, productsPage = false }: Produ
       return
     }
 
-    const url = new URL(productUrl(selected))
+    const url = new URL(PRODUCTION_URL)
+    url.searchParams.set(PRODUCT_PARAM, selected.slug ?? String(selected.id))
+    url.searchParams.set('productId', String(selected.id))
     const title = `${selected.name} | GLAMOURSPHAIR Luxury`
     const imageUrls = (selected.images ?? [selected.image]).map(absoluteImageUrl).filter(Boolean) as string[]
     document.title = title
@@ -1723,7 +1725,7 @@ const writeAdminCache = (key: string, value: unknown) => {
                   </fieldset>
                   <fieldset className="admin-placement" disabled={!salePlacementSupported}>
                     <legend>Christmas Sales</legend>
-                    <label><input type="checkbox" checked={productForm.inChristmasSale} onChange={event => setProductForm(prev => ({ ...prev, inChristmasSale: event.target.checked }))} />Include in Christmas Sales <span>9-15 November 2026</span></label>
+                    <label><input type="checkbox" checked={productForm.inChristmasSale} onChange={event => setProductForm(prev => ({ ...prev, inChristmasSale: event.target.checked }))} />Include in Christmas Sales <span>9-18 November 2026</span></label>
                   </fieldset>
 
                   <div className="grid gap-3 md:grid-cols-2">
